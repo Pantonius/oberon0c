@@ -95,7 +95,7 @@ void Scanner::seek(const FilePos &pos) {
 
 unique_ptr<const Token> Scanner::scanToken() {
     // skip whitespace
-    while (!eof_ && ch_ <= ' ') {
+    while (!eof_ && std::isspace(ch_)) {
         read();
     }
     FilePos pos = current();
