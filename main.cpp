@@ -21,7 +21,7 @@ int main(const int argc, const char *argv[]) {
     path filename = argv[1];
     Logger logger;
     logger.setLevel(LogLevel::DEBUG);
-    Scanner scanner(filename, logger);
+    Scanner scanner(logger, filename);
     auto token = scanner.next();
     while (token->type() != TokenType::eof) {
         cout << *token << endl;

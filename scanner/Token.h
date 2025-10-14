@@ -22,10 +22,10 @@ enum class TokenType : char {
     varargs, pipe, range,
     op_times, op_divide, op_div, op_mod, op_plus, op_minus, op_and, op_or, op_not,
     op_eq, op_neq, op_lt, op_gt, op_leq, op_geq, op_becomes, op_in, op_is,
-    kw_module, kw_import, kw_procedure, kw_extern, kw_return, kw_begin, kw_end,
+    kw_module, kw_import, kw_procedure, kw_external, kw_return, kw_begin, kw_end,
     kw_if, kw_then, kw_else, kw_elsif,
     kw_loop, kw_exit, kw_while, kw_do, kw_repeat, kw_until, kw_for, kw_to, kw_by,
-    kw_case,
+    kw_case, kw_with,
     kw_array, kw_record, kw_const, kw_type, kw_var, kw_of,
     kw_pointer, kw_nil
 };
@@ -33,10 +33,6 @@ enum class TokenType : char {
 std::ostream& operator<<(std::ostream &stream, const TokenType &type);
 
 class Token {
-
-private:
-    TokenType type_;
-    FilePos start_, end_;
 
 public:
     explicit Token(const TokenType type, const FilePos &start) :
@@ -51,6 +47,10 @@ public:
 
     virtual void print(std::ostream &stream) const;
     friend std::ostream& operator<<(std::ostream &stream, const Token &symbol);
+
+private:
+    TokenType type_;
+    FilePos start_, end_;
 
 };
 

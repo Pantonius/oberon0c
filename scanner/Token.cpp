@@ -45,6 +45,7 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::string_literal: result = "STRING literal"; break;
         case TokenType::const_ident: result = "identifier"; break;
         case TokenType::period: result = "."; break;
+        case TokenType::range: result = ".."; break;
         case TokenType::comma: result = ","; break;
         case TokenType::colon: result = ":"; break;
         case TokenType::semicolon: result = ";"; break;
@@ -89,13 +90,15 @@ std::ostream& operator<<(std::ostream &stream, const TokenType &type) {
         case TokenType::kw_for: result = "FOR"; break;
         case TokenType::kw_to: result = "TO"; break;
         case TokenType::kw_by: result = "BY"; break;
+        case TokenType::kw_case: result = "CASE"; break;
+        case TokenType::kw_with: result = "WITH"; break;
         case TokenType::kw_array: result = "ARRAY"; break;
         case TokenType::kw_record: result = "RECORD"; break;
         case TokenType::kw_const: result = "CONST"; break;
         case TokenType::kw_type: result = "TYPE"; break;
         case TokenType::kw_var: result = "VAR"; break;
         case TokenType::kw_of: result = "OF"; break;
-        case TokenType::kw_extern: result = "EXTERN"; break;
+        case TokenType::kw_external: result = "EXTERNAL"; break;
         case TokenType::kw_return: result = "RETURN"; break;
         case TokenType::kw_nil: result = "NIL"; break;
         default: result = "undefined token"; break;

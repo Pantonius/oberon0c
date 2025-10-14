@@ -10,14 +10,13 @@
 
 #include <filesystem>
 #include <fstream>
-#include <sstream>
 #include <memory>
 #include <queue>
 #include <string>
 #include <unordered_map>
 
+#include "global.h"
 #include "Token.h"
-#include "LiteralToken.h"
 #include "util/Logger.h"
 
 using std::filesystem::path;
@@ -29,6 +28,16 @@ using std::unique_ptr;
 using std::unordered_map;
 
 class Scanner {
+
+public:
+    Scanner(Logger &, const path &);
+    ~Scanner();
+    const Token* peek(bool = false);
+    unique_ptr<const Token> next();
+    void seek(const FilePos &);
+
+    static string escape(string str);
+    static string unescape(string str);
 
 private:
     Logger &logger_;
@@ -47,17 +56,7 @@ private:
     unique_ptr<const Token> scanIdent();
     unique_ptr<const Token> scanNumber();
     unique_ptr<const Token> scanString();
-    void scanComment();
-
-public:
-    Scanner(const path &path, Logger &logger);
-    ~Scanner();
-    const Token* peek(bool = false);
-    unique_ptr<const Token> next();
-    void seek(const FilePos &);
-
-    static string escape(string str);
-    static string unescape(string str);
+    void scanComment(const FilePos &);
 
 };
 
