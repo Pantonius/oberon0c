@@ -48,3 +48,4 @@ build
 
 # macOS
 *.DS_Store
+.direnv/bin
