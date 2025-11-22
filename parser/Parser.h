@@ -7,29 +7,29 @@
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
-
-#include <string>
-#include "scanner/Scanner.h"
 #include "ast/Node.h"
+#include "scanner/Scanner.h"
+#include <string>
 
 using std::string;
 
 class Parser {
 
 private:
-    Scanner &scanner_;
-    Logger &logger_;
+  Scanner &scanner_;
+  Token &curr_token_;
+  Logger &logger_;
 
-    const string ident();
+  const string ident();
 
-    void module();
+  void module();
+  void procedure();
 
 public:
-    explicit Parser(Scanner &scanner, Logger &logger) : scanner_(scanner), logger_(logger) {};
-    ~Parser() = default;
-    void parse();
-
+  explicit Parser(Scanner &scanner, Logger &logger)
+      : scanner_(scanner), logger_(logger) {};
+  ~Parser() = default;
+  void parse();
 };
 
-
-#endif //OBERON0C_PARSER_H
+#endif // OBERON0C_PARSER_H

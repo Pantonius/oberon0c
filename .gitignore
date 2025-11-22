@@ -48,5 +48,8 @@ build
 
 # macOS
 *.DS_Store
+
+# Nix
 .direnv
 .ccls-cache
+results/
