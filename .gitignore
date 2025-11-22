@@ -50,3 +50,5 @@ build
 *.DS_Store
 .direnv
 .ccls-cache
+.cache/clangd/index
+result
