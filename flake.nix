@@ -26,7 +26,12 @@
             pkgs.callPackage ./dependencies.nix { inherit pkgs; }
             ++ (if system == "aarch64-darwin" then [ ] else [ pkgs.gdb ]);
         };
-        packages.default = pkgs.callPackage ./default.nix { inherit pkgs; };
+        packages = rec {
+          oberon0c = pkgs.callPackage ./default.nix { inherit pkgs; };
+          oberon0c_fuzz = pkgs.callPackage ./afl.nix { inherit pkgs; };
+          default = oberon0c;
+
+        };
       }
     );
 }

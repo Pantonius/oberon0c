@@ -18,16 +18,11 @@ pkgs.stdenv.mkDerivation rec {
     ];
 
   buildPhase = ''
-    mkdir build
-    cd build
-
-    cmake -DCMAKE_C_COMPILER=afl-cc -DCMAKE_CXX_COMPILER=afl-c++ ..
+    cmake -DCMAKE_C_COMPILER=afl-cc -DCMAKE_CXX_COMPILER=afl-c++ .
     cmake --build . --parallel $NIX_BUILD_CORES
   '';
 
-  checkPhase = ''
-
-  '';
+  checkPhase = '''';
 
   installPhase = ''
     runHook preInstall
