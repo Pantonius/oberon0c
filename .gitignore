@@ -48,4 +48,5 @@ build
 
 # macOS
 *.DS_Store
-.direnv/bin
+.direnv
+.ccls-cache
