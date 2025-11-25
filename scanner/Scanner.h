@@ -14,7 +14,10 @@
 #include <string>
 #include <unordered_map>
 
+#include "IdentToken.h"
+#include "LiteralToken.h"
 #include "Token.h"
+#include "UndefinedToken.h"
 #include "global.h"
 #include "util/Logger.h"
 
@@ -39,8 +42,8 @@ public:
   static string unescape(string str);
 
 private:
-  Logger &logger_;
   const path &path_;
+  Logger &logger_;
   queue<unique_ptr<const Token>> tokens_;
   int lineNo_, charNo_;
   char ch_;

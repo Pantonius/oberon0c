@@ -7,37 +7,34 @@
 #ifndef OBERON0C_AST_H
 #define OBERON0C_AST_H
 
-
-#include <list>
-#include <string>
-#include <ostream>
-#include <utility>
 #include "../../util/Logger.h"
+#include <list>
+#include <ostream>
+#include <string>
+#include <utility>
 
-enum class NodeType : char {
-    module
-};
+enum class NodeType : char { module, procedure, import_list, import };
 
 class NodeVisitor;
 
 class Node {
 
 private:
-    NodeType nodeType_;
-    FilePos pos_;
+  NodeType nodeType_;
+  FilePos pos_;
 
 public:
-    explicit Node(const NodeType nodeType, FilePos pos) : nodeType_(nodeType), pos_(std::move(pos)) { };
-    virtual ~Node();
+  explicit Node(const NodeType nodeType, FilePos pos)
+      : nodeType_(nodeType), pos_(std::move(pos)) {};
+  virtual ~Node();
 
-    [[nodiscard]] NodeType getNodeType() const;
-    [[nodiscard]] FilePos pos() const;
+  [[nodiscard]] NodeType getNodeType() const;
+  [[nodiscard]] FilePos pos() const;
 
-    virtual void accept(NodeVisitor &visitor) = 0;
+  virtual void accept(NodeVisitor &visitor) = 0;
 
-    virtual void print(std::ostream &stream) const = 0;
-    friend std::ostream& operator<<(std::ostream &stream, const Node &node);
-
+  virtual void print(std::ostream &stream) const = 0;
+  friend std::ostream &operator<<(std::ostream &stream, const Node &node);
 };
 
-#endif //OBERON0C_AST_H
+#endif // OBERON0C_AST_H

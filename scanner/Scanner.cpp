@@ -83,6 +83,7 @@ void Scanner::init() {
                {"FALSE", TokenType::boolean_literal}};
 }
 
+/// Peek into scanner, optionally advancing the scanner.
 const Token *Scanner::peek(const bool advance) {
   if (tokens_.empty()) {
     tokens_.push(scanToken());
@@ -96,6 +97,7 @@ const Token *Scanner::peek(const bool advance) {
   return tokens_.front().get();
 }
 
+/// Pop current token, advancing the scanner.
 unique_ptr<const Token> Scanner::next() {
   if (tokens_.empty()) {
     return scanToken();
