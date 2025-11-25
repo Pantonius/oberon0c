@@ -22,9 +22,11 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          packages =
-            pkgs.callPackage ./dependencies.nix { inherit pkgs; }
-            ++ (if system == "aarch64-darwin" then [ ] else [ pkgs.gdb ]);
+          packages = (if system == "aarch64-darwin" then [ ] else [ pkgs.gdb ]);
+          inputsFrom = [
+            self.packages.${system}.oberon0c
+            self.packages.${system}.oberon0c_fuzz
+          ];
         };
         packages = rec {
           oberon0c = pkgs.callPackage ./default.nix { inherit pkgs; };

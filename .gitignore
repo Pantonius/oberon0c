@@ -52,3 +52,5 @@ build
 .ccls-cache
 .cache/clangd/index
 result
+output/default
+test_unique
