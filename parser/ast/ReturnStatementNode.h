@@ -1,6 +1,7 @@
 #ifndef OBERON0C_RETURNSTATEMENTNODE_H
 #define OBERON0C_RETURNSTATEMENTNODE_H
 
+#include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
 #include <vector>
@@ -13,6 +14,8 @@ public:
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
+
+  std::unique_ptr<ExpressionNode> expression;
 };
 
 #endif // OBERON0C_RETURNSTATEMENTNODE_H

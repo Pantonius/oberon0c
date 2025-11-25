@@ -219,33 +219,38 @@ MulOperatorType Parser::mul_operator() {
 std::unique_ptr<FactorNode> Parser::factor() {
   auto factor = std::make_unique<FactorNode>(curr_token_->start());
 
-  if (peek_check_token_type_within(
-          {TokenType::int_literal, TokenType::float_literal,
-           TokenType::double_literal, TokenType::byte_literal})) {
-    // TODO
-  } else if (peek_check_token_type(TokenType::char_literal)) {
-    // TODO
-  } else if (peek_check_token_type(TokenType::string_literal)) {
-    // TODO
-  } else if (peek_set()) {
-    // TODO
-  } else if (peek_check_token_type(TokenType::kw_nil)) {
-    factor->nil = true; // TODO review
-  } else if (peek_designator()) {
-    // TODO
-  } else if (peek_function_call()) {
-    // TODO
-  } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-    factor->expression = expression();
-    expect_token_type(TokenType::rparen);
-  } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
-    factor->not_factor = Parser::factor();
-  }
+  // if (peek_check_token_type_within(
+  //         {TokenType::int_literal, TokenType::float_literal,
+  //          TokenType::double_literal, TokenType::byte_literal})) {
+  //   // TODO
+  // } else if (peek_check_token_type(TokenType::char_literal)) {
+  //   // TODO
+  // } else if (peek_check_token_type(TokenType::string_literal)) {
+  //   // TODO
+  // } else if (peek_set()) {
+  //   // TODO
+  // } else if (peek_check_token_type(TokenType::kw_nil)) {
+  //   factor->nil = true; // TODO review
+  // } else if (peek_designator()) {
+  //   // TODO
+  // } else if (peek_function_call()) {
+  //   // TODO ambiguaty in terms of designator vs function call --> should
+  //   descent
+  //   // into designator and possibly keep going into function call
+  //   // factor = ... | designator ["(" [ActualParameters] ")"]
+  // } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+  //   factor->expression = expression();
+  //   expect_token_type(TokenType::rparen);
+  // } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
+  //   factor->not_factor = Parser::factor();
+  // }
+  logger_.debug("Still working on factor.");
 
   return factor;
 }
 
 // FunctionCall = designator "(" [ActualParameters] ")"
+// TODO is this the same as ProcedureCall?
 std::unique_ptr<FunctionCallNode> Parser::function_call() {
   auto function_call = std::make_unique<FunctionCallNode>(curr_token_->start());
 
@@ -261,6 +266,7 @@ std::unique_ptr<FunctionCallNode> Parser::function_call() {
 
   return function_call;
 }
+
 // ActualParameters = expression {"," expression}
 std::unique_ptr<ActualParametersNode> Parser::actual_parameters() {
   auto actual_parameters =
@@ -282,6 +288,10 @@ std::unique_ptr<DesignatorNode> Parser::designator() {
   return designator;
 }
 
+bool Parser::peek_designator() {
+  return peek_check_token_type(TokenType::char_literal);
+}
+
 // set = "{" [element {"," element}] "}"
 std::unique_ptr<SetNode> Parser::set() {
   auto set = std::make_unique<SetNode>(curr_token_->start());
@@ -298,6 +308,8 @@ std::unique_ptr<SetNode> Parser::set() {
 
   return set;
 }
+
+bool Parser::peek_set() { return peek_check_token_type(TokenType::lbrace); }
 
 // element = expression [".." expression]
 std::unique_ptr<ElementNode> Parser::element() {
@@ -323,6 +335,8 @@ std::unique_ptr<AssignmentNode> Parser::assignment() {
   return assignment;
 }
 
+bool Parser::peek_assignment() { return peek_designator(); }
+
 // StatementSequence = statement {";" statement}
 std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
   auto statement_sequence =
@@ -336,26 +350,33 @@ std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
 }
 
 // statement = [ assignment | ProcedureCall | IfStatement | CaseStatement |
-// LoopStatement | WithStatement | ExitStatement | ReturnStatement ]
+// LoopStatement | WhileStatement | WithStatement | ExitStatement |
+// ReturnStatement ]
 std::unique_ptr<StatementNode> Parser::statement() {
   auto statement = std::make_unique<StatementNode>(curr_token_->start());
 
   if (peek_assignment()) {
-
-  } else if (peek_procedure_call()) {
-
-  } else if (peek_if_statement()) {
-
-  } else if (peek_case_statement()) {
-
-  } else if (peek_loop_statement()) {
-
-  } else if (peek_with_statement()) {
-
-  } else if (peek_exit_statement()) {
-
-  } else if (peek_return_statement()) {
-
+    // } else if (peek_procedure_call()) {
+    //   // TODO ambiguity in between assignment and procedure call; both start
+    //   with
+    //   // a designator --> descent into assignment and decide in terms of the
+    //   next
+    //   // token: statement = [ designator (ASSIGNMENTTHINGS | PROCEDURE CALL
+    //   // THINGS) | ... ]
+  } else if (peek_check_token_type(TokenType::kw_if)) {
+    statement->if_statement = if_statement();
+  } else if (peek_check_token_type(TokenType::kw_case)) {
+    statement->case_statement = case_statement();
+  } else if (peek_check_token_type(TokenType::kw_loop)) {
+    statement->loop_statement = loop_statement();
+  } else if (peek_check_token_type(TokenType::kw_while)) {
+    statement->while_statement = while_statement();
+  } else if (peek_check_token_type(TokenType::kw_with)) {
+    statement->with_statement = with_statement();
+  } else if (peek_check_token_type(TokenType::kw_exit)) {
+    statement->exit_statement = exit_statement();
+  } else if (peek_check_token_type(TokenType::kw_return)) {
+    statement->return_statement = return_statement();
   } else {
     // TODO throw tantrum
   }
@@ -445,6 +466,22 @@ std::unique_ptr<CaseLabelsNode> Parser::case_labels() {
   }
 
   return case_labels;
+}
+
+// WithStatement = "WITH" qualident ":" qualident "DO" StatementSequence "END"
+std::unique_ptr<WithStatementNode> Parser::with_statement() {
+  auto with_statement =
+      std::make_unique<WithStatementNode>(curr_token_->start());
+
+  expect_token_type(TokenType::kw_with);
+  with_statement->first_qual_ident = qual_ident();
+  expect_token_type(TokenType::colon);
+  with_statement->second_qual_ident = qual_ident();
+  expect_token_type(TokenType::kw_do);
+  with_statement->statement_sequence = statement_sequence();
+  expect_token_type(TokenType::kw_end);
+
+  return with_statement;
 }
 
 // WhileStatement = "WHILE" expression "DO" StatementSequence "END"
@@ -611,6 +648,10 @@ std::unique_ptr<FormalParametersNode> Parser::formal_parameters() {
   formal_parameters->qual_ident = qual_ident();
 
   return formal_parameters;
+}
+
+bool Parser::peek_formal_parameters() {
+  return peek_check_token_type(TokenType::lparen);
 }
 
 /* FPSection = ["VAR"] ident {"," ident} ":" FormalType */

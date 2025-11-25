@@ -41,6 +41,7 @@ private:
   std::unique_ptr<StatementNode> statement();
   std::unique_ptr<IfStatementNode> if_statement();
   std::unique_ptr<CaseStatementNode> case_statement();
+  std::unique_ptr<WithStatementNode> with_statement();
   std::unique_ptr<WhileStatementNode> while_statement();
   std::unique_ptr<RepeatStatementNode> repeat_statement();
   std::unique_ptr<LoopStatementNode> loop_statement();
@@ -83,6 +84,12 @@ private:
   bool expect_token_type_within(std::set<TokenType> expectedTypes,
                                 bool advanceOnTrue = true,
                                 bool advanceOnFalse = false);
+
+  bool peek_formal_parameters();
+  bool peek_assignment();
+  bool peek_designator();
+  bool peek_set();
+  bool peek_expression();
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)

@@ -30,4 +30,5 @@
 #include "TypeDeclarationNode.h"
 #include "VarDeclarationNode.h"
 #include "WhileStatementNode.h"
+#include "WithStatementNode.h"
 // TODO remove again; Instead move all those includes into sensible files

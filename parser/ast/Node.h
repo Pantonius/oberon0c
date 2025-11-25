@@ -36,6 +36,7 @@ enum class NodeType : char {
   statement,
   if_statement,
   case_statement,
+  with_statement,
   while_statement,
   repeat_statement,
   loop_statement,
