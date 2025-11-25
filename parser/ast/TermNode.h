@@ -12,20 +12,20 @@
 const std::set<TokenType> MUL_OPERATOR_TOKEN_TYPES = {
     TokenType::op_times, TokenType::op_div, TokenType::op_divide,
     TokenType::op_mod, TokenType::op_and};
-enum MulOperatorType { m_times, m_div, m_divide, m_mod, m_and };
+enum class MulOperatorType { times, div, divide, mod, m_and };
 
 MulOperatorType mul_operator_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_times:
-    return m_times;
+    return MulOperatorType::times;
   case TokenType::op_div:
-    return m_div;
+    return MulOperatorType::div;
   case TokenType::op_divide:
-    return m_divide;
+    return MulOperatorType::divide;
   case TokenType::op_mod:
-    return m_mod;
+    return MulOperatorType::mod;
   case TokenType::op_and:
-    return m_and;
+    return MulOperatorType::m_and;
   default:
     exit(EXIT_FAILURE); // TODO review
   }
