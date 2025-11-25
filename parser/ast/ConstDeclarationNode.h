@@ -1,6 +1,7 @@
 #ifndef OBERON0C_CONSTDECLARATIONNODE_H
 #define OBERON0C_CONSTDECLARATIONNODE_H
 
+#include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
 #include <vector>

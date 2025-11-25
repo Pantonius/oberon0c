@@ -1,5 +1,5 @@
-#ifndef OBERON0C_DECLARATIONSEQUENCE_H
-#define OBERON0C_DECLARATIONSEQUENCE_H
+#ifndef OBERON0C_DECLARATIONSEQUENCENODE_H
+#define OBERON0C_DECLARATIONSEQUENCENODE_H
 
 #include "ConstDeclarationNode.h"
 #include "Node.h"
@@ -24,4 +24,4 @@ public:
   std::vector<std::unique_ptr<ProcedureDeclarationNode>> procedures;
 };
 
-#endif // OBERON0C_DECLARATIONSEQUENCE_H
+#endif // OBERON0C_DECLARATIONSEQUENCENODE_H

@@ -1,6 +1,7 @@
 #ifndef OBERON0C_ACTUALPARAMETERSNODE_H
 #define OBERON0C_ACTUALPARAMETERSNODE_H
 
+#include "ExpressionNode.h"
 #include "Node.h"
 #include "scanner/Token.h"
 #include <memory>

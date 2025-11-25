@@ -1,6 +1,8 @@
 #ifndef OBERON0C_FUNCTIONCALL_H
 #define OBERON0C_FUNCTIONCALL_H
 
+#include "ActualParametersNode.h"
+#include "DesignatorNode.h"
 #include "Node.h"
 #include "scanner/Token.h"
 #include <memory>

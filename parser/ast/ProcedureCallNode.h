@@ -1,6 +1,7 @@
 #ifndef OBERON0C_PROCEDURECALLNODE_H
 #define OBERON0C_PROCEDURECALLNODE_H
 
+#include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
 #include <vector>

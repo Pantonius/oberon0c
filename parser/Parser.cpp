@@ -10,6 +10,8 @@ const string Parser::ident() {
 
     return ident->value();
   }
+
+  exit(EXIT_FAILURE);
 }
 
 /* module = "MODULE" ident ";"
@@ -173,11 +175,7 @@ std::unique_ptr<SimpleExprNode> Parser::simple_expr() {
 
   while (peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES,
                                       NO_ADVANCE_ON_TRUE)) {
-    auto pair =
-        std::make_unique<std::pair<AddOperatorType, std::unique_ptr<TermNode>>>(
-            curr_token_->start());
-    pair->first = add_operator();
-    pair->second = term();
+    simple_expr->additional_terms.push_back(std::pair(add_operator(), term()));
   }
 
   return simple_expr;
@@ -200,11 +198,9 @@ std::unique_ptr<TermNode> Parser::term() {
 
   while (peek_check_token_type_within(MUL_OPERATOR_TOKEN_TYPES,
                                       NO_ADVANCE_ON_TRUE)) {
-    auto pair = std::make_unique<
-        std::pair<MulOperatorType, std::unique_ptr<FactorNode>>>(
-        curr_token_->start());
-    pair->first = mul_operator();
-    pair->second = factor();
+    term->additional_terms.push_back(
+        std::pair<MulOperatorType, std::unique_ptr<FactorNode>>(mul_operator(),
+                                                                factor()));
   }
 
   return term;
