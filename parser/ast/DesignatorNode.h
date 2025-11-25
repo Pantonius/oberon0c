@@ -1,0 +1,19 @@
+#ifndef OBERON0C_DESIGNATORNODE_H
+#define OBERON0C_DESIGNATORNODE_H
+
+#include "Node.h"
+#include "scanner/Token.h"
+#include <memory>
+
+class DesignatorNode final : public Node {
+public:
+  DesignatorNode(const FilePos &pos) : Node(NodeType::designator, pos) {}
+  ~DesignatorNode() noexcept override;
+
+  void accept(NodeVisitor &visitor) override;
+  void print(std::ostream &stream) const override;
+
+  string ident;
+};
+
+#endif // OBERON0C_DESIGNATORNODE_H

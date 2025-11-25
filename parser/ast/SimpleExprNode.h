@@ -3,7 +3,10 @@
 
 #include "Node.h"
 #include "RelationNode.h"
+#include "TermNode.h"
 #include <memory>
+#include <utility>
+#include <vector>
 
 const std::set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
                                               TokenType::op_minus};
@@ -39,11 +42,16 @@ AddOperatorType add_operator_from_token_type(TokenType tokenType) {
 
 class SimpleExprNode final : public Node {
 public:
-  SimpleExprNode(const FilePos &pos) : Node(NodeType::import, pos) {}
+  SimpleExprNode(const FilePos &pos) : Node(NodeType::simple_expr, pos) {}
   ~SimpleExprNode() noexcept override;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
+
+  SignType sign;
+  std::unique_ptr<TermNode> term;
+  std::vector<std::pair<AddOperatorType, std::unique_ptr<TermNode>>>
+      additional_terms;
 };
 
 #endif // OBERON0C_SIMPLEEXPRNODE_H

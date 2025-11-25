@@ -7,7 +7,8 @@
 
 class ConstDeclarationNode final : public Node {
 public:
-  ConstDeclarationNode(const FilePos &pos) : Node(NodeType::import, pos) {}
+  ConstDeclarationNode(const FilePos &pos)
+      : Node(NodeType::const_declaration, pos) {}
   ~ConstDeclarationNode() noexcept override;
 
   void accept(NodeVisitor &visitor) override;

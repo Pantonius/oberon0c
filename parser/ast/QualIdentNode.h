@@ -1,0 +1,20 @@
+#ifndef OBERON0C_QUALIDENTNODE_H
+#define OBERON0C_QUALIDENTNODE_H
+
+#include "Node.h"
+#include <memory>
+#include <vector>
+
+class QualIdentNode final : public Node {
+public:
+  QualIdentNode(const FilePos &pos) : Node(NodeType::qual_ident, pos) {}
+  ~QualIdentNode() noexcept override;
+
+  void accept(NodeVisitor &visitor) override;
+  void print(std::ostream &stream) const override;
+
+  string module;
+  string ident;
+};
+
+#endif // OBERON0C_QUALIDENTNODE_H

@@ -3,18 +3,19 @@
 
 #include "Node.h"
 #include "RelationNode.h"
+#include "SimpleExprNode.h"
 #include <memory>
 
 class ExpressionNode final : public Node {
 public:
-  ExpressionNode(const FilePos &pos) : Node(NodeType::import, pos) {}
+  ExpressionNode(const FilePos &pos) : Node(NodeType::expression, pos) {}
   ~ExpressionNode() noexcept override;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
   std::unique_ptr<SimpleExprNode> left_expr;
-  std::unique_ptr<RelationNode> relation;
+  RelationType relation;
   std::unique_ptr<SimpleExprNode> right_expr;
 };
 

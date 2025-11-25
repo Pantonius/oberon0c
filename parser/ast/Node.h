@@ -13,7 +13,45 @@
 #include <string>
 #include <utility>
 
-enum class NodeType : char { module, procedure, import_list, import };
+enum class NodeType : char {
+  module,
+  import_list,
+  import,
+  declaration_sequence,
+  const_declaration,
+  type_declaration,
+  var_declaration,
+  procedure_declaration,
+  procedure_heading,
+  procedure_body,
+  procedure_call,
+  function_call,
+  actual_parameters,
+  expression,
+  simple_expr,
+  term,
+  designator,
+  set,
+  element,
+  statement,
+  if_statement,
+  case_statement,
+  while_statement,
+  repeat_statement,
+  loop_statement,
+  exit_statement,
+  return_statement,
+  statement_sequence,
+  factor,
+  assignment,
+  clause,
+  case_label_list,
+  case_labels,
+  qual_ident,
+  formal_parameters,
+  fp_section,
+  formal_type
+};
 
 class NodeVisitor;
 

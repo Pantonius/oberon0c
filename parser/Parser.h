@@ -30,18 +30,49 @@ private:
 
   // main stuff
   const string ident();
+  const string type();
   std::unique_ptr<ModuleNode> module();
   std::unique_ptr<ProcedureCallNode> procedure();
   std::unique_ptr<ImportListNode> import_list();
   std::unique_ptr<ImportNode> import();
-  std::unique_ptr<RelationNode> relation();
   std::unique_ptr<ExpressionNode> expression();
+  std::unique_ptr<SimpleExprNode> simple_expr();
+  std::unique_ptr<StatementSequenceNode> statement_sequence();
+  std::unique_ptr<StatementNode> statement();
+  std::unique_ptr<IfStatementNode> if_statement();
+  std::unique_ptr<CaseStatementNode> case_statement();
+  std::unique_ptr<WhileStatementNode> while_statement();
+  std::unique_ptr<RepeatStatementNode> repeat_statement();
+  std::unique_ptr<LoopStatementNode> loop_statement();
+  std::unique_ptr<ExitStatementNode> exit_statement();
+  std::unique_ptr<ReturnStatementNode> return_statement();
+  std::unique_ptr<ClauseNode> clause();
+  std::unique_ptr<CaseLabelListNode> case_label_list();
+  std::unique_ptr<CaseLabelsNode> case_labels();
+  std::unique_ptr<TermNode> term();
+  RelationType relation();
+  SignType sign();
+  AddOperatorType add_operator();
+  MulOperatorType mul_operator();
 
   std::unique_ptr<DeclarationSequenceNode> declaration_sequence();
   std::unique_ptr<ConstDeclarationNode> const_declaration();
   std::unique_ptr<TypeDeclarationNode> type_declaration();
   std::vector<std::unique_ptr<VarDeclarationNode>> var_declarations();
   std::unique_ptr<ProcedureDeclarationNode> procedure_declaration();
+  std::unique_ptr<ProcedureHeadingNode> procedure_heading();
+  std::unique_ptr<ProcedureBodyNode> procedure_body();
+  std::unique_ptr<FunctionCallNode> function_call();
+  std::unique_ptr<DesignatorNode> designator();
+  std::unique_ptr<ActualParametersNode> actual_parameters();
+  std::unique_ptr<SetNode> set();
+  std::unique_ptr<ElementNode> element();
+  std::unique_ptr<FactorNode> factor();
+  std::unique_ptr<AssignmentNode> assignment();
+  std::unique_ptr<QualIdentNode> qual_ident();
+  std::unique_ptr<FormalParametersNode> formal_parameters();
+  std::unique_ptr<FPSectionNode> fp_section();
+  std::unique_ptr<FormalTypeNode> formal_type();
 
   // helpers
   bool peek_check_token_type(TokenType tokenType, bool advanceOnTrue = false);

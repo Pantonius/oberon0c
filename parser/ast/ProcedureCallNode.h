@@ -7,7 +7,7 @@
 
 class ProcedureCallNode final : public Node {
 public:
-  ProcedureCallNode(const FilePos &pos) : Node(NodeType::procedure, pos) {}
+  ProcedureCallNode(const FilePos &pos) : Node(NodeType::procedure_call, pos) {}
   ~ProcedureCallNode() noexcept override;
 
   void accept(NodeVisitor &visitor) override;

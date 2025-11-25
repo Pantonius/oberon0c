@@ -4,6 +4,7 @@
 #include "DeclarationSequenceNode.h"
 #include "ImportListNode.h"
 #include "Node.h"
+#include "StatementSequenceNode.h"
 #include <memory>
 #include <vector>
 
@@ -18,7 +19,7 @@ public:
   std::string ident;
   std::unique_ptr<const ImportListNode> import_list;
   std::unique_ptr<DeclarationSequenceNode> declaration_sequence;
-  std::vector<std::unique_ptr<StatementNode>> statements;
+  std::unique_ptr<StatementSequenceNode> statement_sequence;
 };
 
 #endif // OBERON0C_MODULENODE_H
