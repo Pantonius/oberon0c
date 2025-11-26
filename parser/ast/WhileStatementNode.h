@@ -5,7 +5,8 @@
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class WhileStatementNode final : public Node {
 public:
@@ -16,8 +17,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<ExpressionNode> condition;
-  std::unique_ptr<StatementSequenceNode> body;
+  unique_ptr<ExpressionNode> condition;
+  unique_ptr<StatementSequenceNode> body;
 };
 
 #endif // OBERON0C_WHILESTATEMENTNODE_H

@@ -6,6 +6,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class StatementSequenceNode final : public Node {
 public:
   StatementSequenceNode(const FilePos &pos)
@@ -15,7 +18,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<StatementNode>> statements;
+  vector<unique_ptr<StatementNode>> statements;
 };
 
 #endif // OBERON0C_STATEMENTSEQUENCENODE_H

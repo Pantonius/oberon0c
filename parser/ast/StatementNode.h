@@ -12,6 +12,8 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+
 class StatementNode final : public Node {
 public:
   StatementNode(const FilePos &pos) : Node(NodeType::statement, pos) {}
@@ -20,13 +22,13 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<IfStatementNode> if_statement;
-  std::unique_ptr<CaseStatementNode> case_statement;
-  std::unique_ptr<LoopStatementNode> loop_statement;
-  std::unique_ptr<WhileStatementNode> while_statement;
-  std::unique_ptr<WithStatementNode> with_statement;
-  std::unique_ptr<ExitStatementNode> exit_statement;
-  std::unique_ptr<ReturnStatementNode> return_statement;
+  unique_ptr<IfStatementNode> if_statement;
+  unique_ptr<CaseStatementNode> case_statement;
+  unique_ptr<LoopStatementNode> loop_statement;
+  unique_ptr<WhileStatementNode> while_statement;
+  unique_ptr<WithStatementNode> with_statement;
+  unique_ptr<ExitStatementNode> exit_statement;
+  unique_ptr<ReturnStatementNode> return_statement;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H

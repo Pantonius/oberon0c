@@ -11,9 +11,9 @@
 #include <list>
 #include <ostream>
 #include <string>
-#include <utility>
 
 enum class NodeType : char {
+  // TODO sort these for more readability
   module,
   import_list,
   import,

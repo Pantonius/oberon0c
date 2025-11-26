@@ -5,7 +5,8 @@
 #include "ProcedureBodyNode.h"
 #include "ProcedureHeadingNode.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class ProcedureDeclarationNode final : public Node {
 public:
@@ -16,8 +17,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<ProcedureHeadingNode> heading;
-  std::unique_ptr<ProcedureBodyNode> body;
+  unique_ptr<ProcedureHeadingNode> heading;
+  unique_ptr<ProcedureBodyNode> body;
   string ident;
 };
 

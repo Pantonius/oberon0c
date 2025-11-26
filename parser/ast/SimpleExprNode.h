@@ -8,8 +8,13 @@
 #include <utility>
 #include <vector>
 
-const std::set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
-                                              TokenType::op_minus};
+using std::pair;
+using std::set;
+using std::unique_ptr;
+using std::vector;
+
+const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
+                                         TokenType::op_minus};
 enum class SignType { plus, minus };
 
 SignType sign_from_token_type(TokenType tokenType) {
@@ -23,7 +28,7 @@ SignType sign_from_token_type(TokenType tokenType) {
   }
 }
 
-const std::set<TokenType> ADD_OPERATOR_TOKEN_TYPES = {
+const set<TokenType> ADD_OPERATOR_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_or};
 enum class AddOperatorType { plus, minus, a_or };
 
@@ -49,9 +54,8 @@ public:
   void print(std::ostream &stream) const override;
 
   SignType sign;
-  std::unique_ptr<TermNode> term;
-  std::vector<std::pair<AddOperatorType, std::unique_ptr<TermNode>>>
-      additional_terms;
+  unique_ptr<TermNode> term;
+  vector<pair<AddOperatorType, unique_ptr<TermNode>>> additional_terms;
 };
 
 #endif // OBERON0C_SIMPLEEXPRNODE_H

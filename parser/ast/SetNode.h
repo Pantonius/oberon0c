@@ -3,9 +3,11 @@
 
 #include "ElementNode.h"
 #include "Node.h"
-#include "scanner/Token.h"
 #include <memory>
 #include <vector>
+
+using std::unique_ptr;
+using std::vector;
 
 class SetNode final : public Node {
 public:
@@ -15,7 +17,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<ElementNode>> elements;
+  vector<unique_ptr<ElementNode>> elements;
 };
 
 #endif // OBERON0C_SETNODE_H

@@ -2,8 +2,8 @@
 #define OBERON0C_IMPORTNODE_H
 
 #include "Node.h"
-#include <memory>
-#include <vector>
+
+using std::string;
 
 class ImportNode final : public Node {
 public:
@@ -13,8 +13,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::string alias_ident;
-  std::string actual_ident;
+  string alias_ident;
+  string actual_ident;
 };
 
 #endif // OBERON0C_IMPORTNODE_H

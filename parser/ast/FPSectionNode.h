@@ -7,6 +7,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class FPSectionNode final : public Node {
 public:
   FPSectionNode(const FilePos &pos) : Node(NodeType::fp_section, pos) {}
@@ -15,8 +18,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<string> idents;
-  std::unique_ptr<FormalTypeNode> type;
+  vector<string> idents;
+  unique_ptr<FormalTypeNode> type;
 };
 
 #endif // OBERON0C_FPSECTIONNODE_H

@@ -7,6 +7,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class FormalParametersNode final : public Node {
 public:
   FormalParametersNode(const FilePos &pos)
@@ -16,8 +19,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<QualIdentNode> qual_ident;
-  std::vector<std::unique_ptr<FPSectionNode>> sections;
+  unique_ptr<QualIdentNode> qual_ident;
+  vector<std::unique_ptr<FPSectionNode>> sections;
 };
 
 #endif // OBERON0C_FORMALPARAMETERSNODE_H

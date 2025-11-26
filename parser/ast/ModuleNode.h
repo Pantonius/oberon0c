@@ -6,7 +6,9 @@
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
-#include <vector>
+
+using std::string;
+using std::unique_ptr;
 
 class ModuleNode final : public Node {
 public:
@@ -16,10 +18,10 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::string ident;
-  std::unique_ptr<const ImportListNode> import_list;
-  std::unique_ptr<DeclarationSequenceNode> declaration_sequence;
-  std::unique_ptr<StatementSequenceNode> statement_sequence;
+  string ident;
+  unique_ptr<const ImportListNode> import_list;
+  unique_ptr<DeclarationSequenceNode> declaration_sequence;
+  unique_ptr<StatementSequenceNode> statement_sequence;
 };
 
 #endif // OBERON0C_MODULENODE_H

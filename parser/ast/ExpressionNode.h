@@ -6,6 +6,8 @@
 #include "SimpleExprNode.h"
 #include <memory>
 
+using std::unique_ptr;
+
 class ExpressionNode final : public Node {
 public:
   ExpressionNode(const FilePos &pos) : Node(NodeType::expression, pos) {}
@@ -14,9 +16,9 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<SimpleExprNode> left_expr;
+  unique_ptr<SimpleExprNode> left_expr;
   RelationType relation;
-  std::unique_ptr<SimpleExprNode> right_expr;
+  unique_ptr<SimpleExprNode> right_expr;
 };
 
 #endif // OBERON0C_EXPRESSIONNODE_H

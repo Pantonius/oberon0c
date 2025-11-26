@@ -9,7 +9,12 @@
 #include <utility>
 #include <vector>
 
-const std::set<TokenType> MUL_OPERATOR_TOKEN_TYPES = {
+using std::pair;
+using std::set;
+using std::unique_ptr;
+using std::vector;
+
+const set<TokenType> MUL_OPERATOR_TOKEN_TYPES = {
     TokenType::op_times, TokenType::op_div, TokenType::op_divide,
     TokenType::op_mod, TokenType::op_and};
 enum class MulOperatorType { times, div, divide, mod, m_and };
@@ -39,9 +44,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<FactorNode> factor;
-  std::vector<std::pair<MulOperatorType, std::unique_ptr<FactorNode>>>
-      additional_terms;
+  unique_ptr<FactorNode> factor;
+  vector<pair<MulOperatorType, unique_ptr<FactorNode>>> additional_terms;
 };
 
 #endif // OBERON0C_TERMNODE_H

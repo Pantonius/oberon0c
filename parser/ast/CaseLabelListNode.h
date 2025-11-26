@@ -6,6 +6,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class CaseLabelListNode final : public Node {
 public:
   CaseLabelListNode(const FilePos &pos)
@@ -15,7 +18,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<CaseLabelsNode>> labels;
+  vector<unique_ptr<CaseLabelsNode>> labels;
 };
 
 #endif // OBERON0C_CASELABELLISTNODE_H

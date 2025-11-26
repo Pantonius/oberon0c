@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+
 class VarDeclarationNode final : public Node {
 public:
   VarDeclarationNode(const FilePos &pos)
@@ -17,7 +19,7 @@ public:
 
   string ident;
   bool exported;
-  std::unique_ptr<ExpressionNode> expression;
+  unique_ptr<ExpressionNode> expression;
   string type;
 };
 

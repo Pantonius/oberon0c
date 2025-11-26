@@ -6,6 +6,8 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+
 class FormalTypeNode final : public Node {
 public:
   FormalTypeNode(const FilePos &pos) : Node(NodeType::formal_type, pos) {}
@@ -14,7 +16,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<QualIdentNode> qual_ident;
+  unique_ptr<QualIdentNode> qual_ident;
 };
 
 #endif // OBERON0C_FORMALTYPENODE_H

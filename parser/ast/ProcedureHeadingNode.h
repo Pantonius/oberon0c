@@ -4,7 +4,8 @@
 #include "FormalParametersNode.h"
 #include "Node.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class ProcedureHeadingNode final : public Node {
 public:
@@ -17,7 +18,7 @@ public:
 
   string ident;
   bool exported;
-  std::unique_ptr<FormalParametersNode> formal_parameters;
+  unique_ptr<FormalParametersNode> formal_parameters;
 };
 
 #endif // OBERON0C_PROCEDUREHEADINGNODE_H

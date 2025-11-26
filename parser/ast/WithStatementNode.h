@@ -7,6 +7,8 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+
 class WithStatementNode final : public Node {
 public:
   WithStatementNode(const FilePos &pos) : Node(NodeType::with_statement, pos) {}
@@ -15,9 +17,9 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<QualIdentNode> first_qual_ident;
-  std::unique_ptr<QualIdentNode> second_qual_ident;
-  std::unique_ptr<StatementSequenceNode> statement_sequence;
+  unique_ptr<QualIdentNode> first_qual_ident;
+  unique_ptr<QualIdentNode> second_qual_ident;
+  unique_ptr<StatementSequenceNode> statement_sequence;
 };
 
 #endif // OBERON0C_WITHSTATEMENTNODE_H

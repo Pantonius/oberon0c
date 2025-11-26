@@ -5,7 +5,8 @@
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class ProcedureBodyNode final : public Node {
 public:
@@ -15,8 +16,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<DeclarationSequenceNode> declarations;
-  std::unique_ptr<StatementSequenceNode> statement_sequence;
+  unique_ptr<DeclarationSequenceNode> declarations;
+  unique_ptr<StatementSequenceNode> statement_sequence;
 };
 
 #endif // OBERON0C_PROCEDUREBODYNODE_H

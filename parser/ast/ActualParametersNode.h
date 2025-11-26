@@ -7,6 +7,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class ActualParametersNode final : public Node {
 public:
   ActualParametersNode(const FilePos &pos)
@@ -16,7 +19,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<ExpressionNode>> expressions;
+  vector<unique_ptr<ExpressionNode>> expressions;
 };
 
 #endif // OBERON0C_ACTUALPARAMETERSNODE_H

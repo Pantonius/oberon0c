@@ -2,8 +2,6 @@
 #define OBERON0C_QUALIDENTNODE_H
 
 #include "Node.h"
-#include <memory>
-#include <vector>
 
 class QualIdentNode final : public Node {
 public:

@@ -4,7 +4,8 @@
 #include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class CaseLabelsNode final : public Node {
 public:
@@ -14,8 +15,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<ExpressionNode> const_expression;
-  std::unique_ptr<ExpressionNode> until_const_expression;
+  unique_ptr<ExpressionNode> const_expression;
+  unique_ptr<ExpressionNode> until_const_expression;
 };
 
 #endif // OBERON0C_CASELABELsNODE_H

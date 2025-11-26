@@ -3,10 +3,11 @@
 
 #include "Node.h"
 #include "scanner/Token.h"
-#include <memory>
 #include <set>
 
-const std::set<TokenType> RELATION_TOKEN_TYPES = {
+using std::set;
+
+const set<TokenType> RELATION_TOKEN_TYPES = {
     TokenType::op_eq, TokenType::op_neq, TokenType::op_lt, TokenType::op_leq,
     TokenType::op_gt, TokenType::op_geq, TokenType::op_in, TokenType::op_is};
 

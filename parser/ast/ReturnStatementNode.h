@@ -4,7 +4,8 @@
 #include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class ReturnStatementNode final : public Node {
 public:
@@ -15,7 +16,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<ExpressionNode> expression;
+  unique_ptr<ExpressionNode> expression;
 };
 
 #endif // OBERON0C_RETURNSTATEMENTNODE_H

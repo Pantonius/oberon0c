@@ -9,6 +9,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class DeclarationSequenceNode final : public Node {
 public:
   DeclarationSequenceNode(const FilePos &pos)
@@ -18,10 +21,10 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<ConstDeclarationNode>> constants;
-  std::vector<std::unique_ptr<TypeDeclarationNode>> types;
-  std::vector<std::unique_ptr<VarDeclarationNode>> variables;
-  std::vector<std::unique_ptr<ProcedureDeclarationNode>> procedures;
+  vector<unique_ptr<ConstDeclarationNode>> constants;
+  vector<unique_ptr<TypeDeclarationNode>> types;
+  vector<unique_ptr<VarDeclarationNode>> variables;
+  vector<unique_ptr<ProcedureDeclarationNode>> procedures;
 };
 
 #endif // OBERON0C_DECLARATIONSEQUENCENODE_H

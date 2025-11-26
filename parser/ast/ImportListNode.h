@@ -6,6 +6,9 @@
 #include <memory>
 #include <vector>
 
+using std::unique_ptr;
+using std::vector;
+
 class ImportListNode final : public Node {
 public:
   ImportListNode(const FilePos &pos) : Node(NodeType::import_list, pos) {}
@@ -14,7 +17,7 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::vector<std::unique_ptr<const ImportNode>> list;
+  vector<unique_ptr<ImportNode>> list;
 };
 
 #endif // OBERON0C_IMPORTLISTNODE_H

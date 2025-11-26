@@ -2,8 +2,6 @@
 #define OBERON0C_DESIGNATORNODE_H
 
 #include "Node.h"
-#include "scanner/Token.h"
-#include <memory>
 
 class DesignatorNode final : public Node {
 public:

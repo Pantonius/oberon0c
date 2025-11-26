@@ -4,7 +4,8 @@
 #include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class TypeDeclarationNode final : public Node {
 public:
@@ -16,7 +17,7 @@ public:
   void print(std::ostream &stream) const override;
 
   string ident;
-  std::unique_ptr<ExpressionNode> expression;
+  unique_ptr<ExpressionNode> expression;
 };
 
 #endif // OBERON0C_TYPEDECLARATIONNODE_H

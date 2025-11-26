@@ -6,6 +6,7 @@
 #include "Node.h"
 #include "scanner/Token.h"
 #include <memory>
+using std::unique_ptr;
 
 class AssignmentNode final : public Node {
 public:
@@ -15,8 +16,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<DesignatorNode> designator;
-  std::unique_ptr<ExpressionNode> expression;
+  unique_ptr<DesignatorNode> designator;
+  unique_ptr<ExpressionNode> expression;
 };
 
 #endif // OBERON0C_ASSIGNMENTNODE_H

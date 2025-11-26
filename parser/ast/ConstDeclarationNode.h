@@ -4,7 +4,8 @@
 #include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
-#include <vector>
+
+using std::unique_ptr;
 
 class ConstDeclarationNode final : public Node {
 public:
@@ -17,7 +18,7 @@ public:
 
   string ident;
   bool exported;
-  std::unique_ptr<ExpressionNode> expression;
+  unique_ptr<ExpressionNode> expression;
 };
 
 #endif // OBERON0C_CONSTDECLARATIONNODE_H

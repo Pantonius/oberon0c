@@ -3,11 +3,9 @@
 
 #include "ExpressionNode.h"
 #include "Node.h"
-#include "scanner/Token.h"
 #include <memory>
-#include <set>
-#include <utility>
-#include <vector>
+
+using std::unique_ptr;
 
 class FactorNode final : public Node {
 public:
@@ -18,8 +16,8 @@ public:
   void print(std::ostream &stream) const override;
 
   bool nil = false;
-  std::unique_ptr<ExpressionNode> expression;
-  std::unique_ptr<FactorNode> not_factor;
+  unique_ptr<ExpressionNode> expression;
+  unique_ptr<FactorNode> not_factor;
 };
 
 #endif // OBERON0C_FACTORNODE_H

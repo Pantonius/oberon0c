@@ -6,6 +6,8 @@
 #include "scanner/Token.h"
 #include <memory>
 
+using std::unique_ptr;
+
 class ElementNode final : public Node {
 public:
   ElementNode(const FilePos &pos) : Node(NodeType::element, pos) {}
@@ -14,8 +16,8 @@ public:
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
 
-  std::unique_ptr<ExpressionNode> expression;
-  std::unique_ptr<ExpressionNode> until_expression;
+  unique_ptr<ExpressionNode> expression;
+  unique_ptr<ExpressionNode> until_expression;
 };
 
 #endif // OBERON0C_ELEMENTNODE_H
