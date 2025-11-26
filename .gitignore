@@ -52,4 +52,6 @@ build
 # Nix
 .direnv
 .ccls-cache
+.cache/clangd/index
+result
 results/
