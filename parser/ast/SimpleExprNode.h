@@ -2,7 +2,6 @@
 #define OBERON0C_SIMPLEEXPRNODE_H
 
 #include "Node.h"
-#include "RelationNode.h"
 #include "TermNode.h"
 #include <memory>
 #include <utility>
@@ -17,33 +16,13 @@ const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
                                          TokenType::op_minus};
 enum class SignType { plus, minus };
 
-SignType sign_from_token_type(TokenType tokenType) {
-  switch (tokenType) {
-  case TokenType::op_plus:
-    return SignType::plus;
-  case TokenType::op_minus:
-    return SignType::minus;
-  default:
-    exit(EXIT_FAILURE); // TODO review
-  }
-}
+SignType sign_from_token_type(TokenType tokenType);
 
 const set<TokenType> ADD_OPERATOR_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_or};
 enum class AddOperatorType { plus, minus, a_or };
 
-AddOperatorType add_operator_from_token_type(TokenType tokenType) {
-  switch (tokenType) {
-  case TokenType::op_plus:
-    return AddOperatorType::plus;
-  case TokenType::op_minus:
-    return AddOperatorType::minus;
-  case TokenType::op_or:
-    return AddOperatorType::a_or;
-  default:
-    exit(EXIT_FAILURE); // TODO review
-  }
-}
+AddOperatorType add_operator_from_token_type(TokenType tokenType);
 
 class SimpleExprNode final : public Node {
 public:

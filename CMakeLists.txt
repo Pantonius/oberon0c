@@ -83,7 +83,6 @@ set(PARSER_SOURCES
         parser/ast/ProcedureDeclarationNode.h
         parser/ast/ProcedureHeadingNode.h
         parser/ast/QualIdentNode.h
-        parser/ast/RelationNode.h
         parser/ast/RepeatStatementNode.h
         parser/ast/ReturnStatementNode.h
         parser/ast/SetNode.h

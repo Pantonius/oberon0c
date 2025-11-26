@@ -19,23 +19,7 @@ const set<TokenType> MUL_OPERATOR_TOKEN_TYPES = {
     TokenType::op_mod, TokenType::op_and};
 enum class MulOperatorType { times, div, divide, mod, m_and };
 
-MulOperatorType mul_operator_from_token_type(TokenType tokenType) {
-  switch (tokenType) {
-  case TokenType::op_times:
-    return MulOperatorType::times;
-  case TokenType::op_div:
-    return MulOperatorType::div;
-  case TokenType::op_divide:
-    return MulOperatorType::divide;
-  case TokenType::op_mod:
-    return MulOperatorType::mod;
-  case TokenType::op_and:
-    return MulOperatorType::m_and;
-  default:
-    exit(EXIT_FAILURE); // TODO review
-  }
-}
-
+MulOperatorType mul_operator_from_token_type(TokenType tokenType);
 class TermNode final : public Node {
 public:
   TermNode(const FilePos &pos) : Node(NodeType::term, pos) {}

@@ -2,7 +2,6 @@
 #define OBERON0C_EXPRESSIONNODE_H
 
 #include "Node.h"
-#include "RelationNode.h"
 #include "SimpleExprNode.h"
 #include <memory>
 
