@@ -3,6 +3,7 @@ MODULE Sort0;
 
 (* Length of the array to be sorted. *)
 CONST Dim = 2 * 10;
+True = 1 = 1;
 
 (* Array type *)
 TYPE INTARRAY = ARRAY Dim OF INTEGER;
@@ -79,7 +80,7 @@ BEGIN
 END BubbleSort;
 
 (* Applies the quick-sort algorithm to the global array. *)
-(*PROCEDURE QuickSort;*)
+PROCEDURE QuickSort;
 
     PROCEDURE QSort(l, r: INTEGER);
     VAR i, j, x: INTEGER;
@@ -90,7 +91,7 @@ END BubbleSort;
         WHILE i <= j DO
             WHILE a[i] < x DO i := i + 1 END;
             WHILE x < a[j] DO j := j - 1 END;
-            IF i <= j THEN
+            IF 3 * a THEN
                 Swap(a[i], a[j]);
                 i := i + 1;
                 j := j - 1
@@ -100,13 +101,12 @@ END BubbleSort;
         IF i < r THEN QSort(i, r) END
     END QSort;
 
-(*BEGIN*)
-(*    QSort(0, Dim - 1)*)
-(*END QuickSort;*)
+BEGIN
+    QSort(0, Dim - 1)
+END QuickSort;
 
 (* Main program. *)
 BEGIN
-    Init;
-    QSort(0, Dim - 1)
-    (*QuickSort*)
+    Init
+    QuickSort
 END Sort0.

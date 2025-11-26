@@ -1,42 +1,65 @@
 {
   pkgs,
   makeWrapper,
+  lib,
 }:
-pkgs.stdenv.mkDerivation rec {
-  pname = "oberon0c-fuzz";
-  version = "0.1.0";
+let
+  fs = lib.fileset;
+  sourceFiles = ./.;
+in
 
-  src = ./.;
+fs.trace sourceFiles
 
-  buildInputs =
-    (import ./dependencies.nix {
-      inherit pkgs;
-    })
-    ++ [
-      makeWrapper
-      pkgs.aflplusplus
-    ];
+  pkgs.stdenv.mkDerivation
+  rec {
+    pname = "oberon0c-fuzz";
+    version = "0.1.0";
 
-  buildPhase = ''
-    cmake -DCMAKE_C_COMPILER=afl-cc -DCMAKE_CXX_COMPILER=afl-c++ .
-    cmake --build . --parallel $NIX_BUILD_CORES
-  '';
+    src = fs.toSource {
+      root = ./.;
+      fileset = sourceFiles;
+    };
 
-  checkPhase = '''';
 
-  installPhase = ''
-    runHook preInstall
+    buildInputs =
+      (import ./dependencies.nix {
+        inherit pkgs;
+      })
+      ++ [
+        makeWrapper
+        pkgs.aflplusplus
+      ];
 
-    mkdir -p $out/bin
-    mv oberon0c $out/bin
+    dontConfigure = true;
 
-    runHook postInstall
-  '';
+    buildPhase = ''
+      cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib .
+      cmake --build . --parallel $NIX_BUILD_CORES
 
-  meta = with pkgs.lib; {
-    description = "Basic setup for the Oberon-0 Compiler project of the course \"Compiler Construction\".";
-    homepage = "https://gitlab.inf.uni-konstanz.de/anton.pogrebnjak/${pname}";
-    license = licenses.mit;
-    platforms = platforms.unix;
-  };
-}
+      export AFL_USE_ASAN=1 AFL_SAN_NO_INST=1
+      cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib -DCMAKE_EXECUTABLE_SUFFIX_CXX=_asan .
+      cmake --build . --parallel $NIX_BUILD_CORES
+    '';
+
+    postInstall = ''
+      afl-cmin -i test -o test_unique -- $out/bin/oberon0c @@
+      mv test_unique $out
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      mkdir -p $out/bin
+      mv oberon0c $out/bin
+      mv oberon0c_asan $out/bin
+
+      runHook postInstall
+    '';
+
+    meta = with pkgs.lib; {
+      description = "Basic setup for the Oberon-0 Compiler project of the course \"Compiler Construction\".";
+      homepage = "https://gitlab.inf.uni-konstanz.de/anton.pogrebnjak/${pname}";
+      license = licenses.mit;
+      platforms = platforms.unix;
+    };
+  }

@@ -6,6 +6,7 @@ CONST Dim = 2 * 10;
 
 (* Array type *)
 TYPE INTARRAY = ARRAY Dim OF INTEGER;
+     TESTRECORD = RECORD Dim, Dim : INTEGER END;
 
 (* Array to be sorted. *)
 VAR a: INTARRAY;
@@ -79,7 +80,7 @@ BEGIN
 END BubbleSort;
 
 (* Applies the quick-sort algorithm to the global array. *)
-(*PROCEDURE QuickSort;*)
+PROCEDURE QuickSort;
 
     PROCEDURE QSort(l, r: INTEGER);
     VAR i, j, x: INTEGER;
@@ -100,13 +101,12 @@ END BubbleSort;
         IF i < r THEN QSort(i, r) END
     END QSort;
 
-(*BEGIN*)
-(*    QSort(0, Dim - 1)*)
-(*END QuickSort;*)
+BEGIN
+    QSort(0, Dim - 1)
+END QuickSort;
 
 (* Main program. *)
 BEGIN
     Init;
-    QSort(0, Dim - 1)
-    (*QuickSort*)
+    QuickSort
 END Sort0.

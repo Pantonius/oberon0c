@@ -2,22 +2,35 @@
 MODULE Sort0;
 
 (* Length of the array to be sorted. *)
-CONST Dim = 2 * 10;
+CONST DoubleDeclared = 2 * 10;
+DoubleDeclared = 5;                                    (* Double declaration *)
 
 (* Array type *)
+(*
 TYPE INTARRAY = ARRAY Dim OF INTEGER;
+WRONGARRAY = ARRAY 4 < 5 OF Dim;            (* Not const and not type *)
 
 (* Array to be sorted. *)
-VAR a: INTARRAY;
+VAR a: ARRAY Dim OF INTARRAY;
+WRONGRECORD: RECORD rec, rec: INTEGER END;  (* Double declaration in record *)
 
 (* Initializes the array. *)
 PROCEDURE Init();
-VAR i: INTEGER;
+CONST notconst = a;                         (* Not constant expression *)
+VAR i: HEHEXD;                              (* Undeclared type *)
+u: a;                                       (* Not a type *)
 BEGIN
+    b := Dim;                               (* Not declared *)
     i := 0;
+
+    a[1][456] := 1;                         (* Bounds *)
+    a[1].u := 1;                            (* Selector *)
+
     WHILE i < Dim DO
         a[i] := Dim-i;
-        i := i + 1
+        i := i + 1;
+        i := -a;                            (* a is not a number *)
+        i := ~a                             (* a is not a bool *)
     END
 END Init;
 
@@ -79,7 +92,7 @@ BEGIN
 END BubbleSort;
 
 (* Applies the quick-sort algorithm to the global array. *)
-(*PROCEDURE QuickSort;*)
+PROCEDURE QuickSort;
 
     PROCEDURE QSort(l, r: INTEGER);
     VAR i, j, x: INTEGER;
@@ -100,13 +113,13 @@ END BubbleSort;
         IF i < r THEN QSort(i, r) END
     END QSort;
 
-(*BEGIN*)
-(*    QSort(0, Dim - 1)*)
-(*END QuickSort;*)
+BEGIN
+    QSort(0, Dim - 1)
+END QuickSort;
 
 (* Main program. *)
 BEGIN
     Init;
-    QSort(0, Dim - 1)
-    (*QuickSort*)
-END Sort0.
+    QuickSort
+*)
+END Sort0.                                    (* Wrong Identifier *)
