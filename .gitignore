@@ -48,7 +48,10 @@ build
 
 # macOS
 *.DS_Store
+
+# Nix
 .direnv
 .ccls-cache
 .cache/clangd/index
 result
+results/

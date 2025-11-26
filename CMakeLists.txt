@@ -23,6 +23,7 @@ endif ()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # define DEBUG macro
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -49,8 +50,52 @@ set(SCANNER_SOURCES
         scanner/UndefinedToken.cpp scanner/UndefinedToken.h)
 
 set(PARSER_SOURCES
-        parser/Parser.h
+        parser/Parser.cpp parser/Parser.h
         parser/ast/Node.cpp parser/ast/Node.h
+        parser/ast/ActualParametersNode.h
+        parser/ast/AssignmentNode.h
+        parser/ast/CaseLabelListNode.h
+        parser/ast/CaseLabelsNode.h
+        parser/ast/CaseStatementNode.h
+        parser/ast/ClauseNode.h
+        parser/ast/ConstDeclarationNode.h
+        parser/ast/DeclarationSequenceNode.h
+        parser/ast/DesignatorNode.h
+        parser/ast/ElementNode.h
+        parser/ast/ExitStatementNode.h
+        parser/ast/ExpressionNode.h
+        parser/ast/FPSectionNode.h
+        parser/ast/FactorNode.h
+        parser/ast/FormalParametersNode.h
+        parser/ast/FormalTypeNode.h
+        parser/ast/FunctionCallNode.h
+        parser/ast/IfStatementNode.h
+        parser/ast/ImportListNode.h
+        parser/ast/ImportNode.h
+        parser/ast/LoopStatementNode.h
+        parser/ast/ModuleNode.h
+        parser/ast/Node.cpp
+        parser/ast/Node.h
+        parser/ast/NodeVisitor.cpp
+        parser/ast/NodeVisitor.h
+        parser/ast/ProcedureBodyNode.h
+        parser/ast/ProcedureCallNode.h
+        parser/ast/ProcedureDeclarationNode.h
+        parser/ast/ProcedureHeadingNode.h
+        parser/ast/QualIdentNode.h
+        parser/ast/RelationNode.h
+        parser/ast/RepeatStatementNode.h
+        parser/ast/ReturnStatementNode.h
+        parser/ast/SetNode.h
+        parser/ast/SimpleExprNode.h
+        parser/ast/StatementNode.h
+        parser/ast/StatementSequenceNode.h
+        parser/ast/TermNode.h
+        parser/ast/TypeDeclarationNode.h
+        parser/ast/VarDeclarationNode.h
+        parser/ast/WhileStatementNode.h
+        parser/ast/WithStatementNode.h
+        parser/ast/ast.h
         parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h)
 
 set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES})
