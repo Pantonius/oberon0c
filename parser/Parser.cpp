@@ -218,32 +218,31 @@ MulOperatorType Parser::mul_operator() {
 std::unique_ptr<FactorNode> Parser::factor() {
   auto factor = std::make_unique<FactorNode>(curr_token_->start());
 
-  // if (peek_check_token_type_within(
-  //         {TokenType::int_literal, TokenType::float_literal,
-  //          TokenType::double_literal, TokenType::byte_literal})) {
-  //   // TODO
-  // } else if (peek_check_token_type(TokenType::char_literal)) {
-  //   // TODO
-  // } else if (peek_check_token_type(TokenType::string_literal)) {
-  //   // TODO
-  // } else if (peek_set()) {
-  //   // TODO
-  // } else if (peek_check_token_type(TokenType::kw_nil)) {
-  //   factor->nil = true; // TODO review
-  // } else if (peek_designator()) {
-  //   // TODO
-  // } else if (peek_function_call()) {
-  //   // TODO ambiguaty in terms of designator vs function call --> should
-  //   descent
-  //   // into designator and possibly keep going into function call
-  //   // factor = ... | designator ["(" [ActualParameters] ")"]
-  // } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-  //   factor->expression = expression();
-  //   expect_token_type(TokenType::rparen);
-  // } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
-  //   factor->not_factor = Parser::factor();
-  // }
-  logger_.debug("Still working on factor.");
+  if (peek_check_token_type_within(
+          {TokenType::int_literal, TokenType::float_literal,
+           TokenType::double_literal, TokenType::byte_literal})) {
+    // TODO
+  } else if (peek_check_token_type(TokenType::char_literal)) {
+    // TODO
+  } else if (peek_check_token_type(TokenType::string_literal)) {
+    // TODO
+  } else if (peek_set()) {
+    // TODO
+    factor->set = Parser::set();
+  } else if (peek_check_token_type(TokenType::kw_nil)) {
+    factor->nil = true; // TODO review
+  } else if (peek_designator()) {
+    if (peek_function_call_without_designator()) {
+      factor->function_call = function_call();
+    } else {
+      factor->designator = designator();
+    }
+  } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+    factor->expression = expression();
+    expect_token_type(TokenType::rparen);
+  } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
+    factor->not_factor = Parser::factor();
+  }
 
   return factor;
 }
@@ -264,6 +263,10 @@ std::unique_ptr<FunctionCallNode> Parser::function_call() {
   expect_token_type(TokenType::rparen);
 
   return function_call;
+}
+
+bool Parser::peek_function_call_without_designator() {
+  return peek_check_token_type(TokenType::lparen);
 }
 
 // ActualParameters = expression {"," expression}
@@ -335,6 +338,9 @@ std::unique_ptr<AssignmentNode> Parser::assignment() {
 }
 
 bool Parser::peek_assignment() { return peek_designator(); }
+bool Parser::peek_assignment_without_designator() {
+  return peek_check_token_type(TokenType::op_becomes, NO_ADVANCE_ON_TRUE);
+}
 
 // StatementSequence = statement {";" statement}
 std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
@@ -354,14 +360,15 @@ std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
 std::unique_ptr<StatementNode> Parser::statement() {
   auto statement = std::make_unique<StatementNode>(curr_token_->start());
 
-  if (peek_assignment()) {
-    // } else if (peek_procedure_call()) {
-    //   // TODO ambiguity in between assignment and procedure call; both start
-    //   with
-    //   // a designator --> descent into assignment and decide in terms of the
-    //   next
-    //   // token: statement = [ designator (ASSIGNMENTTHINGS | PROCEDURE CALL
-    //   // THINGS) | ... ]
+  if (peek_designator(
+          NO_ADVANCE_ON_TRUE)) { // Could be assignment or procedure call
+    if (peek_assignment_without_designator()) {
+      statement->assignment = assignment();
+    } else if (peek_function_call_without_designator()) {
+      // NOTE assuming FunctionCall == ProcedureCall
+      statement->function_call = function_call();
+    } else { // TODO throw tantrum
+    }
   } else if (peek_check_token_type(TokenType::kw_if)) {
     statement->if_statement = if_statement();
   } else if (peek_check_token_type(TokenType::kw_case)) {
