@@ -9,27 +9,16 @@
 
 #include "ast/ActualParametersNode.h"
 #include "ast/AssignmentNode.h"
-#include "ast/CaseStatementNode.h"
 #include "ast/ConstDeclarationNode.h"
 #include "ast/DeclarationSequenceNode.h"
-#include "ast/DesignatorNode.h"
-#include "ast/ElementNode.h"
-#include "ast/ExitStatementNode.h"
 #include "ast/ExpressionNode.h"
 #include "ast/FPSectionNode.h"
 #include "ast/FormalParametersNode.h"
-#include "ast/FormalTypeNode.h"
-#include "ast/FunctionCallNode.h"
 #include "ast/IfStatementNode.h"
-#include "ast/ImportNode.h"
-#include "ast/LoopStatementNode.h"
 #include "ast/ModuleNode.h"
 #include "ast/ProcedureCallNode.h"
 #include "ast/ProcedureDeclarationNode.h"
-#include "ast/QualIdentNode.h"
 #include "ast/RepeatStatementNode.h"
-#include "ast/ReturnStatementNode.h"
-#include "ast/SetNode.h"
 #include "ast/SimpleExprNode.h"
 #include "ast/StatementNode.h"
 #include "ast/StatementSequenceNode.h"
@@ -37,7 +26,6 @@
 #include "ast/TypeDeclarationNode.h"
 #include "ast/VarDeclarationNode.h"
 #include "ast/WhileStatementNode.h"
-#include "ast/WithStatementNode.h"
 
 #include "scanner/Scanner.h"
 #include <memory>
@@ -61,48 +49,36 @@ private:
   unique_ptr<const Token> next_token_;
 
   // TODO condense everything down
+  RelationType relation();
+  SignType sign();
   const string ident();
   const string type();
   unique_ptr<ModuleNode> module();
   unique_ptr<ProcedureCallNode> procedure();
-  unique_ptr<ImportListNode> import_list();
-  unique_ptr<ImportNode> import();
   unique_ptr<ExpressionNode> expression();
   unique_ptr<SimpleExprNode> simple_expr();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<StatementNode> statement();
   unique_ptr<IfStatementNode> if_statement();
-  unique_ptr<CaseStatementNode> case_statement();
-  unique_ptr<WithStatementNode> with_statement();
   unique_ptr<WhileStatementNode> while_statement();
   unique_ptr<RepeatStatementNode> repeat_statement();
-  unique_ptr<LoopStatementNode> loop_statement();
-  unique_ptr<ExitStatementNode> exit_statement();
-  unique_ptr<ReturnStatementNode> return_statement();
-  unique_ptr<ClauseNode> clause();
-  unique_ptr<CaseLabelListNode> case_label_list();
-  unique_ptr<CaseLabelsNode> case_labels();
   unique_ptr<TermNode> term();
   unique_ptr<DeclarationSequenceNode> declaration_sequence();
   unique_ptr<ConstDeclarationNode> const_declaration();
   unique_ptr<TypeDeclarationNode> type_declaration();
-  std::vector<unique_ptr<VarDeclarationNode>> var_declarations();
+  std::vector<unique_ptr<VarDeclarationNode>>
+  var_declarations(std::vector<unique_ptr<VarDeclarationNode>> vars);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();
   unique_ptr<ProcedureHeadingNode> procedure_heading();
   unique_ptr<ProcedureBodyNode> procedure_body();
-  unique_ptr<FunctionCallNode> function_call();
-  unique_ptr<DesignatorNode> designator();
+  unique_ptr<ProcedureCallNode> procedure_call();
+  unique_ptr<ProcedureCallNode> procedure_call(string ident);
   unique_ptr<ActualParametersNode> actual_parameters();
-  unique_ptr<SetNode> set();
-  unique_ptr<ElementNode> element();
   unique_ptr<FactorNode> factor();
   unique_ptr<AssignmentNode> assignment();
-  unique_ptr<QualIdentNode> qual_ident();
+  unique_ptr<AssignmentNode> assignment(string ident);
   unique_ptr<FormalParametersNode> formal_parameters();
   unique_ptr<FPSectionNode> fp_section();
-  unique_ptr<FormalTypeNode> formal_type();
-  RelationType relation();
-  SignType sign();
   AddOperatorType add_operator();
   MulOperatorType mul_operator();
 
@@ -118,9 +94,17 @@ private:
 
   bool peek_formal_parameters();
   bool peek_assignment();
-  bool peek_designator();
-  bool peek_set();
+  bool peek_ident();
   bool peek_expression();
+  bool peek_assignment_without_ident();
+  bool peek_procedure_call_without_ident();
+  bool peek_simple_expr();
+  bool peek_factor();
+  bool peek_term();
+  bool peek_sign();
+  bool peek_number();
+  bool peek_char_constant();
+  bool peek_string();
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)

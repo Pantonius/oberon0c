@@ -1,7 +1,6 @@
 #ifndef OBERON0C_ASSIGNMENTNODE_H
 #define OBERON0C_ASSIGNMENTNODE_H
 
-#include "DesignatorNode.h"
 #include "ExpressionNode.h"
 #include "Node.h"
 #include "scanner/Token.h"
@@ -16,7 +15,7 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<DesignatorNode> designator;
+  const string ident;
   unique_ptr<ExpressionNode> expression;
 };
 

@@ -1,7 +1,6 @@
 #ifndef OBERON0C_ACTUALPARAMETERSNODE_H
 #define OBERON0C_ACTUALPARAMETERSNODE_H
 
-#include "ExpressionNode.h"
 #include "Node.h"
 #include "scanner/Token.h"
 #include <memory>
@@ -9,6 +8,8 @@
 
 using std::unique_ptr;
 using std::vector;
+
+class ExpressionNode;
 
 class ActualParametersNode final : public Node {
 public:

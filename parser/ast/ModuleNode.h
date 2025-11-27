@@ -2,7 +2,6 @@
 #define OBERON0C_MODULENODE_H
 
 #include "DeclarationSequenceNode.h"
-#include "ImportListNode.h"
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
@@ -19,7 +18,6 @@ public:
   void print(std::ostream &stream) const override {};
 
   string ident;
-  unique_ptr<const ImportListNode> import_list;
   unique_ptr<DeclarationSequenceNode> declaration_sequence;
   unique_ptr<StatementSequenceNode> statement_sequence;
 };

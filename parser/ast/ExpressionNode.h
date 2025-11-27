@@ -8,13 +8,15 @@
 
 using std::unique_ptr;
 
-enum class RelationType { eq, neq, lt, leq, gt, geq, in, is };
+enum class RelationType { eq, neq, lt, leq, gt, geq };
 
 const set<TokenType> RELATION_TOKEN_TYPES = {
-    TokenType::op_eq, TokenType::op_neq, TokenType::op_lt, TokenType::op_leq,
-    TokenType::op_gt, TokenType::op_geq, TokenType::op_in, TokenType::op_is};
+    TokenType::op_eq,  TokenType::op_neq, TokenType::op_lt,
+    TokenType::op_leq, TokenType::op_gt,  TokenType::op_geq,
+};
 
 RelationType relation_from_token_type(TokenType tokenType);
+
 class ExpressionNode final : public Node {
 public:
   ExpressionNode(const FilePos &pos) : Node(NodeType::expression, pos) {}

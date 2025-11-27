@@ -1,9 +1,7 @@
 #ifndef OBERON0C_FPSECTIONNODE_H
 #define OBERON0C_FPSECTIONNODE_H
 
-#include "FormalTypeNode.h"
 #include "Node.h"
-#include "QualIdentNode.h"
 #include <memory>
 #include <vector>
 
@@ -19,7 +17,6 @@ public:
   void print(std::ostream &stream) const override {};
 
   vector<string> idents;
-  unique_ptr<FormalTypeNode> type;
 };
 
 #endif // OBERON0C_FPSECTIONNODE_H

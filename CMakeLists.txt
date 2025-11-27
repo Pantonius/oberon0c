@@ -54,25 +54,14 @@ set(PARSER_SOURCES
         parser/ast/Node.cpp parser/ast/Node.h
         parser/ast/ActualParametersNode.h
         parser/ast/AssignmentNode.h
-        parser/ast/CaseLabelListNode.h
-        parser/ast/CaseLabelsNode.h
-        parser/ast/CaseStatementNode.h
-        parser/ast/ClauseNode.h
         parser/ast/ConstDeclarationNode.h
         parser/ast/DeclarationSequenceNode.h
-        parser/ast/DesignatorNode.h
-        parser/ast/ElementNode.h
-        parser/ast/ExitStatementNode.h
-        parser/ast/ExpressionNode.h
+        parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
         parser/ast/FPSectionNode.h
         parser/ast/FactorNode.h
         parser/ast/FormalParametersNode.h
-        parser/ast/FormalTypeNode.h
-        parser/ast/FunctionCallNode.h
+        parser/ast/ProcedureCallNode.h
         parser/ast/IfStatementNode.h
-        parser/ast/ImportListNode.h
-        parser/ast/ImportNode.h
-        parser/ast/LoopStatementNode.h
         parser/ast/ModuleNode.h
         parser/ast/Node.cpp
         parser/ast/Node.h
@@ -82,18 +71,14 @@ set(PARSER_SOURCES
         parser/ast/ProcedureCallNode.h
         parser/ast/ProcedureDeclarationNode.h
         parser/ast/ProcedureHeadingNode.h
-        parser/ast/QualIdentNode.h
         parser/ast/RepeatStatementNode.h
-        parser/ast/ReturnStatementNode.h
-        parser/ast/SetNode.h
         parser/ast/SimpleExprNode.h
         parser/ast/StatementNode.h
         parser/ast/StatementSequenceNode.h
-        parser/ast/TermNode.h
+        parser/ast/TermNode.h parser/ast/TermNode.cpp
         parser/ast/TypeDeclarationNode.h
         parser/ast/VarDeclarationNode.h
         parser/ast/WhileStatementNode.h
-        parser/ast/WithStatementNode.h
         parser/ast/ast.h
         parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h)
 

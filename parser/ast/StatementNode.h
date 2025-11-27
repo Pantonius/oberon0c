@@ -1,16 +1,12 @@
 #ifndef OBERON0C_STATEMENTNODE_H
 #define OBERON0C_STATEMENTNODE_H
 
-#include "CaseStatementNode.h"
-#include "ExitStatementNode.h"
+#include "AssignmentNode.h"
 #include "IfStatementNode.h"
-#include "LoopStatementNode.h"
 #include "Node.h"
-#include "ReturnStatementNode.h"
+#include "ProcedureCallNode.h"
 #include "WhileStatementNode.h"
-#include "WithStatementNode.h"
 #include <memory>
-#include <vector>
 
 using std::unique_ptr;
 
@@ -22,13 +18,10 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
+  unique_ptr<AssignmentNode> assignment;
+  unique_ptr<ProcedureCallNode> procedure_call;
   unique_ptr<IfStatementNode> if_statement;
-  unique_ptr<CaseStatementNode> case_statement;
-  unique_ptr<LoopStatementNode> loop_statement;
   unique_ptr<WhileStatementNode> while_statement;
-  unique_ptr<WithStatementNode> with_statement;
-  unique_ptr<ExitStatementNode> exit_statement;
-  unique_ptr<ReturnStatementNode> return_statement;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H

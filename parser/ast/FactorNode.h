@@ -2,7 +2,7 @@
 #define OBERON0C_FACTORNODE_H
 
 #include "Node.h"
-#include "SetNode.h"
+#include "ProcedureCallNode.h"
 #include <memory>
 
 using std::unique_ptr;
@@ -19,7 +19,8 @@ public:
 
   bool nil = false;
   unique_ptr<ExpressionNode> expression;
-  unique_ptr<SetNode> set;
+  unique_ptr<ProcedureCallNode> function_call;
+  string ident;
   unique_ptr<FactorNode> not_factor;
 };
 

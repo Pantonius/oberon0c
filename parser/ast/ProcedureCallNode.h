@@ -19,7 +19,8 @@ public:
   void print(std::ostream &stream) const override {};
 
   string ident;
-  vector<unique_ptr<ExpressionNode>> parameters;
+  unique_ptr<SelectorNode> selector_node;
+  unique_ptr<ActualParametersNode> actual_parameters;
 };
 
 #endif // OBERON0C_PROCEDURECALLNODE_H

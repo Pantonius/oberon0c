@@ -3,7 +3,6 @@
 
 #include "FPSectionNode.h"
 #include "Node.h"
-#include "QualIdentNode.h"
 #include <memory>
 #include <vector>
 
@@ -19,7 +18,6 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<QualIdentNode> qual_ident;
   vector<std::unique_ptr<FPSectionNode>> sections;
 };
 

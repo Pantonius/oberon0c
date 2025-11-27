@@ -13,11 +13,10 @@ public:
       : Node(NodeType::procedure_heading, pos) {}
   ~ProcedureHeadingNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) override {}
+  void print(std::ostream &stream) const override {}
 
   string ident;
-  bool exported;
   unique_ptr<FormalParametersNode> formal_parameters;
 };
 
