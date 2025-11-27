@@ -10,8 +10,8 @@ public:
   ImportNode(const FilePos &pos) : Node(NodeType::import, pos) {}
   ~ImportNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string alias_ident;
   string actual_ident;

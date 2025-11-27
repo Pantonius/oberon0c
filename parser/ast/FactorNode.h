@@ -13,8 +13,8 @@ public:
   FactorNode(const FilePos &pos) : Node(NodeType::factor, pos) {}
   ~FactorNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   bool nil = false;
   unique_ptr<ExpressionNode> expression;

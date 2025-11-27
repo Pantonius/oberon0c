@@ -1,4 +1,7 @@
 #include "Parser.h"
+#include "global.h"
+#include <algorithm>
+#include <string>
 
 std::unique_ptr<ModuleNode> Parser::parse() { return module(); }
 
@@ -723,6 +726,32 @@ bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue,
   auto token = scanner_.peek();
   if (token->type() != expectedType) {
     logger_.error(token->start(), to_string(expectedType) +
+                                      " expected, found " +
+                                      to_string(token->type()) + ".");
+
+    if (advanceOnFalse)
+      curr_token_ = scanner_.next();
+
+    return false;
+  }
+
+  if (advanceOnTrue)
+    curr_token_ = scanner_.next();
+
+  return true;
+}
+
+bool Parser::expect_token_type_within(std::set<TokenType> expectedTypes,
+                                      bool advanceOnTrue, bool advanceOnFalse) {
+  auto token = scanner_.peek();
+  if (!expectedTypes.contains(token->type())) {
+    std::string s_expectedTypes = "{ ";
+    for (auto type : expectedTypes) {
+      s_expectedTypes.append(to_string(type) + ", ");
+    }
+    s_expectedTypes.append("}");
+
+    logger_.error(token->start(), "one of " + s_expectedTypes +
                                       " expected, found " +
                                       to_string(token->type()) + ".");
 

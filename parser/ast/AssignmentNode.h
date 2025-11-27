@@ -13,8 +13,8 @@ public:
   AssignmentNode(const FilePos &pos) : Node(NodeType::assignment, pos) {}
   ~AssignmentNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<DesignatorNode> designator;
   unique_ptr<ExpressionNode> expression;

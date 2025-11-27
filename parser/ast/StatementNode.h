@@ -19,8 +19,8 @@ public:
   StatementNode(const FilePos &pos) : Node(NodeType::statement, pos) {}
   ~StatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<IfStatementNode> if_statement;
   unique_ptr<CaseStatementNode> case_statement;

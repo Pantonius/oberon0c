@@ -14,8 +14,8 @@ public:
   LoopStatementNode(const FilePos &pos) : Node(NodeType::loop_statement, pos) {}
   ~LoopStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<StatementSequenceNode> body;
 };

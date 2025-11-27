@@ -13,8 +13,8 @@ public:
       : Node(NodeType::type_declaration, pos) {}
   ~TypeDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
   unique_ptr<ExpressionNode> expression;

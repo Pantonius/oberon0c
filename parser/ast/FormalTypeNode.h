@@ -13,8 +13,8 @@ public:
   FormalTypeNode(const FilePos &pos) : Node(NodeType::formal_type, pos) {}
   ~FormalTypeNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<QualIdentNode> qual_ident;
 };

@@ -16,8 +16,8 @@ public:
       : Node(NodeType::formal_parameters, pos) {}
   ~FormalParametersNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<QualIdentNode> qual_ident;
   vector<std::unique_ptr<FPSectionNode>> sections;

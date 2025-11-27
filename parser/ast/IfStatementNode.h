@@ -17,8 +17,8 @@ public:
   IfStatementNode(const FilePos &pos) : Node(NodeType::if_statement, pos) {}
   ~IfStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> condition;
   unique_ptr<StatementSequenceNode> body;

@@ -25,8 +25,8 @@ public:
   TermNode(const FilePos &pos) : Node(NodeType::term, pos) {}
   ~TermNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<FactorNode> factor;
   vector<pair<MulOperatorType, unique_ptr<FactorNode>>> additional_terms;

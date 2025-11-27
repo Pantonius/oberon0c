@@ -15,8 +15,8 @@ public:
       : Node(NodeType::while_statement, pos) {}
   ~WhileStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> condition;
   unique_ptr<StatementSequenceNode> body;

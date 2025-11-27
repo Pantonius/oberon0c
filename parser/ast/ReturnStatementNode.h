@@ -13,8 +13,8 @@ public:
       : Node(NodeType::return_statement, pos) {}
   ~ReturnStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> expression;
 };

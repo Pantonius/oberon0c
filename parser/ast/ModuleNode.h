@@ -15,8 +15,8 @@ public:
   ModuleNode(const FilePos &pos) : Node(NodeType::module, pos) {}
   ~ModuleNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
   unique_ptr<const ImportListNode> import_list;

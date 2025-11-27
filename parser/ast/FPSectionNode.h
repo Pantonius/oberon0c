@@ -15,8 +15,8 @@ public:
   FPSectionNode(const FilePos &pos) : Node(NodeType::fp_section, pos) {}
   ~FPSectionNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<string> idents;
   unique_ptr<FormalTypeNode> type;

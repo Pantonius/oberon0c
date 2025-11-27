@@ -8,8 +8,8 @@ public:
   QualIdentNode(const FilePos &pos) : Node(NodeType::qual_ident, pos) {}
   ~QualIdentNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string module;
   string ident;

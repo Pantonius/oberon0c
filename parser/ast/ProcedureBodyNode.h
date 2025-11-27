@@ -14,8 +14,8 @@ public:
   ProcedureBodyNode(const FilePos &pos) : Node(NodeType::procedure_body, pos) {}
   ~ProcedureBodyNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<DeclarationSequenceNode> declarations;
   unique_ptr<StatementSequenceNode> statement_sequence;

@@ -14,8 +14,8 @@ public:
       : Node(NodeType::repeat_statement, pos) {}
   ~RepeatStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> condition;
   unique_ptr<StatementSequenceNode> body;

@@ -13,8 +13,8 @@ public:
   ElementNode(const FilePos &pos) : Node(NodeType::element, pos) {}
   ~ElementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> expression;
   unique_ptr<ExpressionNode> until_expression;

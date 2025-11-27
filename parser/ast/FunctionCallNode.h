@@ -14,8 +14,8 @@ public:
   FunctionCallNode(const FilePos &pos) : Node(NodeType::function_call, pos) {}
   ~FunctionCallNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<DesignatorNode> designator;
   unique_ptr<ActualParametersNode> actual_parameters;

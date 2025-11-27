@@ -14,8 +14,8 @@ public:
   SetNode(const FilePos &pos) : Node(NodeType::set, pos) {}
   ~SetNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<unique_ptr<ElementNode>> elements;
 };

@@ -15,8 +15,8 @@ public:
   ProcedureCallNode(const FilePos &pos) : Node(NodeType::procedure_call, pos) {}
   ~ProcedureCallNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
   vector<unique_ptr<ExpressionNode>> parameters;

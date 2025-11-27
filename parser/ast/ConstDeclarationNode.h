@@ -13,8 +13,8 @@ public:
       : Node(NodeType::const_declaration, pos) {}
   ~ConstDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
   bool exported;

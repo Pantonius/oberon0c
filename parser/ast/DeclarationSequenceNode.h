@@ -18,8 +18,8 @@ public:
       : Node(NodeType::declaration_sequence, pos) {}
   ~DeclarationSequenceNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<unique_ptr<ConstDeclarationNode>> constants;
   vector<unique_ptr<TypeDeclarationNode>> types;

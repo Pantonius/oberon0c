@@ -29,8 +29,8 @@ public:
   SimpleExprNode(const FilePos &pos) : Node(NodeType::simple_expr, pos) {}
   ~SimpleExprNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   SignType sign;
   unique_ptr<TermNode> term;

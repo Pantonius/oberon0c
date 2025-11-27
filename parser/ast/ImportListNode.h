@@ -14,8 +14,8 @@ public:
   ImportListNode(const FilePos &pos) : Node(NodeType::import_list, pos) {}
   ~ImportListNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<unique_ptr<ImportNode>> list;
 };

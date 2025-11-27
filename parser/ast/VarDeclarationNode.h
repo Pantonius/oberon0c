@@ -14,8 +14,8 @@ public:
       : Node(NodeType::var_declaration, pos) {}
   ~VarDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
   bool exported;

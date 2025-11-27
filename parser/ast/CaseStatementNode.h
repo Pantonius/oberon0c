@@ -17,8 +17,8 @@ public:
   CaseStatementNode(const FilePos &pos) : Node(NodeType::case_statement, pos) {}
   ~CaseStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> expression;
   vector<unique_ptr<ClauseNode>> clauses;

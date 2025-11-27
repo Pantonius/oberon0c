@@ -12,8 +12,8 @@ public:
   CaseLabelsNode(const FilePos &pos) : Node(NodeType::case_labels, pos) {}
   ~CaseLabelsNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> const_expression;
   unique_ptr<ExpressionNode> until_const_expression;

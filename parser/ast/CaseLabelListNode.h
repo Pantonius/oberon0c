@@ -15,8 +15,8 @@ public:
       : Node(NodeType::case_label_list, pos) {}
   ~CaseLabelListNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<unique_ptr<CaseLabelsNode>> labels;
 };

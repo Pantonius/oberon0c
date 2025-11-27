@@ -14,8 +14,8 @@ public:
       : Node(NodeType::procedure_declaration, pos) {}
   ~ProcedureDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<ProcedureHeadingNode> heading;
   unique_ptr<ProcedureBodyNode> body;

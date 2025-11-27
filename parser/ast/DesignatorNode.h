@@ -8,8 +8,8 @@ public:
   DesignatorNode(const FilePos &pos) : Node(NodeType::designator, pos) {}
   ~DesignatorNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   string ident;
 };

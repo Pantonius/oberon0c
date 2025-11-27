@@ -20,8 +20,8 @@ public:
   ExpressionNode(const FilePos &pos) : Node(NodeType::expression, pos) {}
   ~ExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   unique_ptr<SimpleExprNode> left_expr;
   RelationType relation;

@@ -16,8 +16,8 @@ public:
       : Node(NodeType::actual_parameters, pos) {}
   ~ActualParametersNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
 
   vector<unique_ptr<ExpressionNode>> expressions;
 };
