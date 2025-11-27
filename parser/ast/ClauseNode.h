@@ -3,10 +3,11 @@
 
 #include "CaseLabelListNode.h"
 #include "Node.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 
 using std::unique_ptr;
+
+class StatementSequenceNode;
 
 class ClauseNode final : public Node {
 public:

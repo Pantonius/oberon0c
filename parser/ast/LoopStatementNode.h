@@ -3,10 +3,11 @@
 
 #include "ExpressionNode.h"
 #include "Node.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 
 using std::unique_ptr;
+
+class StatementSequenceNode;
 
 class LoopStatementNode final : public Node {
 public:

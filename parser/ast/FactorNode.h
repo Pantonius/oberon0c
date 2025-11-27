@@ -1,11 +1,12 @@
 #ifndef OBERON0C_FACTORNODE_H
 #define OBERON0C_FACTORNODE_H
 
-#include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
 
 using std::unique_ptr;
+
+class ExpressionNode;
 
 class FactorNode final : public Node {
 public:

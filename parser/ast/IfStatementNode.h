@@ -3,13 +3,14 @@
 
 #include "ExpressionNode.h"
 #include "Node.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 #include <vector>
 
 using std::pair;
 using std::unique_ptr;
 using std::vector;
+
+class StatementSequenceNode;
 
 class IfStatementNode final : public Node {
 public:

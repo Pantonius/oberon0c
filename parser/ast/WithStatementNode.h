@@ -3,11 +3,12 @@
 
 #include "Node.h"
 #include "QualIdentNode.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 #include <vector>
 
 using std::unique_ptr;
+
+class StatementSequenceNode;
 
 class WithStatementNode final : public Node {
 public:

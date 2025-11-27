@@ -1,6 +1,6 @@
 #include "Parser.h"
 
-std::unique_ptr<const ModuleNode> Parser::parse() { module(); }
+std::unique_ptr<ModuleNode> Parser::parse() { return module(); }
 
 /* ident = letter {letter | digit} */
 const string Parser::ident() {
@@ -160,7 +160,7 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
 // relation = "=" | "#" | "<" | "<=" | ">" | ">=" | "IN" | "IS"
 RelationType Parser::relation() {
   expect_token_type_within(RELATION_TOKEN_TYPES, ADVANCE_ON_TRUE);
-  return relation_type_from_token_type(curr_token_->type());
+  return relation_from_token_type(curr_token_->type());
 }
 
 // SimpleExpr = ["+" | "-"] term {AddOperator term}

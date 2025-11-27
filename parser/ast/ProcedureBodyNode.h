@@ -1,12 +1,13 @@
 #ifndef OBERON0C_PROCEDUREBODYNODE_H
 #define OBERON0C_PROCEDUREBODYNODE_H
 
-#include "DeclarationSequenceNode.h"
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
 
 using std::unique_ptr;
+
+class DeclarationSequenceNode;
 
 class ProcedureBodyNode final : public Node {
 public:

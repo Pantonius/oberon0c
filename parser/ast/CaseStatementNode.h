@@ -4,12 +4,13 @@
 #include "ClauseNode.h"
 #include "ExpressionNode.h"
 #include "Node.h"
-#include "StatementSequenceNode.h"
 #include <memory>
 #include <vector>
 
 using std::unique_ptr;
 using std::vector;
+
+class StatementSequenceNode;
 
 class CaseStatementNode final : public Node {
 public:
