@@ -14,7 +14,7 @@ class FormalParametersNode final : public Node {
 public:
   FormalParametersNode(const FilePos &pos)
       : Node(NodeType::formal_parameters, pos) {}
-  ~FormalParametersNode() noexcept override;
+  ~FormalParametersNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

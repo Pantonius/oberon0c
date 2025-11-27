@@ -11,7 +11,7 @@ class TypeDeclarationNode final : public Node {
 public:
   TypeDeclarationNode(const FilePos &pos)
       : Node(NodeType::type_declaration, pos) {}
-  ~TypeDeclarationNode() noexcept override;
+  ~TypeDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

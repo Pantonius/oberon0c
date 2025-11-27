@@ -12,7 +12,7 @@ class StatementSequenceNode;
 class ClauseNode final : public Node {
 public:
   ClauseNode(const FilePos &pos) : Node(NodeType::clause, pos) {}
-  ~ClauseNode() noexcept override;
+  ~ClauseNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

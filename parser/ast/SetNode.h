@@ -12,7 +12,7 @@ using std::vector;
 class SetNode final : public Node {
 public:
   SetNode(const FilePos &pos) : Node(NodeType::set, pos) {}
-  ~SetNode() noexcept override;
+  ~SetNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

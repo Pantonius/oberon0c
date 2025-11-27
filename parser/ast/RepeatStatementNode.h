@@ -12,7 +12,7 @@ class RepeatStatementNode final : public Node {
 public:
   RepeatStatementNode(const FilePos &pos)
       : Node(NodeType::repeat_statement, pos) {}
-  ~RepeatStatementNode() noexcept override;
+  ~RepeatStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

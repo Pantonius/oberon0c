@@ -12,7 +12,7 @@ class DeclarationSequenceNode;
 class ProcedureBodyNode final : public Node {
 public:
   ProcedureBodyNode(const FilePos &pos) : Node(NodeType::procedure_body, pos) {}
-  ~ProcedureBodyNode() noexcept override;
+  ~ProcedureBodyNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

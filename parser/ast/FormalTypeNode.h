@@ -11,7 +11,7 @@ using std::unique_ptr;
 class FormalTypeNode final : public Node {
 public:
   FormalTypeNode(const FilePos &pos) : Node(NodeType::formal_type, pos) {}
-  ~FormalTypeNode() noexcept override;
+  ~FormalTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

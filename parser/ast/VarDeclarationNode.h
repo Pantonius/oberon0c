@@ -12,7 +12,7 @@ class VarDeclarationNode final : public Node {
 public:
   VarDeclarationNode(const FilePos &pos)
       : Node(NodeType::var_declaration, pos) {}
-  ~VarDeclarationNode() noexcept override;
+  ~VarDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

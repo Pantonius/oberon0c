@@ -11,7 +11,7 @@ class ProcedureHeadingNode final : public Node {
 public:
   ProcedureHeadingNode(const FilePos &pos)
       : Node(NodeType::procedure_heading, pos) {}
-  ~ProcedureHeadingNode() noexcept override;
+  ~ProcedureHeadingNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

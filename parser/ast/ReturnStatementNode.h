@@ -11,7 +11,7 @@ class ReturnStatementNode final : public Node {
 public:
   ReturnStatementNode(const FilePos &pos)
       : Node(NodeType::return_statement, pos) {}
-  ~ReturnStatementNode() noexcept override;
+  ~ReturnStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

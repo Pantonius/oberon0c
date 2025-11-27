@@ -15,7 +15,7 @@ class StatementSequenceNode;
 class CaseStatementNode final : public Node {
 public:
   CaseStatementNode(const FilePos &pos) : Node(NodeType::case_statement, pos) {}
-  ~CaseStatementNode() noexcept override;
+  ~CaseStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

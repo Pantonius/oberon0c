@@ -8,7 +8,7 @@ using std::string;
 class ImportNode final : public Node {
 public:
   ImportNode(const FilePos &pos) : Node(NodeType::import, pos) {}
-  ~ImportNode() noexcept override;
+  ~ImportNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

@@ -15,7 +15,7 @@ class StatementSequenceNode;
 class IfStatementNode final : public Node {
 public:
   IfStatementNode(const FilePos &pos) : Node(NodeType::if_statement, pos) {}
-  ~IfStatementNode() noexcept override;
+  ~IfStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

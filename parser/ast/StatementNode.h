@@ -17,7 +17,7 @@ using std::unique_ptr;
 class StatementNode final : public Node {
 public:
   StatementNode(const FilePos &pos) : Node(NodeType::statement, pos) {}
-  ~StatementNode() noexcept override;
+  ~StatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

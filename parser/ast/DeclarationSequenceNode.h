@@ -16,7 +16,7 @@ class DeclarationSequenceNode final : public Node {
 public:
   DeclarationSequenceNode(const FilePos &pos)
       : Node(NodeType::declaration_sequence, pos) {}
-  ~DeclarationSequenceNode() noexcept override;
+  ~DeclarationSequenceNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

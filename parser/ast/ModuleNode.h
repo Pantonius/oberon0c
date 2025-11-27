@@ -13,7 +13,7 @@ using std::unique_ptr;
 class ModuleNode final : public Node {
 public:
   ModuleNode(const FilePos &pos) : Node(NodeType::module, pos) {}
-  ~ModuleNode() noexcept override;
+  ~ModuleNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

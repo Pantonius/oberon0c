@@ -14,7 +14,7 @@ class ActualParametersNode final : public Node {
 public:
   ActualParametersNode(const FilePos &pos)
       : Node(NodeType::actual_parameters, pos) {}
-  ~ActualParametersNode() noexcept override;
+  ~ActualParametersNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

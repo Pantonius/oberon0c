@@ -11,7 +11,7 @@ class ConstDeclarationNode final : public Node {
 public:
   ConstDeclarationNode(const FilePos &pos)
       : Node(NodeType::const_declaration, pos) {}
-  ~ConstDeclarationNode() noexcept override;
+  ~ConstDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

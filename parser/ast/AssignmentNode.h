@@ -11,7 +11,7 @@ using std::unique_ptr;
 class AssignmentNode final : public Node {
 public:
   AssignmentNode(const FilePos &pos) : Node(NodeType::assignment, pos) {}
-  ~AssignmentNode() noexcept override;
+  ~AssignmentNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

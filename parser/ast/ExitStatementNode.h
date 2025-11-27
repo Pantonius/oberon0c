@@ -8,7 +8,7 @@
 class ExitStatementNode final : public Node {
 public:
   ExitStatementNode(const FilePos &pos) : Node(NodeType::exit_statement, pos) {}
-  ~ExitStatementNode() noexcept override;
+  ~ExitStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

@@ -12,7 +12,7 @@ using std::unique_ptr;
 class FunctionCallNode final : public Node {
 public:
   FunctionCallNode(const FilePos &pos) : Node(NodeType::function_call, pos) {}
-  ~FunctionCallNode() noexcept override;
+  ~FunctionCallNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

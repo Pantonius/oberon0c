@@ -13,7 +13,7 @@ using std::vector;
 class FPSectionNode final : public Node {
 public:
   FPSectionNode(const FilePos &pos) : Node(NodeType::fp_section, pos) {}
-  ~FPSectionNode() noexcept override;
+  ~FPSectionNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

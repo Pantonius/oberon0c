@@ -12,7 +12,7 @@ class ProcedureDeclarationNode final : public Node {
 public:
   ProcedureDeclarationNode(const FilePos &pos)
       : Node(NodeType::procedure_declaration, pos) {}
-  ~ProcedureDeclarationNode() noexcept override;
+  ~ProcedureDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

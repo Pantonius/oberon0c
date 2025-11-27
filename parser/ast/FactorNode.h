@@ -11,7 +11,7 @@ class ExpressionNode;
 class FactorNode final : public Node {
 public:
   FactorNode(const FilePos &pos) : Node(NodeType::factor, pos) {}
-  ~FactorNode() noexcept override;
+  ~FactorNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

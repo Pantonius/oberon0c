@@ -6,7 +6,7 @@
 class DesignatorNode final : public Node {
 public:
   DesignatorNode(const FilePos &pos) : Node(NodeType::designator, pos) {}
-  ~DesignatorNode() noexcept override;
+  ~DesignatorNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

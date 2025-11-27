@@ -12,7 +12,7 @@ class StatementSequenceNode;
 class LoopStatementNode final : public Node {
 public:
   LoopStatementNode(const FilePos &pos) : Node(NodeType::loop_statement, pos) {}
-  ~LoopStatementNode() noexcept override;
+  ~LoopStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

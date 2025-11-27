@@ -12,7 +12,7 @@ using std::vector;
 class ImportListNode final : public Node {
 public:
   ImportListNode(const FilePos &pos) : Node(NodeType::import_list, pos) {}
-  ~ImportListNode() noexcept override;
+  ~ImportListNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

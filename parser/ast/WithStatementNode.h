@@ -13,7 +13,7 @@ class StatementSequenceNode;
 class WithStatementNode final : public Node {
 public:
   WithStatementNode(const FilePos &pos) : Node(NodeType::with_statement, pos) {}
-  ~WithStatementNode() noexcept override;
+  ~WithStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

@@ -11,7 +11,7 @@ using std::unique_ptr;
 class ElementNode final : public Node {
 public:
   ElementNode(const FilePos &pos) : Node(NodeType::element, pos) {}
-  ~ElementNode() noexcept override;
+  ~ElementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

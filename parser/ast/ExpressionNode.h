@@ -18,7 +18,7 @@ RelationType relation_from_token_type(TokenType tokenType);
 class ExpressionNode final : public Node {
 public:
   ExpressionNode(const FilePos &pos) : Node(NodeType::expression, pos) {}
-  ~ExpressionNode() noexcept override;
+  ~ExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

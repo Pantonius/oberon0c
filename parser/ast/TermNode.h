@@ -23,7 +23,7 @@ MulOperatorType mul_operator_from_token_type(TokenType tokenType);
 class TermNode final : public Node {
 public:
   TermNode(const FilePos &pos) : Node(NodeType::term, pos) {}
-  ~TermNode() noexcept override;
+  ~TermNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

@@ -6,7 +6,7 @@
 class QualIdentNode final : public Node {
 public:
   QualIdentNode(const FilePos &pos) : Node(NodeType::qual_ident, pos) {}
-  ~QualIdentNode() noexcept override;
+  ~QualIdentNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

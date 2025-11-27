@@ -10,7 +10,7 @@ using std::unique_ptr;
 class CaseLabelsNode final : public Node {
 public:
   CaseLabelsNode(const FilePos &pos) : Node(NodeType::case_labels, pos) {}
-  ~CaseLabelsNode() noexcept override;
+  ~CaseLabelsNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

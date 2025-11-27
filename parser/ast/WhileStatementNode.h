@@ -13,7 +13,7 @@ class WhileStatementNode final : public Node {
 public:
   WhileStatementNode(const FilePos &pos)
       : Node(NodeType::while_statement, pos) {}
-  ~WhileStatementNode() noexcept override;
+  ~WhileStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

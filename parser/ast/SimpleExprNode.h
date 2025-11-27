@@ -27,7 +27,7 @@ AddOperatorType add_operator_from_token_type(TokenType tokenType);
 class SimpleExprNode final : public Node {
 public:
   SimpleExprNode(const FilePos &pos) : Node(NodeType::simple_expr, pos) {}
-  ~SimpleExprNode() noexcept override;
+  ~SimpleExprNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

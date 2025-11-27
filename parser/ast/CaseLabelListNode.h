@@ -13,7 +13,7 @@ class CaseLabelListNode final : public Node {
 public:
   CaseLabelListNode(const FilePos &pos)
       : Node(NodeType::case_label_list, pos) {}
-  ~CaseLabelListNode() noexcept override;
+  ~CaseLabelListNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;

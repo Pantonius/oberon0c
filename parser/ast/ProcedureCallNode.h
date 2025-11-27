@@ -13,7 +13,7 @@ using std::vector;
 class ProcedureCallNode final : public Node {
 public:
   ProcedureCallNode(const FilePos &pos) : Node(NodeType::procedure_call, pos) {}
-  ~ProcedureCallNode() noexcept override;
+  ~ProcedureCallNode() override = default;
 
   void accept(NodeVisitor &visitor) override;
   void print(std::ostream &stream) const override;
