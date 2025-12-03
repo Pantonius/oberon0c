@@ -3,6 +3,7 @@
 
 #include "ExpressionNode.h"
 #include "Node.h"
+#include "SelectorNode.h"
 #include "scanner/Token.h"
 #include <memory>
 using std::unique_ptr;
@@ -15,8 +16,9 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  const string ident;
+  string ident;
   unique_ptr<ExpressionNode> expression;
+  unique_ptr<SelectorNode> selector;
 };
 
 #endif // OBERON0C_ASSIGNMENTNODE_H

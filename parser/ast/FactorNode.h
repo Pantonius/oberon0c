@@ -18,11 +18,10 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  bool nil = false;
-  unique_ptr<ExpressionNode> expression;
-  unique_ptr<ProcedureCallNode> function_call;
   string ident;
   unique_ptr<SelectorNode> selector;
+  int number;
+  unique_ptr<ExpressionNode> expression;
   unique_ptr<FactorNode> not_factor;
 };
 

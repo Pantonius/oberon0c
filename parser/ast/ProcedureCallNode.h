@@ -20,7 +20,7 @@ public:
   void print(std::ostream &stream) const override {};
 
   string ident;
-  unique_ptr<SelectorNode> selector_node;
+  unique_ptr<SelectorNode> selector;
   unique_ptr<ActualParametersNode> actual_parameters;
 };
 

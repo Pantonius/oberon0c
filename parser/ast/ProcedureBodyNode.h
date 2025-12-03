@@ -19,6 +19,7 @@ public:
 
   unique_ptr<DeclarationSequenceNode> declarations;
   unique_ptr<StatementSequenceNode> statement_sequence;
+  string end_ident;
 };
 
 #endif // OBERON0C_PROCEDUREBODYNODE_H

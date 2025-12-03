@@ -2,7 +2,6 @@
 #define OBERON0C_TYPEDECLARATIONNODE_H
 
 #include "Node.h"
-#include "ProcedureCallNode.h"
 #include "TypeNode.h"
 #include <memory>
 

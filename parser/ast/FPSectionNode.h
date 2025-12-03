@@ -17,6 +17,7 @@ public:
   void print(std::ostream &stream) const override {};
 
   vector<string> idents;
+  unique_ptr<TypeNode> type;
 };
 
 #endif // OBERON0C_FPSECTIONNODE_H

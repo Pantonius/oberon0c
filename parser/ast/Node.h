@@ -7,11 +7,13 @@
 enum class NodeType : char {
   // TODO sort these for more readability
   actual_parameters,
+  array_type,
   assignment,
   const_declaration,
   declaration_sequence,
   expression,
   factor,
+  field_list,
   formal_parameters,
   fp_section,
   if_statement,
@@ -20,6 +22,7 @@ enum class NodeType : char {
   procedure_call,
   procedure_declaration,
   procedure_heading,
+  record_type,
   repeat_statement,
   selector,
   simple_expr,
