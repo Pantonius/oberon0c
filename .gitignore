@@ -55,3 +55,5 @@ build
 .cache/clangd/index
 result
 results/
+output/default
+test_unique

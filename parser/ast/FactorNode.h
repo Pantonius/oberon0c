@@ -3,6 +3,7 @@
 
 #include "Node.h"
 #include "ProcedureCallNode.h"
+#include "SelectorNode.h"
 #include <memory>
 
 using std::unique_ptr;
@@ -21,6 +22,7 @@ public:
   unique_ptr<ExpressionNode> expression;
   unique_ptr<ProcedureCallNode> function_call;
   string ident;
+  unique_ptr<SelectorNode> selector;
   unique_ptr<FactorNode> not_factor;
 };
 

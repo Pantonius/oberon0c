@@ -1,8 +1,13 @@
 #include "Parser.h"
 #include "ast/SimpleExprNode.h"
 #include "global.h"
+#include "parser/ast/FactorNode.h"
+#include "scanner/Token.h"
 #include <algorithm>
+#include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 std::unique_ptr<ModuleNode> Parser::parse() { return module(); }
 
@@ -16,6 +21,16 @@ const string Parser::ident() {
   }
 
   exit(EXIT_FAILURE);
+}
+
+std::unique_ptr<std::vector<string>> Parser::identList() {
+  std::unique_ptr<std::vector<string>> identList = {};
+
+  do {
+    identList->push_back(ident());
+  } while (peek_check_token_type(TokenType::comma));
+
+  return identList;
 }
 
 const string Parser::type() {
@@ -268,6 +283,8 @@ bool Parser::peek_nil() { return peek_check_token_type(TokenType::kw_nil); }
 std::unique_ptr<ProcedureCallNode> Parser::procedure_call() {
   return Parser::procedure_call(designator());
 }
+
+// FIXME: Oberon0 has no function call
 std::unique_ptr<FunctionCallNode>
 Parser::procedure_call(unique_ptr<DesignatorNode> desig) {
   auto procedure_call =
@@ -502,6 +519,51 @@ std::unique_ptr<FPSectionNode> Parser::fp_section() {
   return fp_section;
 }
 
+/* selector = {"." ident | "[" expression "]"} */
+bool Parser::selector() {
+  while (token = peek_check_token_type_within(
+             {TokenType::period, TokenType::lbrack})) {
+
+    switch (token) {
+    case TokenType::period:
+      ident();
+      break;
+    case TokenType::lbrack:
+      expression();
+      if (!expect_token_type(TokenType::rbrack))
+        return false;
+      break;
+    default:
+      return false;
+      break;
+    }
+  }
+
+  return true;
+}
+
+/* number = integer */
+bool Parser::number() { return expect_token_type(TokenType::int_literal); }
+
+/* ArrayType = "ARRAY" expression "OF" type */
+bool Parser::arrayType() {
+  expect_token_type(TokenType::kw_array);
+  expression();
+  expect_token_type(TokenType::kw_of);
+  type();
+
+  return true;
+}
+
+/* FieldList = [IdentList ":" type] */
+bool Parser::fieldList() {
+  do {
+    identList();
+    expect_token_type(TokenType::period);
+    type();
+  } while (peek_check_token_type())
+}
+
 /* ===================
  *  UTILITY FUNCTIONS
  * =================== */
@@ -516,18 +578,19 @@ bool Parser::peek_check_token_type(TokenType tokenType, bool advanceOnTrue) {
   return false;
 }
 
-bool Parser::peek_check_token_type_within(std::set<TokenType> expectedTypes,
-                                          bool advanceOnTrue) {
+std::optional<TokenType>
+Parser::peek_check_token_type_within(std::set<TokenType> expectedTypes,
+                                     bool advanceOnTrue) {
   auto token = scanner_.peek();
   if (auto search = expectedTypes.find(token->type());
       search == expectedTypes.end()) {
-    return false;
+    return {};
   }
 
   if (advanceOnTrue)
     curr_token_ = scanner_.next();
 
-  return true;
+  return token;
 }
 
 bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue,

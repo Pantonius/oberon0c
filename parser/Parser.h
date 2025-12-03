@@ -31,6 +31,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
 #define ADVANCE_ON_TRUE true
 #define ADVANCE_ON_FALSE true
@@ -53,6 +54,7 @@ private:
   SignType sign();
   const string ident();
   const string type();
+  unique_ptr<std::vector<string>> identList();
   unique_ptr<ModuleNode> module();
   unique_ptr<ProcedureCallNode> procedure();
   unique_ptr<ExpressionNode> expression();
@@ -67,6 +69,7 @@ private:
   unique_ptr<ConstDeclarationNode> const_declaration();
   unique_ptr<TypeDeclarationNode> type_declaration();
   std::vector<unique_ptr<VarDeclarationNode>>
+  // FIXME: How should the signature look like?
   var_declarations(std::vector<unique_ptr<VarDeclarationNode>> vars);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();
   unique_ptr<ProcedureHeadingNode> procedure_heading();
