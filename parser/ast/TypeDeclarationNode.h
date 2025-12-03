@@ -1,8 +1,9 @@
 #ifndef OBERON0C_TYPEDECLARATIONNODE_H
 #define OBERON0C_TYPEDECLARATIONNODE_H
 
-#include "ExpressionNode.h"
 #include "Node.h"
+#include "ProcedureCallNode.h"
+#include "TypeNode.h"
 #include <memory>
 
 using std::unique_ptr;
@@ -18,7 +19,7 @@ public:
 
   string ident;
   // FIXME: Should be a TypeNode
-  unique_ptr<ExpressionNode> expression;
+  unique_ptr<TypeNode> type;
 };
 
 #endif // OBERON0C_TYPEDECLARATIONNODE_H

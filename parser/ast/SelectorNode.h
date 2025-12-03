@@ -1,7 +1,8 @@
 #ifndef OBERON0C_SELECTORNODE_H
 #define OBERON0C_SELECTORNODE_H
 
-#include "global.h"
+#include "Node.h"
+#include "ProcedureCallNode.h"
 #include "parser/ast/Node.h"
 #include <memory>
 
@@ -11,9 +12,11 @@ class ExpressionNode;
 class IdentNode;
 
 class SelectorNode final : public Node {
+public:
   SelectorNode(const FilePos &pos) : Node(NodeType::selector, pos) {}
+  ~SelectorNode() override = default;
 
-  unique_ptr<IdentNode> ident;
+  string ident;
   unique_ptr<ExpressionNode> expression;
 };
 
