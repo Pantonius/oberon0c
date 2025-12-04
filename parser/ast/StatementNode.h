@@ -5,6 +5,7 @@
 #include "IfStatementNode.h"
 #include "Node.h"
 #include "ProcedureCallNode.h"
+#include "RepeatStatementNode.h"
 #include "WhileStatementNode.h"
 #include <memory>
 
@@ -22,6 +23,7 @@ public:
   unique_ptr<ProcedureCallNode> procedure_call;
   unique_ptr<IfStatementNode> if_statement;
   unique_ptr<WhileStatementNode> while_statement;
+  unique_ptr<RepeatStatementNode> repeat_statement;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H

@@ -9,7 +9,7 @@
 std::unique_ptr<ModuleNode> Parser::parse() { return module(); }
 
 /* ident = letter {letter | digit} */
-const string Parser::ident() {
+string Parser::ident() {
   if (expect_token_type(TokenType::char_literal)) {
     // Cast token pointer to IdentToken
     auto ident = dynamic_cast<const IdentToken *>(curr_token_.get());
@@ -583,13 +583,15 @@ std::unique_ptr<SelectorNode> Parser::selector() {
 }
 
 /* number = integer */
-const int Parser::number() {
+int Parser::number() {
   if (expect_token_type(TokenType::int_literal)) {
     // Cast token pointer to IdentToken
     auto number = dynamic_cast<const IntLiteralToken *>(curr_token_.get());
 
     return number->value();
   }
+
+  exit(EXIT_FAILURE);
 }
 
 /* ===================

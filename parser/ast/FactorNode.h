@@ -2,13 +2,10 @@
 #define OBERON0C_FACTORNODE_H
 
 #include "Node.h"
-#include "ProcedureCallNode.h"
 #include "SelectorNode.h"
 #include <memory>
 
 using std::unique_ptr;
-
-class ExpressionNode;
 
 class FactorNode final : public Node {
 public:

@@ -9,28 +9,7 @@
 
 #include "global.h"
 
-#include "ast/ActualParametersNode.h"
-#include "ast/ArrayTypeNode.h"
-#include "ast/AssignmentNode.h"
-#include "ast/ConstDeclarationNode.h"
-#include "ast/DeclarationSequenceNode.h"
-#include "ast/ExpressionNode.h"
-#include "ast/FPSectionNode.h"
-#include "ast/FormalParametersNode.h"
-#include "ast/IfStatementNode.h"
 #include "ast/ModuleNode.h"
-#include "ast/ProcedureCallNode.h"
-#include "ast/ProcedureDeclarationNode.h"
-#include "ast/RecordTypeNode.h"
-#include "ast/RepeatStatementNode.h"
-#include "ast/SelectorNode.h"
-#include "ast/SimpleExprNode.h"
-#include "ast/StatementNode.h"
-#include "ast/StatementSequenceNode.h"
-#include "ast/TermNode.h"
-#include "ast/TypeDeclarationNode.h"
-#include "ast/VarDeclarationNode.h"
-#include "ast/WhileStatementNode.h"
 
 #include "scanner/Scanner.h"
 #include "scanner/Token.h"
@@ -60,8 +39,8 @@ private:
   // TODO condense everything down
   RelationType relation();
   SignType sign();
-  const int number();
-  const string ident();
+  int number();
+  string ident();
   unique_ptr<ArrayTypeNode> array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
   unique_ptr<DeclarationSequenceNode> declaration_sequence();

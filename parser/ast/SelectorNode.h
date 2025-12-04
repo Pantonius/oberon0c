@@ -1,13 +1,12 @@
 #ifndef OBERON0C_SELECTORNODE_H
 #define OBERON0C_SELECTORNODE_H
 
+#include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
 
 using std::string;
 using std::unique_ptr;
-
-class ExpressionNode;
 
 class SelectorNode final : public Node {
 public:

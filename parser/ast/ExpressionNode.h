@@ -2,10 +2,12 @@
 #define OBERON0C_EXPRESSIONNODE_H
 
 #include "Node.h"
-#include "SimpleExprNode.h"
+// #include "SimpleExprNode.h"
 #include "scanner/Token.h"
 #include <memory>
+#include <set>
 
+using std::set;
 using std::unique_ptr;
 
 enum class RelationType { eq, neq, lt, leq, gt, geq };
@@ -16,6 +18,8 @@ const set<TokenType> RELATION_TOKEN_TYPES = {
 };
 
 RelationType relation_from_token_type(TokenType tokenType);
+
+class SimpleExprNode;
 
 class ExpressionNode final : public Node {
 public:

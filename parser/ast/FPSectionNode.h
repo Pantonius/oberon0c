@@ -8,6 +8,8 @@
 using std::unique_ptr;
 using std::vector;
 
+class TypeNode;
+
 class FPSectionNode final : public Node {
 public:
   FPSectionNode(const FilePos &pos) : Node(NodeType::fp_section, pos) {}
