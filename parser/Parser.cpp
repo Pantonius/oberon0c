@@ -20,12 +20,11 @@ const string Parser::ident() {
   exit(EXIT_FAILURE);
 }
 
-std::unique_ptr<std::vector<string>> Parser::ident_list() {
-  std::unique_ptr<std::vector<string>> ident_list =
-      std::make_unique<std::vector<string>>(curr_token_->start());
+std::vector<string> Parser::ident_list() {
+  std::vector<string> ident_list;
 
   do {
-    ident_list->push_back(ident());
+    ident_list.push_back(ident());
   } while (peek_check_token_type(TokenType::comma));
 
   return ident_list;
@@ -72,7 +71,7 @@ std::unique_ptr<RecordTypeNode> Parser::record_type() {
 
   expect_token_type(TokenType::kw_record);
   do {
-    std::unique_ptr<vector<string>> idents = ident_list();
+    vector<string> idents = ident_list();
     expect_token_type(TokenType::colon);
     std::unique_ptr<TypeNode> type = Parser::type();
 

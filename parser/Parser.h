@@ -79,7 +79,7 @@ private:
   unique_ptr<TypeDeclarationNode> type_declaration();
   unique_ptr<TypeNode> type();
   unique_ptr<WhileStatementNode> while_statement();
-  unique_ptr<std::vector<string>> ident_list();
+  std::vector<string> ident_list();
   void var_declarations(std::vector<unique_ptr<VarDeclarationNode>> &vars);
   AddOperatorType add_operator();
   MulOperatorType mul_operator();
