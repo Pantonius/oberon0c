@@ -57,7 +57,6 @@ set(PARSER_SOURCES
         parser/ast/DeclarationSequenceNode.h
         parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
         parser/ast/FPSectionNode.h
-        parser/ast/FactorNode.h
         parser/ast/FormalParametersNode.h
         parser/ast/IfStatementNode.h
         parser/ast/ModuleNode.h
@@ -69,10 +68,8 @@ set(PARSER_SOURCES
         parser/ast/ProcedureDeclarationNode.h
         parser/ast/ProcedureHeadingNode.h
         parser/ast/RepeatStatementNode.h
-        parser/ast/SimpleExprNode.h
         parser/ast/StatementNode.h
         parser/ast/StatementSequenceNode.h
-        parser/ast/TermNode.h parser/ast/TermNode.cpp
         parser/ast/TypeDeclarationNode.h
         parser/ast/TypeNode.h
         parser/ast/VarDeclarationNode.h

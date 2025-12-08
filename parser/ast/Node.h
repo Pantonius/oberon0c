@@ -44,17 +44,17 @@ private:
   FilePos pos_;
 
 public:
-  explicit Node(const NodeType nodeType, FilePos pos)
+  Node(const NodeType nodeType, FilePos pos)
       : nodeType_(nodeType), pos_(std::move(pos)) {};
   virtual ~Node();
 
   [[nodiscard]] NodeType getNodeType() const;
   [[nodiscard]] FilePos pos() const;
 
-  virtual void accept(NodeVisitor &visitor) = 0;
+  virtual void accept(NodeVisitor &) = 0;
 
-  virtual void print(std::ostream &stream) const = 0;
-  friend std::ostream &operator<<(std::ostream &stream, const Node &node);
+  virtual void print(std::ostream &) const = 0;
+  friend std::ostream &operator<<(std::ostream &, const Node &);
 };
 
 #endif // OBERON0C_NODE_H

@@ -1,7 +1,6 @@
 #include "Parser.h"
 #include "scanner/IdentToken.h"
 #include "scanner/Token.h"
-#include <algorithm>
 #include <memory>
 #include <string>
 #include <vector>
@@ -377,6 +376,10 @@ std::unique_ptr<AssignmentNode> Parser::assignment(string ident) {
   assignment->expression = expression();
 
   return assignment;
+}
+
+bool Parser::peek_ident() {
+  return peek_check_token_type(TokenType::char_literal);
 }
 
 bool Parser::peek_assignment() { return peek_ident(); }

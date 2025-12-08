@@ -1,20 +1,19 @@
 #ifndef OBERON0C_ASSIGNMENTNODE_H
 #define OBERON0C_ASSIGNMENTNODE_H
 
+#include <memory>
 #include "ExpressionNode.h"
 #include "Node.h"
-#include "SelectorNode.h"
-#include "scanner/Token.h"
-#include <memory>
+
 using std::unique_ptr;
 
 class AssignmentNode final : public Node {
 public:
-  AssignmentNode(const FilePos &pos) : Node(NodeType::assignment, pos) {}
+  explicit AssignmentNode(const FilePos &pos) : Node(NodeType::assignment, pos) {}
   ~AssignmentNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &) override {};
+  void print(std::ostream &) const override {};
 
   string ident;
   unique_ptr<ExpressionNode> expression;
