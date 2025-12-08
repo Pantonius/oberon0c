@@ -33,8 +33,7 @@ class Parser {
 private:
   Scanner &scanner_;
   Logger &logger_;
-  unique_ptr<const Token> curr_token_;
-  unique_ptr<const Token> next_token_;
+  unique_ptr<const Token> last_token_;
 
   // TODO condense everything down
   RelationType relation();
@@ -93,7 +92,7 @@ private:
   bool peek_factor();
   bool peek_formal_parameters();
   bool peek_ident();
-  bool peek_number();
+  bool peek_number(bool advanceOnTrue = false);
   bool peek_procedure_call_without_ident();
   bool peek_record_type();
   bool peek_sign();
