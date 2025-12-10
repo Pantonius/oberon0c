@@ -28,8 +28,9 @@ std::unique_ptr<ModuleNode> Parser::module() {
   module->declaration_sequence = declaration_sequence();
 
   // [
-  expect_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE);
-  module->statement_sequence = statement_sequence();
+  if (peek_check_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE)) {
+    module->statement_sequence = statement_sequence();
+  }
   // ]
 
   expect_token_type(TokenType::kw_end);
@@ -57,7 +58,7 @@ std::vector<string> Parser::ident_list() {
 
   do {
     ident_list.push_back(ident());
-  } while (peek_check_token_type(TokenType::comma));
+  } while (peek_check_token_type(TokenType::comma, true));
 
   return ident_list;
 }
@@ -70,7 +71,7 @@ std::unique_ptr<TypeNode> Parser::type() {
     type->ident = ident();
   } else if (peek_array_type()) {
     type->array_type = array_type();
-  } else if (peek_array_type()) {
+  } else if (peek_record_type()) {
     type->record_type = record_type();
   } else {
     const Token *curr = scanner_.peek();

@@ -13,7 +13,7 @@ WRONGRECORD: RECORD rec: INTEGER END;  (* Double declaration in record *)
 
 (* Initializes the array. *)
 PROCEDURE Init();
-VAR i;
+VAR i : INTEGER;
 BEGIN
     i := 0;
 
