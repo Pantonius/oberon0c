@@ -53,7 +53,6 @@ set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h
         parser/ast/ActualParametersNode.h
         parser/ast/AssignmentNode.h
-        parser/ast/ConstDeclarationNode.h
         parser/ast/DeclarationSequenceNode.h
         parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
         parser/ast/FPSectionNode.h
@@ -65,14 +64,11 @@ set(PARSER_SOURCES
         parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h
         parser/ast/ProcedureBodyNode.h
         parser/ast/ProcedureCallNode.h
-        parser/ast/ProcedureDeclarationNode.h
         parser/ast/ProcedureHeadingNode.h
         parser/ast/RepeatStatementNode.h
         parser/ast/StatementNode.h
         parser/ast/StatementSequenceNode.h
-        parser/ast/TypeDeclarationNode.h
         parser/ast/TypeNode.h
-        parser/ast/VarDeclarationNode.h
         parser/ast/WhileStatementNode.h)
 
 set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES})
