@@ -61,7 +61,6 @@ public:
   void print(std::ostream &stream) const override {};
 
   string ident;
-  bool exported;
   unique_ptr<ExpressionNode> expression;
   string type;
 };

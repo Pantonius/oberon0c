@@ -77,7 +77,7 @@ private:
   bool peek_check_token_type(TokenType tokenType, bool advanceOnTrue = false);
   optional<TokenType>
   peek_check_token_type_within(std::set<TokenType> expectedTypes,
-                               bool advanceOnTrue = true);
+                               bool advanceOnTrue = false);
   bool expect_token_type(TokenType expectedType, bool advanceOnTrue = true,
                          bool advanceOnFalse = false);
   bool expect_token_type_within(std::set<TokenType> expectedTypes,
@@ -92,6 +92,7 @@ private:
   bool peek_factor();
   bool peek_formal_parameters();
   bool peek_ident();
+  bool peek_selector();
   bool peek_number(bool advanceOnTrue = false);
   bool peek_procedure_call_without_ident();
   bool peek_record_type();
@@ -99,6 +100,9 @@ private:
   bool peek_simple_expr();
   bool peek_string();
   bool peek_term();
+  bool peek_const_declaration();
+  bool peek_type_declaration();
+  bool peek_var_declaration();
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)

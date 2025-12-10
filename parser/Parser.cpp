@@ -3,6 +3,7 @@
 #include "scanner/IdentToken.h"
 #include "scanner/LiteralToken.h"
 #include "scanner/Token.h"
+#include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,7 +28,7 @@ std::unique_ptr<ModuleNode> Parser::module() {
   module->declaration_sequence = declaration_sequence();
 
   // [
-  expect_token_type(TokenType::kw_begin, NO_ADVANCE_ON_TRUE);
+  expect_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE);
   module->statement_sequence = statement_sequence();
   // ]
 
@@ -72,7 +73,10 @@ std::unique_ptr<TypeNode> Parser::type() {
   } else if (peek_array_type()) {
     type->record_type = record_type();
   } else {
-    // TODO throw tentrum
+    const Token *curr = scanner_.peek();
+    logger_.error(curr->start(),
+                  "Expected type found " + to_string(curr->type()));
+    exit(EXIT_FAILURE);
   }
 
   return type;
@@ -85,6 +89,7 @@ std::unique_ptr<ArrayTypeNode> Parser::array_type() {
 
   expect_token_type(TokenType::kw_array);
   array_type->expression = expression();
+  logger_.debug(to_string(last_token_->type()));
   expect_token_type(TokenType::kw_of);
   array_type->type = type();
 
@@ -127,8 +132,8 @@ bool Parser::peek_record_type() {
 // digit = "0" | ... | "9"
 
 /* DeclarationSequence =
- *          [ "CONST" { ConstDeclaration ";" ]
- *          [ "TYPE" { TypeDeclaration ";" ]
+ *          [ "CONST" { ConstDeclaration ";" } ]
+ *          [ "TYPE" { TypeDeclaration ";" } ]
  *          [ "VAR" { VarDeclaration ";" }]
  *          { ProcedureDeclaration ";" } */
 std::unique_ptr<DeclarationSequenceNode> Parser::declaration_sequence() {
@@ -136,15 +141,21 @@ std::unique_ptr<DeclarationSequenceNode> Parser::declaration_sequence() {
       std::make_unique<DeclarationSequenceNode>(last_token_->start());
 
   if (peek_check_token_type(TokenType::kw_const, ADVANCE_ON_TRUE)) {
-    declarations->constants.push_back(const_declaration());
+    do {
+      declarations->constants.push_back(const_declaration());
+    } while (peek_const_declaration());
   }
 
   if (peek_check_token_type(TokenType::kw_type, ADVANCE_ON_TRUE)) {
-    declarations->types.push_back(type_declaration());
+    do {
+      declarations->types.push_back(type_declaration());
+    } while (peek_type_declaration());
   }
 
   if (peek_check_token_type(TokenType::kw_var, ADVANCE_ON_TRUE)) {
-    var_declarations(declarations->variables);
+    do {
+      var_declarations(declarations->variables);
+    } while (peek_var_declaration());
   }
 
   while (peek_check_token_type(TokenType::kw_procedure, NO_ADVANCE_ON_TRUE)) {
@@ -154,7 +165,7 @@ std::unique_ptr<DeclarationSequenceNode> Parser::declaration_sequence() {
   return declarations;
 }
 
-// ConstDeclaration = ident "=" expression
+// ConstDeclaration = ident "=" expression ";"
 std::unique_ptr<ConstDeclarationNode> Parser::const_declaration() {
   auto const_declaration =
       std::make_unique<ConstDeclarationNode>(last_token_->start());
@@ -164,10 +175,14 @@ std::unique_ptr<ConstDeclarationNode> Parser::const_declaration() {
 
   const_declaration->expression = expression();
 
+  expect_token_type(TokenType::semicolon);
+
   return const_declaration;
 }
 
-// TypeDeclaration = ident "=" type
+bool Parser::peek_const_declaration() { return peek_ident(); }
+
+// TypeDeclaration = ident "=" type ";"
 std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
   auto type_declaration =
       std::make_unique<TypeDeclarationNode>(last_token_->start());
@@ -175,20 +190,24 @@ std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
   type_declaration->ident = ident();
   expect_token_type(TokenType::op_eq);
   type_declaration->type = type();
+  expect_token_type(TokenType::semicolon);
 
   return type_declaration;
 }
 
-// VarDeclaration = IdentList ":" type
+bool Parser::peek_type_declaration() { return peek_ident(); }
+
+// VarDeclaration = IdentList ":" type ";"
 // IdentList = ident {"," ident}
 void Parser::var_declarations(
     std::vector<unique_ptr<VarDeclarationNode>> &vars) {
   do {
     auto var_declaration =
         std::make_unique<VarDeclarationNode>(last_token_->start());
+    var_declaration->ident = ident();
 
     vars.push_back(std::move(var_declaration));
-  } while (expect_token_type(TokenType::comma, ADVANCE_ON_TRUE));
+  } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
 
   expect_token_type(TokenType::colon);
 
@@ -198,7 +217,10 @@ void Parser::var_declarations(
   // for (const auto &var_declaration : vars) {
   //   var_declaration->type = var_type;
   // }
+  expect_token_type(TokenType::semicolon);
 }
+
+bool Parser::peek_var_declaration() { return peek_ident(); }
 
 // expression = SimpleExpr [relation SimpleExpr]
 std::unique_ptr<ExpressionNode> Parser::expression() {
@@ -236,7 +258,9 @@ std::unique_ptr<SimpleExprNode> Parser::simple_expr() {
   while (
       peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
-    simple_expr->additional_terms.push_back(std::pair(add_operator(), term()));
+    AddOperatorType op = add_operator();
+    unique_ptr<TermNode> term = Parser::term();
+    simple_expr->additional_terms.push_back(std::pair(op, std::move(term)));
   }
 
   return simple_expr;
@@ -267,7 +291,6 @@ std::unique_ptr<TermNode> Parser::term() {
   while (
       peek_check_token_type_within(MUL_OPERATOR_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
-    logger_.debug("Parsing additional terms");
     auto mul_operator = Parser::mul_operator();
     auto factor = Parser::factor();
     term->additional_terms.emplace_back(mul_operator, std::move(factor));
@@ -288,11 +311,9 @@ std::unique_ptr<FactorNode> Parser::factor() {
   auto factor = std::make_unique<FactorNode>(last_token_->start());
 
   if (peek_ident()) {
-    // TODO
     factor->ident = ident();
     factor->selector = selector();
   } else if (peek_number()) {
-    // TODO
     factor->number = number();
   } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     factor->expression = expression();
@@ -300,7 +321,6 @@ std::unique_ptr<FactorNode> Parser::factor() {
   } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
     factor->not_factor = Parser::factor();
   } else {
-    logger_.debug("Could not parse factor");
   }
 
   return factor;
@@ -331,7 +351,7 @@ bool Parser::peek_string() {
   return peek_check_token_type(TokenType::string_literal);
 }
 
-// ProcedureCall = ident selector "(" [ActualParameters] ")"
+// ProcedureCall = ident selector ["(" ActualParameters ")"]
 std::unique_ptr<ProcedureCallNode> Parser::procedure_call() {
   return Parser::procedure_call(ident());
 }
@@ -343,19 +363,12 @@ std::unique_ptr<ProcedureCallNode> Parser::procedure_call(string ident) {
   procedure_call->ident = ident;
   procedure_call->selector = selector();
 
-  expect_token_type(TokenType::lparen);
-
-  if (!peek_check_token_type(TokenType::rparen)) {
+  if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     procedure_call->actual_parameters = actual_parameters();
+    expect_token_type(TokenType::rparen);
   }
 
-  expect_token_type(TokenType::rparen);
-
   return procedure_call;
-}
-
-bool Parser::peek_procedure_call_without_ident() {
-  return peek_check_token_type(TokenType::lparen);
 }
 
 // ActualParameters = expression {"," expression}
@@ -386,12 +399,16 @@ std::unique_ptr<AssignmentNode> Parser::assignment(string ident) {
 }
 
 bool Parser::peek_ident() {
-  return peek_check_token_type(TokenType::char_literal);
+  return peek_check_token_type(TokenType::const_ident);
 }
 
 bool Parser::peek_assignment() { return peek_ident(); }
 bool Parser::peek_assignment_without_ident() {
-  return peek_check_token_type(TokenType::op_becomes, NO_ADVANCE_ON_TRUE);
+  return peek_selector() || peek_check_token_type(TokenType::op_becomes);
+}
+bool Parser::peek_selector() {
+  return peek_check_token_type_within({TokenType::period, TokenType::lbrack})
+      .has_value();
 }
 
 // StatementSequence = statement {";" statement}
@@ -401,7 +418,7 @@ std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
 
   do {
     statement_sequence->statements.push_back(statement());
-  } while (peek_check_token_type(TokenType::semicolon));
+  } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
 
   return statement_sequence;
 }
@@ -414,17 +431,18 @@ std::unique_ptr<StatementNode> Parser::statement() {
     string ident = Parser::ident();
     if (peek_assignment_without_ident()) {
       statement->assignment = assignment(ident);
-    } else if (peek_procedure_call_without_ident()) {
-      statement->procedure_call = procedure_call(ident);
     } else {
-      // TODO throw tantrum
+      statement->procedure_call = procedure_call(ident);
     }
   } else if (peek_check_token_type(TokenType::kw_if)) {
     statement->if_statement = if_statement();
   } else if (peek_check_token_type(TokenType::kw_while)) {
     statement->while_statement = while_statement();
   } else {
-    // TODO throw tantrum
+    const Token *curr = scanner_.peek();
+    logger_.error(curr->start(),
+                  "Expected statement found " + to_string(curr->type()));
+    exit(EXIT_FAILURE);
   }
 
   return statement;
@@ -485,7 +503,7 @@ std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
   return repeat_statement;
 }
 
-// ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ident
+// ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ";"
 std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
   auto procedure_declaration =
       std::make_unique<ProcedureDeclarationNode>(last_token_->start());
@@ -494,7 +512,7 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
   expect_token_type(TokenType::semicolon);
   procedure_declaration->body = procedure_body();
 
-  procedure_declaration->ident = ident();
+  expect_token_type(TokenType::semicolon);
 
   return procedure_declaration;
 }
@@ -564,7 +582,7 @@ std::unique_ptr<FPSectionNode> Parser::fp_section() {
 
   do {
     fp_section->idents.push_back(ident());
-  } while (peek_check_token_type(TokenType::comma));
+  } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
 
   expect_token_type(TokenType::colon);
 
@@ -583,9 +601,15 @@ std::unique_ptr<SelectorNode> Parser::selector() {
     switch (*token) {
     case TokenType::period:
       selector->ident = ident();
+      break;
     case TokenType::lbrack:
       selector->expression = expression();
       expect_token_type(TokenType::rbrack);
+      break;
+    default:
+      logger_.error(last_token_->start(), "Expected selector found " +
+                                              to_string(last_token_->type()));
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -606,6 +630,9 @@ int Parser::number() {
     case TokenType::long_literal:
       return dynamic_cast<const LongLiteralToken *>(last_token_.get())->value();
     default:
+      const Token *curr = scanner_.peek();
+      logger_.error(curr->start(),
+                    "Expected number found " + to_string(curr->type()));
       break;
     }
   }
@@ -649,11 +676,12 @@ bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue,
     logger_.error(token->start(), to_string(expectedType) +
                                       " expected, found " +
                                       to_string(token->type()) + ".");
+    exit(EXIT_FAILURE);
 
-    if (advanceOnFalse)
-      last_token_ = scanner_.next();
-
-    return false;
+    //   if (advanceOnFalse)
+    //     last_token_ = scanner_.next();
+    //
+    //   return false;
   }
 
   if (advanceOnTrue)
@@ -675,11 +703,11 @@ bool Parser::expect_token_type_within(std::set<TokenType> expectedTypes,
     logger_.error(token->start(), "one of " + s_expectedTypes +
                                       " expected, found " +
                                       to_string(token->type()) + ".");
-
-    if (advanceOnFalse)
-      last_token_ = scanner_.next();
-
-    return false;
+    exit(EXIT_FAILURE);
+    // if (advanceOnFalse)
+    //   last_token_ = scanner_.next();
+    //
+    // return false;
   }
 
   if (advanceOnTrue)
