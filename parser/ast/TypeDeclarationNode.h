@@ -17,7 +17,6 @@ public:
   void print(std::ostream &stream) const override {};
 
   string ident;
-  // FIXME: Should be a TypeNode
   unique_ptr<TypeNode> type;
 };
 
