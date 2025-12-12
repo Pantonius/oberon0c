@@ -61,6 +61,7 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
+  // TODO const ref?
   vector<unique_ptr<ConstDeclarationNode>> &constants();
   vector<unique_ptr<TypeDeclarationNode>> &types();
   vector<unique_ptr<VarDeclarationNode>> &variables();
