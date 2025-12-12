@@ -42,7 +42,11 @@ private:
   string ident();
   unique_ptr<ArrayTypeNode> array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
-  unique_ptr<DeclarationSequenceNode> declaration_sequence();
+  void
+  declaration_sequence(vector<unique_ptr<ConstDeclarationNode>> &consts,
+                       vector<unique_ptr<TypeDeclarationNode>> &types,
+                       vector<unique_ptr<VarDeclarationNode>> &vars,
+                       vector<unique_ptr<ProcedureDeclarationNode>> &procs);
   unique_ptr<ExpressionNode> expression();
   unique_ptr<IfStatementNode> if_statement();
   unique_ptr<ModuleNode> module();
@@ -67,11 +71,9 @@ private:
   unique_ptr<FPSectionNode> fp_section();
   unique_ptr<FactorNode> factor();
   unique_ptr<FormalParametersNode> formal_parameters();
-  unique_ptr<ProcedureBodyNode> procedure_body();
   unique_ptr<ProcedureCallNode> procedure_call();
   unique_ptr<ProcedureCallNode> procedure_call(string ident);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();
-  unique_ptr<ProcedureHeadingNode> procedure_heading();
 
   // helpers
   bool peek_check_token_type(TokenType tokenType, bool advanceOnTrue = false);

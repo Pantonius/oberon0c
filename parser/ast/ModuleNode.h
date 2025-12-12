@@ -9,16 +9,16 @@
 using std::string;
 using std::unique_ptr;
 
-class ModuleNode final : public Node {
+class ModuleNode final : public DeclarationSequenceNode {
 public:
-  ModuleNode(const FilePos &pos) : Node(NodeType::module, pos) {}
+  ModuleNode(const FilePos &pos)
+      : DeclarationSequenceNode(NodeType::module, pos) {}
   ~ModuleNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
   string ident;
-  unique_ptr<DeclarationSequenceNode> declaration_sequence;
   unique_ptr<StatementSequenceNode> statement_sequence;
 };
 

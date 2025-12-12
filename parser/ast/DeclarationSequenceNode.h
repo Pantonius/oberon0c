@@ -1,9 +1,9 @@
 #ifndef OBERON0C_DECLARATIONSEQUENCENODE_H
 #define OBERON0C_DECLARATIONSEQUENCENODE_H
 
+#include "FormalParametersNode.h"
 #include "Node.h"
-#include "ProcedureBodyNode.h"
-#include "ProcedureHeadingNode.h"
+#include "StatementSequenceNode.h"
 #include "TypeNode.h"
 #include <memory>
 #include <vector>
@@ -22,20 +22,6 @@ public:
 
   string ident;
   unique_ptr<ExpressionNode> expression;
-};
-
-class ProcedureDeclarationNode final : public Node {
-public:
-  ProcedureDeclarationNode(const FilePos &pos)
-      : Node(NodeType::procedure_declaration, pos) {}
-  ~ProcedureDeclarationNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
-
-  unique_ptr<ProcedureHeadingNode> heading;
-  unique_ptr<ProcedureBodyNode> body;
-  string ident;
 };
 
 class TypeDeclarationNode final : public Node {
@@ -65,19 +51,42 @@ public:
   string type;
 };
 
-class DeclarationSequenceNode final : public Node {
+class ProcedureDeclarationNode;
+class DeclarationSequenceNode : public Node {
 public:
-  DeclarationSequenceNode(const FilePos &pos)
-      : Node(NodeType::declaration_sequence, pos) {}
+  DeclarationSequenceNode(const NodeType &type, const FilePos &pos)
+      : Node(type, pos) {};
   ~DeclarationSequenceNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  vector<unique_ptr<ConstDeclarationNode>> constants;
-  vector<unique_ptr<TypeDeclarationNode>> types;
-  vector<unique_ptr<VarDeclarationNode>> variables;
-  vector<unique_ptr<ProcedureDeclarationNode>> procedures;
+  vector<unique_ptr<ConstDeclarationNode>> &constants();
+  vector<unique_ptr<TypeDeclarationNode>> &types();
+  vector<unique_ptr<VarDeclarationNode>> &variables();
+  vector<unique_ptr<ProcedureDeclarationNode>> &procedures();
+
+private:
+  vector<unique_ptr<ConstDeclarationNode>> consts_;
+  vector<unique_ptr<TypeDeclarationNode>> types_;
+  vector<unique_ptr<VarDeclarationNode>> vars_;
+  vector<unique_ptr<ProcedureDeclarationNode>> procs_;
+};
+
+class ProcedureDeclarationNode final : public DeclarationSequenceNode {
+public:
+  ProcedureDeclarationNode(const FilePos &pos)
+      : DeclarationSequenceNode(NodeType::procedure_declaration, pos) {}
+  ~ProcedureDeclarationNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+
+  // ProcedureHeading
+  string proc_name;
+  unique_ptr<FormalParametersNode> formal_parameters;
+  // ProcedureBody
+  unique_ptr<StatementSequenceNode> statement_sequence;
 };
 
 #endif // OBERON0C_DECLARATIONSEQUENCENODE_H

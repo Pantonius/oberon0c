@@ -19,6 +19,7 @@ struct FilePos {
   int lineNo, charNo;
   streampos offset;
 };
+static const FilePos EMPTY_POS = {"", 0, 0, 0};
 
 template <typename T> static string to_string(T obj) {
   stringstream stream;

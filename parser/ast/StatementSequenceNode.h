@@ -18,7 +18,10 @@ public:
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  vector<unique_ptr<StatementNode>> statements;
+  void addStatement(unique_ptr<StatementNode> stmt);
+
+private:
+  vector<unique_ptr<StatementNode>> stmts_;
 };
 
 #endif // OBERON0C_STATEMENTSEQUENCENODE_H
