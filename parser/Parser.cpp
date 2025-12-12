@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "global.h"
+#include "parser/ast/ExpressionNode.h"
 #include "scanner/IdentToken.h"
 #include "scanner/LiteralToken.h"
 #include "scanner/Token.h"
@@ -224,19 +225,23 @@ bool Parser::peek_var_declaration() { return peek_ident(); }
 
 // expression = SimpleExpr [relation SimpleExpr]
 std::unique_ptr<ExpressionNode> Parser::expression() {
-  auto expression = std::make_unique<ExpressionNode>(scanner_.peek()->start());
+  const Token *curr = scanner_.peek();
 
-  // TODO compute first expression
   auto first_expr = simple_expr();
+  if (peek_check_token_type_within(RELATION_TOKEN_TYPES)) {
+    auto binary_expr = std::make_unique<BinaryExpressionNode>(curr->start());
+    binary_expr->left_expression = std::move(first_expr);
+    binary_expr->op = relation();
+    binary_expr->right_expression = simple_expr();
 
-  // TODO check for additional op and read in second op
-  if (peek_check_token_type_within(RELATION_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
-          .has_value()) {
-    expression->relation = relation();
-    expression->right_expr = simple_expr();
+    return binary_expr;
   }
 
-  return expression;
+  auto unary_expr = std::make_unique<UnaryExpressionNode>(curr->start());
+  unary_expr->expression = std::move(first_expr);
+  unary_expr->op = relation();
+
+  return unary_expr;
 }
 
 bool Parser::peek_expression() { return peek_simple_expr(); }
@@ -249,11 +254,51 @@ RelationType Parser::relation() {
 
 // SimpleExpr = ["+" | "-"] term {AddOperator term}
 std::unique_ptr<ExpressionNode> Parser::simple_expr() {
-  auto simple_expr = std::make_unique<ExpressionNode>(last_token_->start());
+  const Token *curr = scanner_.peek();
 
   if (peek_check_token_type_within(SIGN_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
-    simple_expr->sign = sign();
+    auto unary_expr = std::make_unique<UnaryExpressionNode>(curr->start());
+    unary_expr->op = sign();
+
+    // term
+    unary_expr->expression = term();
+
+    // add op
+    if (peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES,
+                                     NO_ADVANCE_ON_TRUE)) {
+      auto binary_expr =
+          std::make_unique<BinaryExpressionNode>(scanner_.peek()->start());
+      binary_expr->left_expression = std::move(unary_expr);
+      binary_expr->op = add_operator();
+      binary_expr->right_expression = term();
+
+      // TODO what the fuck to do with additional terms?
+
+      return binary_expr;
+    }
+  } else {
+    auto first_expr = term();
+
+    if (peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES,
+                                     NO_ADVANCE_ON_TRUE)) {
+      auto binary_expr =
+          std::make_unique<BinaryExpressionNode>(scanner_.peek()->start());
+      binary_expr->left_expression = std::move(first_expr);
+      binary_expr->op = add_operator();
+      binary_expr->right_expression = term();
+
+      return binary_expr;
+    } else {
+      auto unary_expr =
+          std::make_unique<UnaryExpressionNode>(scanner_.peek()->start());
+      unary_expr->op = add_operator();
+      unary_expr->expression = term();
+
+      // TODO what the fuck to do with additional terms?
+
+      return unary_expr;
+    }
   }
 
   simple_expr->term = term();
