@@ -1,9 +1,3 @@
-/*
- * Parser of the Oberon-0 compiler.
- *
- * Created by Michael Grossniklaus on 2/2/18.
- */
-
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
@@ -37,7 +31,6 @@ private:
 
   // TODO condense everything down
   RelationType relation();
-  SignType sign();
   int number();
   string ident();
   unique_ptr<ArrayTypeNode> array_type();
@@ -48,16 +41,16 @@ private:
                        vector<unique_ptr<VarDeclarationNode>> &vars,
                        vector<unique_ptr<ProcedureDeclarationNode>> &procs);
   unique_ptr<ExpressionNode> expression();
+  unique_ptr<ExpressionNode> factor();
+  unique_ptr<BinaryExpressionNode> term();
   unique_ptr<IfStatementNode> if_statement();
   unique_ptr<ModuleNode> module();
   unique_ptr<ProcedureCallNode> procedure();
   unique_ptr<RecordTypeNode> record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
   unique_ptr<SelectorNode> selector();
-  unique_ptr<SimpleExprNode> simple_expr();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
-  unique_ptr<TermNode> term();
   unique_ptr<TypeDeclarationNode> type_declaration();
   unique_ptr<TypeNode> type();
   unique_ptr<WhileStatementNode> while_statement();
@@ -69,7 +62,6 @@ private:
   unique_ptr<AssignmentNode> assignment();
   unique_ptr<AssignmentNode> assignment(string ident);
   unique_ptr<FPSectionNode> fp_section();
-  unique_ptr<FactorNode> factor();
   unique_ptr<FormalParametersNode> formal_parameters();
   unique_ptr<ProcedureCallNode> procedure_call();
   unique_ptr<ProcedureCallNode> procedure_call(string ident);

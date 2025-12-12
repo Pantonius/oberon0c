@@ -224,9 +224,12 @@ bool Parser::peek_var_declaration() { return peek_ident(); }
 
 // expression = SimpleExpr [relation SimpleExpr]
 std::unique_ptr<ExpressionNode> Parser::expression() {
-  auto expression = std::make_unique<ExpressionNode>(last_token_->start());
-  expression->left_expr = simple_expr();
+  auto expression = std::make_unique<ExpressionNode>(scanner_.peek()->start());
 
+  // TODO compute first expression
+  auto first_expr = simple_expr();
+
+  // TODO check for additional op and read in second op
   if (peek_check_token_type_within(RELATION_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
     expression->relation = relation();
@@ -245,8 +248,8 @@ RelationType Parser::relation() {
 }
 
 // SimpleExpr = ["+" | "-"] term {AddOperator term}
-std::unique_ptr<SimpleExprNode> Parser::simple_expr() {
-  auto simple_expr = std::make_unique<SimpleExprNode>(last_token_->start());
+std::unique_ptr<ExpressionNode> Parser::simple_expr() {
+  auto simple_expr = std::make_unique<ExpressionNode>(last_token_->start());
 
   if (peek_check_token_type_within(SIGN_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
@@ -284,8 +287,8 @@ AddOperatorType Parser::add_operator() {
 }
 
 // term = factor {MulOperator factor}
-std::unique_ptr<TermNode> Parser::term() {
-  auto term = std::make_unique<TermNode>(last_token_->start());
+std::unique_ptr<BinaryExpressionNode> Parser::term() {
+  auto term = std::make_unique<BinaryExpressionNode>(last_token_->start());
   term->factor = factor();
 
   while (
@@ -307,23 +310,31 @@ MulOperatorType Parser::mul_operator() {
   return mul_operator_from_token_type(last_token_->type());
 }
 // factor = ident selector | number | "(" expression ")" | "~" factor
-std::unique_ptr<FactorNode> Parser::factor() {
-  auto factor = std::make_unique<FactorNode>(last_token_->start());
+std::unique_ptr<ExpressionNode> Parser::factor() {
+  const Token *curr = scanner_.peek();
 
   if (peek_ident()) {
+    auto factor = std::make_unique<IdentExpressionNode>(curr->start());
     factor->ident = ident();
     factor->selector = selector();
+    return factor;
   } else if (peek_number()) {
+    auto factor = std::make_unique<NumberExpressionNode>(curr->start());
     factor->number = number();
+    return factor;
   } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-    factor->expression = expression();
+    auto factor = expression();
     expect_token_type(TokenType::rparen);
+    return factor;
   } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
-    factor->not_factor = Parser::factor();
+    auto factor = std::make_unique<NotExpressionNode>(curr->start());
+    factor->expression = expression();
+    return factor;
   } else {
+    logger_.error(curr->start(),
+                  "Expected factor found " + to_string(curr->type()));
+    exit(EXIT_FAILURE);
   }
-
-  return factor;
 }
 
 bool Parser::peek_factor() {

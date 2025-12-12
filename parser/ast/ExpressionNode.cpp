@@ -4,8 +4,6 @@ RelationType relation_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_eq:
     return RelationType::eq;
-  case TokenType::op_neq:
-    return RelationType::neq;
   case TokenType::op_lt:
     return RelationType::lt;
   case TokenType::op_leq:
@@ -19,12 +17,14 @@ RelationType relation_from_token_type(TokenType tokenType) {
   }
 }
 
-SignType sign_from_token_type(TokenType tokenType) {
+UnaryOpType unary_op_from_token_type(TokenType tokenType) {
   switch (tokenType) {
+  case TokenType::op_not:
+    return UnaryOpType::not_;
   case TokenType::op_plus:
-    return SignType::plus;
+    return UnaryOpType::plus;
   case TokenType::op_minus:
-    return SignType::minus;
+    return UnaryOpType::minus;
   default:
     exit(EXIT_FAILURE); // TODO review
   }
