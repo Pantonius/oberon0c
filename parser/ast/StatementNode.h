@@ -24,6 +24,19 @@ public:
   unique_ptr<SelectorNode> selector;
 };
 
+class ElsIfStatementNode final : public Node {
+public:
+  ElsIfStatementNode(const FilePos &pos)
+      : Node(NodeType::elsif_statement, pos) {}
+  ~ElsIfStatementNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+
+  unique_ptr<ExpressionNode> condition;
+  unique_ptr<StatementSequenceNode> body;
+};
+
 class IfStatementNode final : public Node {
 public:
   IfStatementNode(const FilePos &pos) : Node(NodeType::if_statement, pos) {}
@@ -34,8 +47,7 @@ public:
 
   unique_ptr<ExpressionNode> condition;
   unique_ptr<StatementSequenceNode> body;
-  vector<pair<unique_ptr<ExpressionNode>, unique_ptr<StatementSequenceNode>>>
-      elsifs;
+  vector<unique_ptr<ElsIfStatementNode>> elsifs;
   unique_ptr<StatementSequenceNode> else_statement_sequence;
 };
 

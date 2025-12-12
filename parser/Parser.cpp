@@ -25,7 +25,8 @@ std::unique_ptr<ModuleNode> Parser::module() {
   module->ident = ident();
   expect_token_type(TokenType::semicolon);
 
-  module->declaration_sequence = declaration_sequence();
+  declaration_sequence(module->constants(), module->types(),
+                       module->variables(), module->procedures());
 
   // [
   expect_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE);
@@ -89,7 +90,6 @@ std::unique_ptr<ArrayTypeNode> Parser::array_type() {
 
   expect_token_type(TokenType::kw_array);
   array_type->expression = expression();
-  logger_.debug(to_string(last_token_->type()));
   expect_token_type(TokenType::kw_of);
   array_type->type = type();
 
@@ -136,33 +136,32 @@ bool Parser::peek_record_type() {
  *          [ "TYPE" { TypeDeclaration ";" } ]
  *          [ "VAR" { VarDeclaration ";" }]
  *          { ProcedureDeclaration ";" } */
-std::unique_ptr<DeclarationSequenceNode> Parser::declaration_sequence() {
-  auto declarations =
-      std::make_unique<DeclarationSequenceNode>(last_token_->start());
-
+void Parser::declaration_sequence(
+    vector<unique_ptr<ConstDeclarationNode>> &consts,
+    vector<unique_ptr<TypeDeclarationNode>> &types,
+    vector<unique_ptr<VarDeclarationNode>> &vars,
+    vector<unique_ptr<ProcedureDeclarationNode>> &procs) {
   if (peek_check_token_type(TokenType::kw_const, ADVANCE_ON_TRUE)) {
     do {
-      declarations->constants.push_back(const_declaration());
+      consts.push_back(const_declaration());
     } while (peek_const_declaration());
   }
 
   if (peek_check_token_type(TokenType::kw_type, ADVANCE_ON_TRUE)) {
     do {
-      declarations->types.push_back(type_declaration());
+      types.push_back(type_declaration());
     } while (peek_type_declaration());
   }
 
   if (peek_check_token_type(TokenType::kw_var, ADVANCE_ON_TRUE)) {
     do {
-      var_declarations(declarations->variables);
+      var_declarations(vars);
     } while (peek_var_declaration());
   }
 
   while (peek_check_token_type(TokenType::kw_procedure, NO_ADVANCE_ON_TRUE)) {
-    declarations->procedures.push_back(procedure_declaration());
+    procs.push_back(procedure_declaration());
   }
-
-  return declarations;
 }
 
 // ConstDeclaration = ident "=" expression ";"
@@ -412,12 +411,11 @@ bool Parser::peek_selector() {
 }
 
 // StatementSequence = statement {";" statement}
-std::unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
+unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
   auto statement_sequence =
-      std::make_unique<StatementSequenceNode>(last_token_->start());
-
+      std::make_unique<StatementSequenceNode>(scanner_.peek()->start());
   do {
-    statement_sequence->statements.push_back(statement());
+    statement_sequence->addStatement(statement());
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
 
   return statement_sequence;
@@ -459,10 +457,12 @@ std::unique_ptr<IfStatementNode> Parser::if_statement() {
   if_statement->body = statement_sequence();
 
   while (peek_check_token_type(TokenType::kw_elsif, ADVANCE_ON_TRUE)) {
-    auto expression = Parser::expression();
+    auto elsif = std::make_unique<ElsIfStatementNode>(scanner_.peek()->start());
+    elsif->condition = Parser::expression();
     expect_token_type(TokenType::kw_then);
-    if_statement->elsifs.push_back(
-        std::pair(std::move(expression), statement_sequence()));
+    elsif->body = statement_sequence();
+
+    if_statement->elsifs.push_back(std::move(elsif));
   }
 
   if (peek_check_token_type(TokenType::kw_else, ADVANCE_ON_TRUE)) {
@@ -508,52 +508,42 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
   auto procedure_declaration =
       std::make_unique<ProcedureDeclarationNode>(last_token_->start());
 
-  procedure_declaration->heading = procedure_heading();
+  // ProcedureHeading = "PROCEDURE" ident [FormalParameters]
+  expect_token_type(TokenType::kw_procedure);
+
+  procedure_declaration->proc_name = ident();
+
+  if (peek_formal_parameters()) {
+    procedure_declaration->formal_parameters = formal_parameters();
+  }
+
   expect_token_type(TokenType::semicolon);
-  procedure_declaration->body = procedure_body();
+
+  // ProcedureBody = DeclarationSequence ["BEGIN" StatementSequence] "END" ident
+  declaration_sequence(
+      procedure_declaration->constants(), procedure_declaration->types(),
+      procedure_declaration->variables(), procedure_declaration->procedures());
+
+  if (peek_check_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE)) {
+    procedure_declaration->statement_sequence = statement_sequence();
+  }
+
+  // END ident;
+  expect_token_type(TokenType::kw_end);
+
+  // TODO semantic check
+  ident();
 
   expect_token_type(TokenType::semicolon);
 
   return procedure_declaration;
 }
 
-// ProcedureHeading = "PROCEDURE" ident [FormalParameters]
-std::unique_ptr<ProcedureHeadingNode> Parser::procedure_heading() {
-  auto procedure_heading =
-      std::make_unique<ProcedureHeadingNode>(last_token_->start());
-
-  expect_token_type(TokenType::kw_procedure);
-  procedure_heading->ident = ident();
-
-  if (peek_formal_parameters()) {
-    procedure_heading->formal_parameters = formal_parameters();
-  }
-
-  return procedure_heading;
-}
-// ProcedureBody = DeclarationSequence ["BEGIN" StatementSequence] "END" ident
-std::unique_ptr<ProcedureBodyNode> Parser::procedure_body() {
-  auto procedure_body =
-      std::make_unique<ProcedureBodyNode>(last_token_->start());
-
-  procedure_body->declarations = declaration_sequence();
-
-  if (peek_check_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE)) {
-    procedure_body->statement_sequence = statement_sequence();
-  }
-
-  expect_token_type(TokenType::kw_end);
-
-  procedure_body->end_ident = ident();
-
-  return procedure_body;
-}
-
 /* FormalParameters =
  *        "(" [FPSection {";" FPSection}] ")" */
-std::unique_ptr<FormalParametersNode> Parser::formal_parameters() {
+unique_ptr<FormalParametersNode> Parser::formal_parameters() {
   auto formal_parameters =
-      std::make_unique<FormalParametersNode>(last_token_->start());
+      std::make_unique<FormalParametersNode>(scanner_.peek()->start());
 
   expect_token_type(TokenType::lparen);
 

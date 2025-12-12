@@ -5,7 +5,6 @@
 #include <ostream>
 
 enum class NodeType : char {
-  // TODO sort these for more readability
   actual_parameters,
   array_type,
   assignment,
@@ -13,10 +12,10 @@ enum class NodeType : char {
   declaration_sequence,
   expression,
   factor,
-  field_list,
   formal_parameters,
   fp_section,
   if_statement,
+  elsif_statement,
   module,
   procedure_body,
   procedure_call,
@@ -29,8 +28,8 @@ enum class NodeType : char {
   statement,
   statement_sequence,
   term,
-  type_declaration,
   type,
+  type_declaration,
   var_declaration,
   while_statement,
 };
