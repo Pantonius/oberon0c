@@ -31,8 +31,8 @@ enum class NodeType : char {
   type_declaration,
   number_expression,
   ident_expression,
-  not_expression,
   binary_expression,
+  unary_expression,
   var_declaration,
   while_statement,
 };

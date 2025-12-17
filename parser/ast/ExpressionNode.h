@@ -26,12 +26,11 @@ public:
   void print(std::ostream &stream) const override {};
 };
 
-enum class RelationType { eq, lt, leq, gt, geq };
+enum class RelationType { eq, neq, lt, leq, gt, geq, in, is };
 
 const set<TokenType> RELATION_TOKEN_TYPES = {
-    TokenType::op_eq, TokenType::op_lt,  TokenType::op_leq,
-    TokenType::op_gt, TokenType::op_geq,
-};
+    TokenType::op_eq, TokenType::op_neq, TokenType::op_lt, TokenType::op_leq,
+    TokenType::op_gt, TokenType::op_geq, TokenType::op_in, TokenType::op_is};
 
 RelationType relation_from_token_type(TokenType tokenType);
 
@@ -39,7 +38,10 @@ const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
 enum class UnaryOpType { plus, minus, not_ };
 
-UnaryOpType unary_op_from_token_type(TokenType tokenType);
+const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
+                                         TokenType::op_minus};
+
+UnaryOpType sign_from_token_type(TokenType tokenType);
 
 class SelectorNode final : public Node {
 public:
@@ -55,8 +57,8 @@ public:
 
 class UnaryExpressionNode final : public ExpressionNode {
 public:
-  UnaryExpressionNode(const NodeType &type, const FilePos &pos)
-      : ExpressionNode(type, pos) {}
+  UnaryExpressionNode(const FilePos &pos)
+      : ExpressionNode(NodeType::unary_expression, pos) {}
   ~UnaryExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
@@ -114,7 +116,7 @@ public:
   void print(std::ostream &stream) const override {};
 
   unique_ptr<ExpressionNode> left_expression;
-  variant<AddOperatorType, MulOperatorType> op;
+  variant<AddOperatorType, MulOperatorType, RelationType> op;
   unique_ptr<ExpressionNode> right_expression;
 };
 

@@ -41,8 +41,9 @@ private:
                        vector<unique_ptr<VarDeclarationNode>> &vars,
                        vector<unique_ptr<ProcedureDeclarationNode>> &procs);
   unique_ptr<ExpressionNode> expression();
+  unique_ptr<ExpressionNode> simple_expr();
   unique_ptr<ExpressionNode> factor();
-  unique_ptr<BinaryExpressionNode> term();
+  unique_ptr<ExpressionNode> term();
   unique_ptr<IfStatementNode> if_statement();
   unique_ptr<ModuleNode> module();
   unique_ptr<ProcedureCallNode> procedure();
@@ -66,6 +67,8 @@ private:
   unique_ptr<ProcedureCallNode> procedure_call();
   unique_ptr<ProcedureCallNode> procedure_call(string ident);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();
+
+  UnaryOpType sign();
 
   // helpers
   bool peek_check_token_type(TokenType tokenType, bool advanceOnTrue = false);
