@@ -26,12 +26,12 @@ BEGIN
     i := 1;
     j := 2;
     Swap(i, j);
-    b := a;
+    b := a
 END Swap;
 
 (*
 (* Main program. *)
 *)
 BEGIN
-    Swap(1,2);
+    Swap(1,2)
 END Sort0.                                    (* Wrong Identifier *)
