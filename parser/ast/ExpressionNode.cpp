@@ -14,17 +14,21 @@ RelationType relation_from_token_type(TokenType tokenType) {
     return RelationType::gt;
   case TokenType::op_geq:
     return RelationType::geq;
+  case TokenType::op_in:
+    return RelationType::in;
+  case TokenType::op_is:
+    return RelationType::is;
   default:
     exit(EXIT_FAILURE);
   }
 }
 
-SignType sign_from_token_type(TokenType tokenType) {
+UnaryOpType sign_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_plus:
-    return SignType::plus;
+    return UnaryOpType::plus;
   case TokenType::op_minus:
-    return SignType::minus;
+    return UnaryOpType::minus;
   default:
     exit(EXIT_FAILURE); // TODO review
   }

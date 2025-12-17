@@ -15,7 +15,6 @@ public:
   void visit(ConstDeclarationNode &const_declaration) override;
   void visit(DeclarationSequenceNode &declaration_sequence) override;
   void visit(ExpressionNode &expression) override;
-  void visit(FactorNode &factor) override;
   void visit(FormalParametersNode &formal_parameters) override;
   void visit(FPSectionNode &fp_section) override;
   void visit(IfStatementNode &if_statement) override;
@@ -25,10 +24,8 @@ public:
   void visit(RecordTypeNode &record_type) override;
   void visit(RepeatStatementNode &repeat_statement) override;
   void visit(SelectorNode &selector) override;
-  void visit(SimpleExprNode &simple_expr) override;
   void visit(StatementNode &statement) override;
   void visit(StatementSequenceNode &statement_sequence) override;
-  void visit(TermNode &term) override;
   void visit(TypeNode &type) override;
   void visit(TypeDeclarationNode &type_declaration) override;
   void visit(VarDeclarationNode &var_declaration) override;

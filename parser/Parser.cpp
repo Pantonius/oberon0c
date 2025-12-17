@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "global.h"
+#include "parser/ast/ExpressionNode.h"
 #include "scanner/IdentToken.h"
 #include "scanner/LiteralToken.h"
 #include "scanner/Token.h"
@@ -224,16 +225,19 @@ bool Parser::peek_var_declaration() { return peek_ident(); }
 
 // expression = SimpleExpr [relation SimpleExpr]
 std::unique_ptr<ExpressionNode> Parser::expression() {
-  auto expression = std::make_unique<ExpressionNode>(last_token_->start());
-  expression->left_expr = simple_expr();
+  const Token *curr = scanner_.peek();
 
-  if (peek_check_token_type_within(RELATION_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
-          .has_value()) {
-    expression->relation = relation();
-    expression->right_expr = simple_expr();
+  auto first_expr = simple_expr();
+  if (!peek_check_token_type_within(RELATION_TOKEN_TYPES)) {
+    return first_expr;
   }
 
-  return expression;
+  auto binary_expr = std::make_unique<BinaryExpressionNode>(curr->start());
+  binary_expr->left_expression = std::move(first_expr);
+  binary_expr->op = relation();
+  binary_expr->right_expression = simple_expr();
+
+  return binary_expr;
 }
 
 bool Parser::peek_expression() { return peek_simple_expr(); }
@@ -245,30 +249,39 @@ RelationType Parser::relation() {
 }
 
 // SimpleExpr = ["+" | "-"] term {AddOperator term}
-std::unique_ptr<SimpleExprNode> Parser::simple_expr() {
-  auto simple_expr = std::make_unique<SimpleExprNode>(last_token_->start());
+std::unique_ptr<ExpressionNode> Parser::simple_expr() {
+  const Token *curr = scanner_.peek();
 
+  unique_ptr<ExpressionNode> expr;
   if (peek_check_token_type_within(SIGN_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
-    simple_expr->sign = sign();
+    // signed term
+    auto unary_expr = std::make_unique<UnaryExpressionNode>(curr->start());
+    unary_expr->op = sign();
+    unary_expr->expression = term();
+    expr = std::move(unary_expr);
+  } else {
+    // just term
+    expr = term();
   }
 
-  simple_expr->term = term();
-
-  while (
-      peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
-          .has_value()) {
-    AddOperatorType op = add_operator();
-    unique_ptr<TermNode> term = Parser::term();
-    simple_expr->additional_terms.push_back(std::pair(op, std::move(term)));
+  // add op
+  while (peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES,
+                                      NO_ADVANCE_ON_TRUE)) {
+    auto binary_expr =
+        std::make_unique<BinaryExpressionNode>(scanner_.peek()->start());
+    binary_expr->left_expression = std::move(expr); // old expression
+    binary_expr->op = add_operator();
+    binary_expr->right_expression = term(); // new term
+    expr = std::move(binary_expr);          // TODO don't know if this passes
   }
 
-  return simple_expr;
+  return expr;
 }
 
 bool Parser::peek_simple_expr() { return peek_sign() || peek_term(); }
 
-SignType Parser::sign() {
+UnaryOpType Parser::sign() {
   expect_token_type_within(SIGN_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return sign_from_token_type(last_token_->type());
 }
@@ -284,19 +297,21 @@ AddOperatorType Parser::add_operator() {
 }
 
 // term = factor {MulOperator factor}
-std::unique_ptr<TermNode> Parser::term() {
-  auto term = std::make_unique<TermNode>(last_token_->start());
-  term->factor = factor();
+std::unique_ptr<ExpressionNode> Parser::term() {
+  const Token *curr = scanner_.peek();
+  auto expr = factor();
 
   while (
       peek_check_token_type_within(MUL_OPERATOR_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
           .has_value()) {
-    auto mul_operator = Parser::mul_operator();
-    auto factor = Parser::factor();
-    term->additional_terms.emplace_back(mul_operator, std::move(factor));
+    auto binary_expr = std::make_unique<BinaryExpressionNode>(curr->start());
+    binary_expr->left_expression = std::move(expr);
+    binary_expr->op = Parser::mul_operator();
+    binary_expr->right_expression = Parser::factor();
+    expr = std::move(binary_expr);
   }
 
-  return term;
+  return expr;
 }
 
 bool Parser::peek_term() { return peek_factor(); }
@@ -307,23 +322,32 @@ MulOperatorType Parser::mul_operator() {
   return mul_operator_from_token_type(last_token_->type());
 }
 // factor = ident selector | number | "(" expression ")" | "~" factor
-std::unique_ptr<FactorNode> Parser::factor() {
-  auto factor = std::make_unique<FactorNode>(last_token_->start());
+std::unique_ptr<ExpressionNode> Parser::factor() {
+  const Token *curr = scanner_.peek();
 
   if (peek_ident()) {
+    auto factor = std::make_unique<IdentExpressionNode>(curr->start());
     factor->ident = ident();
     factor->selector = selector();
+    return factor;
   } else if (peek_number()) {
+    auto factor = std::make_unique<NumberExpressionNode>(curr->start());
     factor->number = number();
+    return factor;
   } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-    factor->expression = expression();
+    auto factor = expression();
     expect_token_type(TokenType::rparen);
+    return factor;
   } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
-    factor->not_factor = Parser::factor();
+    auto factor = std::make_unique<UnaryExpressionNode>(curr->start());
+    factor->op = UnaryOpType::not_;
+    factor->expression = expression();
+    return factor;
   } else {
+    logger_.error(curr->start(),
+                  "Expected factor found " + to_string(curr->type()));
+    exit(EXIT_FAILURE);
   }
-
-  return factor;
 }
 
 bool Parser::peek_factor() {

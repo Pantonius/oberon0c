@@ -32,7 +32,6 @@
           oberon0c = pkgs.callPackage ./default.nix { inherit pkgs; };
           oberon0c_fuzz = pkgs.callPackage ./afl.nix { inherit pkgs; };
           default = oberon0c;
-
         };
       }
     );
