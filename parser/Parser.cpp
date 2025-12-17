@@ -242,7 +242,7 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
 
 bool Parser::peek_expression() { return peek_simple_expr(); }
 
-// relation = "=" | "#" | "<" | "<=" | ">" | ">=" | "IN" | "IS"
+// relation = "=" | "#" | "<" | "<=" | ">" | ">="
 RelationType Parser::relation() {
   expect_token_type_within(RELATION_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return relation_from_token_type(last_token_->type());
