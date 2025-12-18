@@ -7,6 +7,7 @@
 #include "Scanner.h"
 
 #include <cctype>
+#include <cstdlib>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -432,6 +433,10 @@ unique_ptr<const Token> Scanner::scanString() {
   auto pos = current();
   read();
   while (ch_ != '"') {
+    if (eof_) {
+      logger_.error(pos, "Missing closing \" for string");
+      exit(1);
+    }
     ss << ch_;
     if (ch_ == '\\') {
       read();
