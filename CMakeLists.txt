@@ -64,7 +64,9 @@ set(PARSER_SOURCES
         parser/ast/StatementNode.h
         parser/ast/StatementSequenceNode.h parser/ast/StatementSequenceNode.cpp
         parser/ast/TypeNode.h
+        parser/SymbolTable.h parser/SymbolTable.cpp
       )
+
 
 set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES})
 

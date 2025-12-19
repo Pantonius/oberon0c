@@ -5,6 +5,7 @@
 
 #include "ast/ModuleNode.h"
 
+#include "parser/SymbolTable.h"
 #include "scanner/Scanner.h"
 #include "scanner/Token.h"
 #include <memory>
@@ -28,6 +29,7 @@ private:
   Scanner &scanner_;
   Logger &logger_;
   unique_ptr<const Token> last_token_;
+  SymbolTable symbol_table_;
 
   // TODO condense everything down
   RelationType relation();
@@ -103,7 +105,7 @@ private:
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)
-      : scanner_(scanner), logger_(logger) {};
+      : scanner_(scanner), logger_(logger), symbol_table_(logger) {};
   ~Parser() = default;
   unique_ptr<ModuleNode> parse();
 };

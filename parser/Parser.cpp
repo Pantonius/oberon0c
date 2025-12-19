@@ -16,6 +16,7 @@ std::unique_ptr<ModuleNode> Parser::parse() { return module(); }
  *          [ "BEGIN" StatementSequence ]
  *          "END" ident "." */
 std::unique_ptr<ModuleNode> Parser::module() {
+  symbol_table_.beginScope();
   if (!expect_token_type(TokenType::kw_module)) {
 
     logger_.info("You might be missing MODULE.");
@@ -39,6 +40,8 @@ std::unique_ptr<ModuleNode> Parser::module() {
   ident();
   expect_token_type(TokenType::period);
   expect_token_type(TokenType::eof);
+
+  symbol_table_.endScope();
 
   return module;
 }
@@ -108,6 +111,9 @@ std::unique_ptr<RecordTypeNode> Parser::record_type() {
       std::make_unique<RecordTypeNode>(last_token_->start());
 
   expect_token_type(TokenType::kw_record);
+
+  symbol_table_.beginScope();
+
   do {
     vector<string> idents = ident_list();
     expect_token_type(TokenType::colon);
@@ -118,6 +124,8 @@ std::unique_ptr<RecordTypeNode> Parser::record_type() {
     // }
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
   expect_token_type(TokenType::kw_end);
+
+  symbol_table_.endScope();
 
   return record_type;
 }
@@ -178,6 +186,8 @@ std::unique_ptr<ConstDeclarationNode> Parser::const_declaration() {
 
   expect_token_type(TokenType::semicolon);
 
+  symbol_table_.insert(const_declaration->ident, const_declaration.get());
+
   return const_declaration;
 }
 
@@ -193,6 +203,8 @@ std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
   type_declaration->type = type();
   expect_token_type(TokenType::semicolon);
 
+  symbol_table_.insert(type_declaration->ident, type_declaration.get());
+
   return type_declaration;
 }
 
@@ -206,6 +218,8 @@ void Parser::var_declarations(
     auto var_declaration =
         std::make_unique<VarDeclarationNode>(last_token_->start());
     var_declaration->ident = ident();
+
+    symbol_table_.insert(var_declaration->ident, var_declaration.get());
 
     vars.push_back(std::move(var_declaration));
   } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
@@ -538,6 +552,10 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 
   procedure_declaration->proc_name = ident();
 
+  symbol_table_.insert(procedure_declaration->proc_name,
+                       procedure_declaration.get());
+  symbol_table_.beginScope();
+
   if (peek_formal_parameters()) {
     procedure_declaration->formal_parameters = formal_parameters();
   }
@@ -560,6 +578,8 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
   ident();
 
   expect_token_type(TokenType::semicolon);
+
+  symbol_table_.endScope();
 
   return procedure_declaration;
 }

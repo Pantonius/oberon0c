@@ -1,10 +1,12 @@
 MODULE Procedure;
 
-VAR a, b: INTEGER;
+VAR a, b, c: INTEGER;
 
 
 
 PROCEDURE Init(VAR x: INTEGER; y: INTEGER);
+VAR
+  c: BOOLEAN;
 BEGIN
   b := x;
   a := x
