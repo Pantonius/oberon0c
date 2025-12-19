@@ -1,7 +1,6 @@
 #ifndef OBERON0C_STATEMENTNODE_H
 #define OBERON0C_STATEMENTNODE_H
 
-#include "ActualParametersNode.h"
 #include "ExpressionNode.h"
 #include "Node.h"
 #include <memory>
@@ -9,101 +8,113 @@
 using std::unique_ptr;
 
 class StatementSequenceNode;
-
-class AssignmentNode final : public Node {
+class StatementNode : public Node {
 public:
-  explicit AssignmentNode(const FilePos &pos)
-      : Node(NodeType::assignment, pos) {}
+  StatementNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  ~StatementNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+};
+
+class AssignmentNode final : public StatementNode {
+public:
+  explicit AssignmentNode(const FilePos &pos, unique_ptr<IdentNode> &ident,
+                          vector<unique_ptr<SelectorNode>> &selectors,
+                          unique_ptr<ExpressionNode> &expression)
+      : StatementNode(NodeType::assignment, pos), ident(ident),
+        selectors(selectors), expression(expression) {}
   ~AssignmentNode() override = default;
 
   void accept(NodeVisitor &) override {};
   void print(std::ostream &) const override {};
 
-  string ident;
-  unique_ptr<ExpressionNode> expression;
-  unique_ptr<SelectorNode> selector;
+  const unique_ptr<IdentNode> &ident;
+  const vector<unique_ptr<SelectorNode>> &selectors;
+  const unique_ptr<ExpressionNode> &expression;
 };
 
-class ElsIfStatementNode final : public Node {
+class ElsIfStatementNode final : public StatementNode {
 public:
-  ElsIfStatementNode(const FilePos &pos)
-      : Node(NodeType::elsif_statement, pos) {}
+  ElsIfStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> &condition,
+                     unique_ptr<StatementSequenceNode> &body)
+      : StatementNode(NodeType::elsif_statement, pos), condition(condition),
+        body(body) {}
   ~ElsIfStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> condition;
-  unique_ptr<StatementSequenceNode> body;
+  const unique_ptr<ExpressionNode> &condition;
+  const unique_ptr<StatementSequenceNode> &body;
 };
 
-class IfStatementNode final : public Node {
+class IfStatementNode final : public StatementNode {
 public:
-  IfStatementNode(const FilePos &pos) : Node(NodeType::if_statement, pos) {}
+  IfStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> &condition,
+                  unique_ptr<StatementSequenceNode> &body,
+                  vector<unique_ptr<ElsIfStatementNode>> &elsifs,
+                  unique_ptr<StatementSequenceNode> &else_statement_sequence)
+      : StatementNode(NodeType::if_statement, pos), condition(condition),
+        body(body), elsifs(elsifs),
+        else_statement_sequence(else_statement_sequence) {}
   ~IfStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> condition;
-  unique_ptr<StatementSequenceNode> body;
-  vector<unique_ptr<ElsIfStatementNode>> elsifs;
-  unique_ptr<StatementSequenceNode> else_statement_sequence;
+  const unique_ptr<ExpressionNode> &condition;
+  const unique_ptr<StatementSequenceNode> &body;
+  const vector<unique_ptr<ElsIfStatementNode>> &elsifs;
+  const unique_ptr<StatementSequenceNode> &else_statement_sequence;
 };
 
-class ProcedureCallNode final : public Node {
+class ProcedureCallNode final : public StatementNode {
 public:
-  explicit ProcedureCallNode(const FilePos &pos)
-      : Node(NodeType::procedure_call, pos) {}
+  explicit ProcedureCallNode(
+      const FilePos &pos, unique_ptr<IdentNode> &ident,
+      vector<unique_ptr<SelectorNode>> &selectors,
+      vector<unique_ptr<ExpressionNode>> &actual_parameters)
+      : StatementNode(NodeType::procedure_call, pos), ident(ident),
+        selectors(selectors), actual_parameters(actual_parameters) {}
   ~ProcedureCallNode() override = default;
 
   void accept(NodeVisitor &) override {};
   void print(std::ostream &) const override {};
 
-  string ident;
-  unique_ptr<SelectorNode> selector;
-  unique_ptr<ActualParametersNode> actual_parameters;
+  const unique_ptr<IdentNode> &ident;
+  const vector<unique_ptr<SelectorNode>> &selectors;
+  const vector<unique_ptr<ExpressionNode>> &actual_parameters;
 };
 
-class WhileStatementNode final : public Node {
+class WhileStatementNode final : public StatementNode {
 public:
-  WhileStatementNode(const FilePos &pos)
-      : Node(NodeType::while_statement, pos) {}
+  WhileStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> &condition,
+                     unique_ptr<StatementSequenceNode> &body)
+      : StatementNode(NodeType::while_statement, pos), condition(condition),
+        body(body) {}
   ~WhileStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> condition;
-  unique_ptr<StatementSequenceNode> body;
+  const unique_ptr<ExpressionNode> &condition;
+  const unique_ptr<StatementSequenceNode> &body;
 };
 
-class RepeatStatementNode final : public Node {
+class RepeatStatementNode final : public StatementNode {
 public:
-  RepeatStatementNode(const FilePos &pos)
-      : Node(NodeType::repeat_statement, pos) {}
+  RepeatStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> &condition,
+                      unique_ptr<StatementSequenceNode> &body)
+      : StatementNode(NodeType::repeat_statement, pos), condition(condition),
+        body(body) {}
   ~RepeatStatementNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> condition;
-  unique_ptr<StatementSequenceNode> body;
-};
-
-class StatementNode final : public Node {
-public:
-  StatementNode(const FilePos &pos) : Node(NodeType::statement, pos) {}
-  ~StatementNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
-
-  unique_ptr<AssignmentNode> assignment;
-  unique_ptr<ProcedureCallNode> procedure_call;
-  unique_ptr<IfStatementNode> if_statement;
-  unique_ptr<WhileStatementNode> while_statement;
-  unique_ptr<RepeatStatementNode> repeat_statement;
+  const unique_ptr<ExpressionNode> &condition;
+  const unique_ptr<StatementSequenceNode> &body;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H

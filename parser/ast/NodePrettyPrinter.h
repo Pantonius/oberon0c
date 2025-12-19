@@ -9,13 +9,11 @@ public:
   explicit NodePrettyPrinter() = default;
   virtual ~NodePrettyPrinter() noexcept override;
 
-  void visit(ActualParametersNode &actual_parameters) override;
   void visit(ArrayTypeNode &array_type) override;
   void visit(AssignmentNode &assignment) override;
   void visit(ConstDeclarationNode &const_declaration) override;
   void visit(DeclarationSequenceNode &declaration_sequence) override;
   void visit(ExpressionNode &expression) override;
-  void visit(FormalParametersNode &formal_parameters) override;
   void visit(FPSectionNode &fp_section) override;
   void visit(IfStatementNode &if_statement) override;
   void visit(ModuleNode &module_node) override;

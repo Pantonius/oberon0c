@@ -11,15 +11,17 @@ using std::unique_ptr;
 
 class ModuleNode final : public DeclarationSequenceNode {
 public:
-  ModuleNode(const FilePos &pos)
-      : DeclarationSequenceNode(NodeType::module, pos) {}
+  ModuleNode(const FilePos &pos, unique_ptr<IdentNode> &ident,
+             DeclarationSequence decl, unique_ptr<StatementSequenceNode> &stmts)
+      : DeclarationSequenceNode(NodeType::module, pos, decl), ident(ident),
+        statement_sequence(stmts) {}
   ~ModuleNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  string ident;
-  unique_ptr<StatementSequenceNode> statement_sequence;
+  const unique_ptr<IdentNode> &ident;
+  const unique_ptr<StatementSequenceNode> &statement_sequence;
 };
 
 #endif // OBERON0C_MODULENODE_H
