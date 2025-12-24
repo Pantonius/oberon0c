@@ -1,6 +1,7 @@
 #ifndef OBERON0C_EXPRESSIONNODE_H
 #define OBERON0C_EXPRESSIONNODE_H
 
+#include "IdentNode.h"
 #include "Node.h"
 #include "scanner/Token.h"
 #include <memory>
@@ -26,6 +27,36 @@ public:
   void print(std::ostream &stream) const override {};
 };
 
+class SelectorNode : public Node {
+public:
+  SelectorNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  ~SelectorNode() override = default;
+};
+
+class ArrayIndexNode final : public SelectorNode {
+public:
+  ArrayIndexNode(const FilePos &pos, unique_ptr<ExpressionNode> &expression)
+      : SelectorNode(NodeType::array_selector, pos), expression(expression) {}
+  ~ArrayIndexNode() override = default;
+
+  void accept(NodeVisitor &) override {};
+  void print(std::ostream &) const override {};
+
+  const unique_ptr<ExpressionNode> &expression;
+};
+
+class RecordFieldNode final : public SelectorNode {
+public:
+  RecordFieldNode(const FilePos &pos, unique_ptr<IdentNode> &ident)
+      : SelectorNode(NodeType::record_selector, pos), ident(ident) {}
+  ~RecordFieldNode() override = default;
+
+  void accept(NodeVisitor &) override {};
+  void print(std::ostream &) const override {};
+
+  const unique_ptr<IdentNode> &ident;
+};
+
 enum class RelationType { eq, neq, lt, leq, gt, geq };
 
 const set<TokenType> RELATION_TOKEN_TYPES = {
@@ -43,54 +74,46 @@ const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
 
 UnaryOpType sign_from_token_type(TokenType tokenType);
 
-class SelectorNode final : public Node {
-public:
-  explicit SelectorNode(const FilePos &pos) : Node(NodeType::selector, pos) {}
-  ~SelectorNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
-
-  string ident;
-  unique_ptr<ExpressionNode> expression;
-};
-
 class UnaryExpressionNode final : public ExpressionNode {
 public:
-  UnaryExpressionNode(const FilePos &pos)
-      : ExpressionNode(NodeType::unary_expression, pos) {}
+  UnaryExpressionNode(const FilePos &pos, UnaryOpType &op,
+                      unique_ptr<ExpressionNode> &expression)
+      : ExpressionNode(NodeType::unary_expression, pos), op(op),
+        expression(expression) {}
   ~UnaryExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  UnaryOpType op;
-  unique_ptr<ExpressionNode> expression;
+  const UnaryOpType &op;
+  const unique_ptr<ExpressionNode> &expression;
 };
 
 class IdentExpressionNode final : public ExpressionNode {
 public:
-  IdentExpressionNode(const FilePos &pos)
-      : ExpressionNode(NodeType::ident_expression, pos) {}
+  IdentExpressionNode(const FilePos &pos, unique_ptr<IdentNode> &ident,
+                      vector<unique_ptr<SelectorNode>> &selectors)
+      : ExpressionNode(NodeType::ident_expression, pos), ident(ident),
+        selectors(selectors) {}
   ~IdentExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  string ident;
-  unique_ptr<SelectorNode> selector;
+  const unique_ptr<IdentNode> &ident;
+  const vector<unique_ptr<SelectorNode>> &selectors;
 };
 
 class NumberExpressionNode final : public ExpressionNode {
 public:
-  NumberExpressionNode(const FilePos &pos)
-      : ExpressionNode(NodeType::number_expression, pos) {}
+  NumberExpressionNode(const FilePos &pos, int &number)
+      : ExpressionNode(NodeType::number_expression, pos), number(number) {}
   ~NumberExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  int number;
+  const int &number;
 };
 
 const set<TokenType> ADD_OPERATOR_TOKEN_TYPES = {
@@ -108,16 +131,21 @@ MulOperatorType mul_operator_from_token_type(TokenType tokenType);
 
 class BinaryExpressionNode final : public ExpressionNode {
 public:
-  BinaryExpressionNode(const FilePos &pos)
-      : ExpressionNode(NodeType::binary_expression, pos) {}
+  BinaryExpressionNode(
+      const FilePos &pos, unique_ptr<ExpressionNode> &left_expression,
+      const variant<AddOperatorType, MulOperatorType, RelationType> &op,
+      unique_ptr<ExpressionNode> &right_expression)
+      : ExpressionNode(NodeType::binary_expression, pos),
+        left_expression(left_expression), op(op),
+        right_expression(right_expression) {}
   ~BinaryExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> left_expression;
-  variant<AddOperatorType, MulOperatorType, RelationType> op;
-  unique_ptr<ExpressionNode> right_expression;
+  const unique_ptr<ExpressionNode> &left_expression;
+  const variant<AddOperatorType, MulOperatorType, RelationType> &op;
+  const unique_ptr<ExpressionNode> &right_expression;
 };
 
 #endif // OBERON0C_EXPRESSIONNODE_H

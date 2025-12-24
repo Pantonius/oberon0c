@@ -1,12 +1,10 @@
 #include "NodePrettyPrinter.h"
 
-void NodePrettyPrinter::visit(ActualParametersNode &actual_parameters) {}
 void NodePrettyPrinter::visit(ArrayTypeNode &array_type) {}
 void NodePrettyPrinter::visit(AssignmentNode &assignment) {}
 void NodePrettyPrinter::visit(ConstDeclarationNode &const_declaration) {}
 void NodePrettyPrinter::visit(DeclarationSequenceNode &declaration_sequence) {}
 void NodePrettyPrinter::visit(ExpressionNode &expression) {}
-void NodePrettyPrinter::visit(FormalParametersNode &formal_parameters) {}
 void NodePrettyPrinter::visit(FPSectionNode &fp_section) {}
 void NodePrettyPrinter::visit(IfStatementNode &if_statement) {}
 void NodePrettyPrinter::visit(ModuleNode &module_node) {}

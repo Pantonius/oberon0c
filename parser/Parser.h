@@ -34,14 +34,10 @@ private:
   // TODO condense everything down
   RelationType relation();
   int number();
-  string ident();
+  unique_ptr<IdentNode> ident();
   unique_ptr<ArrayTypeNode> array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
-  void
-  declaration_sequence(vector<unique_ptr<ConstDeclarationNode>> &consts,
-                       vector<unique_ptr<TypeDeclarationNode>> &types,
-                       vector<unique_ptr<VarDeclarationNode>> &vars,
-                       vector<unique_ptr<ProcedureDeclarationNode>> &procs);
+  DeclarationSequence declaration_sequence();
   unique_ptr<ExpressionNode> expression();
   unique_ptr<ExpressionNode> simple_expr();
   unique_ptr<ExpressionNode> factor();
@@ -51,23 +47,21 @@ private:
   unique_ptr<ProcedureCallNode> procedure();
   unique_ptr<RecordTypeNode> record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
-  unique_ptr<SelectorNode> selector();
+  vector<unique_ptr<SelectorNode>> selectors();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();
   unique_ptr<TypeNode> type();
   unique_ptr<WhileStatementNode> while_statement();
-  std::vector<string> ident_list();
-  void var_declarations(std::vector<unique_ptr<VarDeclarationNode>> &vars);
+  std::vector<unique_ptr<IdentNode>> ident_list();
+  vector<unique_ptr<VarDeclarationNode>> var_declarations();
   AddOperatorType add_operator();
   MulOperatorType mul_operator();
-  unique_ptr<ActualParametersNode> actual_parameters();
   unique_ptr<AssignmentNode> assignment();
-  unique_ptr<AssignmentNode> assignment(string ident);
+  unique_ptr<AssignmentNode> assignment(unique_ptr<IdentNode> ident);
   unique_ptr<FPSectionNode> fp_section();
-  unique_ptr<FormalParametersNode> formal_parameters();
   unique_ptr<ProcedureCallNode> procedure_call();
-  unique_ptr<ProcedureCallNode> procedure_call(string ident);
+  unique_ptr<ProcedureCallNode> procedure_call(unique_ptr<IdentNode> ident);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();
 
   UnaryOpType sign();
@@ -89,7 +83,6 @@ private:
   bool peek_char_constant();
   bool peek_expression();
   bool peek_factor();
-  bool peek_formal_parameters();
   bool peek_ident();
   bool peek_selector();
   bool peek_number(bool advanceOnTrue = false);

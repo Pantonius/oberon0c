@@ -2,47 +2,72 @@
 #define OBERON0C_TYPENODE_H
 
 #include "ExpressionNode.h"
+#include "IdentNode.h"
 #include "Node.h"
 #include <memory>
 
 using std::string;
 using std::unique_ptr;
 
-class TypeNode;
-class ArrayTypeNode final : public Node {
+class TypeNode : public Node {
 public:
-  ArrayTypeNode(const FilePos &pos) : Node(NodeType::array_type, pos) {}
+  TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  ~TypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+};
+
+class IdentTypeNode final : public TypeNode {
+public:
+  IdentTypeNode(const FilePos &pos, unique_ptr<IdentNode> &ident)
+      : TypeNode(NodeType::ident_type, pos), ident(ident) {}
+  ~IdentTypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+
+  const unique_ptr<IdentNode> &ident;
+};
+
+class ArrayTypeNode final : public TypeNode {
+public:
+  ArrayTypeNode(const FilePos &pos, unique_ptr<ExpressionNode> &expression,
+                unique_ptr<TypeNode> &type)
+      : TypeNode(NodeType::array_type, pos), expression(expression),
+        type(type) {}
   ~ArrayTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  unique_ptr<ExpressionNode> expression;
-  unique_ptr<TypeNode> type;
+  const unique_ptr<ExpressionNode> &expression;
+  const unique_ptr<TypeNode> &type;
 };
 
-class RecordTypeNode final : public Node {
+class FieldNode final : public Node {
 public:
-  RecordTypeNode(const FilePos &pos) : Node(NodeType::record_type, pos) {}
+  FieldNode(const FilePos &pos, unique_ptr<IdentNode> &ident, TypeNode *type)
+      : Node(NodeType::field, pos), ident(ident), type(type) {}
+  ~FieldNode() override = default;
+
+  void accept(NodeVisitor &visitor) override {};
+  void print(std::ostream &stream) const override {};
+
+  const unique_ptr<IdentNode> &ident;
+  const TypeNode *type;
+};
+
+class RecordTypeNode final : public TypeNode {
+public:
+  RecordTypeNode(const FilePos &pos, vector<unique_ptr<FieldNode>> &field_lists)
+      : TypeNode(NodeType::record_type, pos), field_lists(field_lists) {}
   ~RecordTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) override {};
   void print(std::ostream &stream) const override {};
 
-  vector<unique_ptr<pair<string, TypeNode>>> field_lists;
-};
-
-class TypeNode final : public Node {
-public:
-  TypeNode(const FilePos &pos) : Node(NodeType::type, pos) {}
-  ~TypeNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
-
-  string ident;
-  unique_ptr<ArrayTypeNode> array_type;
-  unique_ptr<RecordTypeNode> record_type;
+  const vector<unique_ptr<FieldNode>> &field_lists;
 };
 
 #endif // OBERON0C_TYPENODE_H

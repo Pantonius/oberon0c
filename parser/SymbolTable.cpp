@@ -1,5 +1,4 @@
 #include "SymbolTable.h"
-#include <optional>
 #include <ranges>
 #include <string>
 #include <unordered_map>

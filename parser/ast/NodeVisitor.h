@@ -9,13 +9,11 @@ public:
   explicit NodeVisitor() = default;
   virtual ~NodeVisitor() noexcept;
 
-  virtual void visit(ActualParametersNode &actual_parameters) = 0;
   virtual void visit(ArrayTypeNode &array_type) = 0;
   virtual void visit(AssignmentNode &assignment) = 0;
   virtual void visit(ConstDeclarationNode &const_declaration) = 0;
   virtual void visit(DeclarationSequenceNode &declaration_sequence) = 0;
   virtual void visit(ExpressionNode &expression) = 0;
-  virtual void visit(FormalParametersNode &formal_parameters) = 0;
   virtual void visit(FPSectionNode &fp_section) = 0;
   virtual void visit(IfStatementNode &if_statement) = 0;
   virtual void visit(ModuleNode &module_node) = 0;
