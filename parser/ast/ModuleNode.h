@@ -17,8 +17,8 @@ public:
         statement_sequence(stmts) {}
   ~ModuleNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
   const unique_ptr<StatementSequenceNode> &statement_sequence;

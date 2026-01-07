@@ -1,19 +1,69 @@
 #include "ExpressionNode.h"
+#include "NodeVisitor.h"
+#include "util/Logger.h"
 
-RelationType relation_from_token_type(TokenType tokenType) {
+ostream &operator<<(ostream &os, UnaryOpType op) {
+  switch (op) {
+  case UnaryOpType::plus:
+    return os << "+";
+  case UnaryOpType::minus:
+    return os << "-";
+  case UnaryOpType::u_not:
+    return os << "~";
+  default:
+    return os << "Unknown UnaryOpType";
+  }
+}
+
+ostream &operator<<(ostream &os, BinaryOpType op) {
+  switch (op) {
+  case BinaryOpType::b_or:
+    return os << "OR";
+  case BinaryOpType::minus:
+    return os << "-";
+  case BinaryOpType::plus:
+    return os << "+";
+  case BinaryOpType::div:
+    return os << "DIV";
+  case BinaryOpType::divide:
+    return os << "/";
+  case BinaryOpType::b_and:
+    return os << "AND";
+  case BinaryOpType::mod:
+    return os << "MOD";
+  case BinaryOpType::times:
+    return os << "*";
+  case BinaryOpType::eq:
+    return os << "=";
+  case BinaryOpType::neq:
+    return os << "#";
+  case BinaryOpType::geq:
+    return os << ">=";
+  case BinaryOpType::gt:
+    return os << ">";
+  case BinaryOpType::leq:
+    return os << "<=";
+  case BinaryOpType::lt:
+    return os << "<";
+  default:
+    return os << "Unknown BinaryOpType";
+  }
+}
+
+BinaryOpType relation_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_eq:
-    return RelationType::eq;
+    return BinaryOpType::eq;
   case TokenType::op_neq:
-    return RelationType::neq;
+    return BinaryOpType::neq;
   case TokenType::op_lt:
-    return RelationType::lt;
+    return BinaryOpType::lt;
   case TokenType::op_leq:
-    return RelationType::leq;
+    return BinaryOpType::leq;
   case TokenType::op_gt:
-    return RelationType::gt;
+    return BinaryOpType::gt;
   case TokenType::op_geq:
-    return RelationType::geq;
+    return BinaryOpType::geq;
   default:
     exit(EXIT_FAILURE);
   }
@@ -30,32 +80,76 @@ UnaryOpType sign_from_token_type(TokenType tokenType) {
   }
 }
 
-AddOperatorType add_operator_from_token_type(TokenType tokenType) {
+BinaryOpType add_operator_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_plus:
-    return AddOperatorType::plus;
+    return BinaryOpType::plus;
   case TokenType::op_minus:
-    return AddOperatorType::minus;
+    return BinaryOpType::minus;
   case TokenType::op_or:
-    return AddOperatorType::a_or;
+    return BinaryOpType::b_or;
   default:
     exit(EXIT_FAILURE); // TODO review
   }
 }
 
-MulOperatorType mul_operator_from_token_type(TokenType tokenType) {
+BinaryOpType mul_operator_from_token_type(TokenType tokenType) {
   switch (tokenType) {
   case TokenType::op_times:
-    return MulOperatorType::times;
+    return BinaryOpType::times;
   case TokenType::op_div:
-    return MulOperatorType::div;
+    return BinaryOpType::div;
   case TokenType::op_divide:
-    return MulOperatorType::divide;
+    return BinaryOpType::divide;
   case TokenType::op_mod:
-    return MulOperatorType::mod;
+    return BinaryOpType::mod;
   case TokenType::op_and:
-    return MulOperatorType::m_and;
+    return BinaryOpType::b_and;
   default:
     exit(EXIT_FAILURE); // TODO review
   }
+}
+
+void ArrayIndexNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void ArrayIndexNode::print(ostream &stream) const {
+  stream << "[";
+  expression->print(stream);
+  stream << "]";
+}
+
+void RecordFieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void RecordFieldNode::print(ostream &stream) const {
+  stream << ".";
+  ident->print(stream);
+}
+
+void NumberExpressionNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void NumberExpressionNode::print(ostream &stream) const { stream << number; }
+
+void IdentExpressionNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void IdentExpressionNode::print(ostream &stream) const {
+  ident->print(stream);
+  for (size_t i = 0; i < selectors.size(); i++) {
+    selectors[i]->print(stream);
+  }
+}
+
+void UnaryExpressionNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+
+void UnaryExpressionNode::print(ostream &stream) const {
+  stream << op;
+  expression->print(stream);
+  stream << ";";
+}
+
+void BinaryExpressionNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+
+void BinaryExpressionNode::print(ostream &stream) const {
+  left_expression->print(stream);
+  stream << " " << op << " ";
+  right_expression->print(stream);
 }

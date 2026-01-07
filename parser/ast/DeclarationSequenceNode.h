@@ -17,10 +17,10 @@ public:
                        unique_ptr<ExpressionNode> &expression)
       : Node(NodeType::const_declaration, pos), ident(ident),
         expression(expression) {}
-  ~ConstDeclarationNode() override = default;
+  ~ConstDeclarationNode() final = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
   const unique_ptr<ExpressionNode> &expression;
@@ -33,8 +33,8 @@ public:
       : Node(NodeType::type_declaration, pos), ident(ident), type(type) {}
   ~TypeDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
   const unique_ptr<TypeNode> &type;
@@ -47,8 +47,8 @@ public:
       : Node(NodeType::var_declaration, pos), ident(ident), type(type) {}
   ~VarDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
   const TypeNode *type;
@@ -77,9 +77,6 @@ public:
         variables(decl.vars), procedures(decl.procs) {};
   ~DeclarationSequenceNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
-
   const vector<unique_ptr<ConstDeclarationNode>> &constants;
   const vector<unique_ptr<TypeDeclarationNode>> &types;
   const vector<unique_ptr<VarDeclarationNode>> &variables;
@@ -98,8 +95,8 @@ public:
         statement_sequence(statement_sequence) {}
   ~ProcedureDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   // ProcedureHeading
   const unique_ptr<IdentNode> &proc_name;

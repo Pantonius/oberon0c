@@ -43,7 +43,8 @@ int main(const int argc, const char *argv[]) {
 
   // Parsing
   Parser parser(scanner, logger);
-  parser.parse();
+  auto ast = parser.parse();
+  ast->print(cout);
 
   // Status print
   string status = (logger.getErrorCount() == 0 ? "complete" : "failed");

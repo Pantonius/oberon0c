@@ -13,9 +13,6 @@ class TypeNode : public Node {
 public:
   TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
   ~TypeNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
 };
 
 class IdentTypeNode final : public TypeNode {
@@ -24,8 +21,8 @@ public:
       : TypeNode(NodeType::ident_type, pos), ident(ident) {}
   ~IdentTypeNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
 };
@@ -38,8 +35,8 @@ public:
         type(type) {}
   ~ArrayTypeNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> &expression;
   const unique_ptr<TypeNode> &type;
@@ -51,8 +48,8 @@ public:
       : Node(NodeType::field, pos), ident(ident), type(type) {}
   ~FieldNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> &ident;
   const TypeNode *type;
@@ -64,8 +61,8 @@ public:
       : TypeNode(NodeType::record_type, pos), field_lists(field_lists) {}
   ~RecordTypeNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const vector<unique_ptr<FieldNode>> &field_lists;
 };

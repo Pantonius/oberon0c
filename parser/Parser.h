@@ -32,7 +32,7 @@ private:
   SymbolTable symbol_table_;
 
   // TODO condense everything down
-  RelationType relation();
+  BinaryOpType relation();
   int number();
   unique_ptr<IdentNode> ident();
   unique_ptr<ArrayTypeNode> array_type();
@@ -55,8 +55,8 @@ private:
   unique_ptr<WhileStatementNode> while_statement();
   std::vector<unique_ptr<IdentNode>> ident_list();
   vector<unique_ptr<VarDeclarationNode>> var_declarations();
-  AddOperatorType add_operator();
-  MulOperatorType mul_operator();
+  BinaryOpType add_operator();
+  BinaryOpType mul_operator();
   unique_ptr<AssignmentNode> assignment();
   unique_ptr<AssignmentNode> assignment(unique_ptr<IdentNode> ident);
   unique_ptr<FPSectionNode> fp_section();

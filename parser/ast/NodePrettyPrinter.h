@@ -5,14 +5,18 @@
 
 class NodePrettyPrinter : private NodeVisitor {
 
+private:
+  std::ostream &stream_;
+
 public:
   explicit NodePrettyPrinter() = default;
   virtual ~NodePrettyPrinter() noexcept override;
 
+  void declaration_sequence(DeclarationSequenceNode &declaration_sequence);
+
   void visit(ArrayTypeNode &array_type) override;
   void visit(AssignmentNode &assignment) override;
   void visit(ConstDeclarationNode &const_declaration) override;
-  void visit(DeclarationSequenceNode &declaration_sequence) override;
   void visit(ExpressionNode &expression) override;
   void visit(FPSectionNode &fp_section) override;
   void visit(IfStatementNode &if_statement) override;

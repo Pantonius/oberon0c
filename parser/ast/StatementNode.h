@@ -12,9 +12,6 @@ class StatementNode : public Node {
 public:
   StatementNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
   ~StatementNode() override = default;
-
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
 };
 
 class AssignmentNode final : public StatementNode {
@@ -26,8 +23,8 @@ public:
         selectors(selectors), expression(expression) {}
   ~AssignmentNode() override = default;
 
-  void accept(NodeVisitor &) override {};
-  void print(std::ostream &) const override {};
+  void accept(NodeVisitor &) final;
+  void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> &ident;
   const vector<unique_ptr<SelectorNode>> &selectors;
@@ -42,8 +39,8 @@ public:
         body(body) {}
   ~ElsIfStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> &condition;
   const unique_ptr<StatementSequenceNode> &body;
@@ -60,8 +57,8 @@ public:
         else_statement_sequence(else_statement_sequence) {}
   ~IfStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> &condition;
   const unique_ptr<StatementSequenceNode> &body;
@@ -79,8 +76,8 @@ public:
         selectors(selectors), actual_parameters(actual_parameters) {}
   ~ProcedureCallNode() override = default;
 
-  void accept(NodeVisitor &) override {};
-  void print(std::ostream &) const override {};
+  void accept(NodeVisitor &) final;
+  void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> &ident;
   const vector<unique_ptr<SelectorNode>> &selectors;
@@ -95,8 +92,8 @@ public:
         body(body) {}
   ~WhileStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> &condition;
   const unique_ptr<StatementSequenceNode> &body;
@@ -110,8 +107,8 @@ public:
         body(body) {}
   ~RepeatStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> &condition;
   const unique_ptr<StatementSequenceNode> &body;

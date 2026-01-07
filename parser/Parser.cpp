@@ -260,7 +260,7 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
 bool Parser::peek_expression() { return peek_simple_expr(); }
 
 // relation = "=" | "#" | "<" | "<=" | ">" | ">="
-RelationType Parser::relation() {
+BinaryOpType Parser::relation() {
   expect_token_type_within(RELATION_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return relation_from_token_type(last_token_->type());
 }
@@ -310,7 +310,7 @@ bool Parser::peek_sign() {
 }
 
 // AddOperator = "+" | "-" | "OR"
-AddOperatorType Parser::add_operator() {
+BinaryOpType Parser::add_operator() {
   expect_token_type_within(ADD_OPERATOR_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return add_operator_from_token_type(last_token_->type());
 }
@@ -336,7 +336,7 @@ std::unique_ptr<ExpressionNode> Parser::term() {
 bool Parser::peek_term() { return peek_factor(); }
 
 // MulOperator = "*" | "/" | "DIV" | "MOD" | "&"
-MulOperatorType Parser::mul_operator() {
+BinaryOpType Parser::mul_operator() {
   expect_token_type_within(MUL_OPERATOR_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return mul_operator_from_token_type(last_token_->type());
 }
@@ -356,7 +356,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     expect_token_type(TokenType::rparen);
     return expression;
   } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
-    auto op = UnaryOpType::not_;
+    auto op = UnaryOpType::u_not;
     auto expression = Parser::expression();
     return make_unique<UnaryExpressionNode>(curr->start(), op, expression);
   } else {

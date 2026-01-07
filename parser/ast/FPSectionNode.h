@@ -18,8 +18,8 @@ public:
       : Node(NodeType::fp_section, pos), idents(idents), type(type) {}
   ~FPSectionNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const vector<unique_ptr<IdentNode>> &idents;
   const unique_ptr<TypeNode> &type;
