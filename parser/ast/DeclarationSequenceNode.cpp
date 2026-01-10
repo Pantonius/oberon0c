@@ -2,6 +2,25 @@
 #include "NodeVisitor.h"
 #include "util/Logger.h"
 
+void DeclarationSequenceNode::add_const(
+    unique_ptr<ConstDeclarationNode> const_decl) {
+  constants_.push_back(std::move(const_decl));
+}
+
+void DeclarationSequenceNode::add_type(
+    unique_ptr<TypeDeclarationNode> type_decl) {
+  types_.push_back(std::move(type_decl));
+}
+
+void DeclarationSequenceNode::add_var(unique_ptr<VarDeclarationNode> var_decl) {
+  variables_.push_back(std::move(var_decl));
+}
+
+void DeclarationSequenceNode::add_procedure(
+    unique_ptr<ProcedureDeclarationNode> proc_decl) {
+  procedures_.push_back(std::move(proc_decl));
+}
+
 void ConstDeclarationNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }
@@ -34,7 +53,7 @@ void ProcedureDeclarationNode::accept(NodeVisitor &visitor) {
 }
 void ProcedureDeclarationNode::print(ostream &stream) const {
   stream << "PROCEDURE ";
-  proc_name->print(stream);
+  ident->print(stream);
   stream << "(";
 
   int fp_size = formal_parameters.size();
@@ -48,7 +67,11 @@ void ProcedureDeclarationNode::print(ostream &stream) const {
   }
 
   stream << ")";
-  statement_sequence->print(stream);
+  statement_sequence_->print(stream);
   stream << "END ";
-  proc_name->print(stream);
+  ident->print(stream);
+}
+void ProcedureDeclarationNode::set_statement_sequence(
+    unique_ptr<StatementSequenceNode> stmt_seq) {
+  statement_sequence_ = std::move(stmt_seq);
 }

@@ -1,11 +1,9 @@
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
-#include "global.h"
+#include "ast/ASTContext.h"
 
-#include "ast/ModuleNode.h"
-
-#include "parser/SymbolTable.h"
+#include "SemanticChecker.h"
 #include "scanner/Scanner.h"
 #include "scanner/Token.h"
 #include <memory>
@@ -26,18 +24,18 @@ using std::unique_ptr;
 class Parser {
 
 private:
+  ASTContext context_;
   Scanner &scanner_;
   Logger &logger_;
   unique_ptr<const Token> last_token_;
-  SymbolTable symbol_table_;
+  SemanticChecker sema_;
 
-  // TODO condense everything down
   BinaryOpType relation();
   int number();
   unique_ptr<IdentNode> ident();
   unique_ptr<ArrayTypeNode> array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
-  DeclarationSequence declaration_sequence();
+  void declaration_sequence(DeclarationSequenceNode *);
   unique_ptr<ExpressionNode> expression();
   unique_ptr<ExpressionNode> simple_expr();
   unique_ptr<ExpressionNode> factor();
@@ -98,9 +96,10 @@ private:
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)
-      : scanner_(scanner), logger_(logger), symbol_table_(logger) {};
+      : scanner_(scanner), logger_(logger), sema_(logger) {};
   ~Parser() = default;
-  unique_ptr<ModuleNode> parse();
+
+  ASTContext *parse();
 };
 
 #endif // OBERON0C_PARSER_H

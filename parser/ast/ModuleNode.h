@@ -9,19 +9,19 @@
 using std::string;
 using std::unique_ptr;
 
-class ModuleNode final : public DeclarationSequenceNode {
+class ModuleNode final : public Node, public DeclarationSequenceNode {
+private:
+  unique_ptr<StatementSequenceNode> statement_sequence_;
+
 public:
-  ModuleNode(const FilePos &pos, unique_ptr<IdentNode> &ident,
-             DeclarationSequence decl, unique_ptr<StatementSequenceNode> &stmts)
-      : DeclarationSequenceNode(NodeType::module, pos, decl), ident(ident),
-        statement_sequence(stmts) {}
+  ModuleNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+      : Node(NodeType::module, pos), ident(std::move(ident)) {}
   ~ModuleNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const unique_ptr<IdentNode> &ident;
-  const unique_ptr<StatementSequenceNode> &statement_sequence;
+  const unique_ptr<IdentNode> ident;
 };
 
 #endif // OBERON0C_MODULENODE_H

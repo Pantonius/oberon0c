@@ -123,6 +123,9 @@ void RecordFieldNode::print(ostream &stream) const {
   ident->print(stream);
 }
 
+void ExpressionNode::setType(TypeNode *type_node) { type_ = type_node; }
+TypeNode *ExpressionNode::getType() const { return type_; }
+
 void NumberExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }
@@ -135,21 +138,27 @@ void IdentExpressionNode::print(ostream &stream) const {
     selectors[i]->print(stream);
   }
 }
+bool IdentExpressionNode::is_const() const { return false; }
 
 void UnaryExpressionNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-
 void UnaryExpressionNode::print(ostream &stream) const {
   stream << op;
   expression->print(stream);
   stream << ";";
 }
+bool UnaryExpressionNode::is_const() const {
+  return expression && expression->is_const();
+}
 
 void BinaryExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }
-
 void BinaryExpressionNode::print(ostream &stream) const {
   left_expression->print(stream);
   stream << " " << op << " ";
   right_expression->print(stream);
+}
+bool BinaryExpressionNode::is_const() const {
+  return left_expression && right_expression && left_expression->is_const() &&
+         right_expression->is_const();
 }

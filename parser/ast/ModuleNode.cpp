@@ -7,7 +7,7 @@ void ModuleNode::print(ostream &stream) const {
   stream << "MODULE ";
   ident->print(stream);
   stream << "\n";
-  statement_sequence->print(stream);
+  statement_sequence_->print(stream);
   stream << "END ";
   ident->print(stream);
   stream << ";";
