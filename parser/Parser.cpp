@@ -11,15 +11,15 @@
 using std::make_unique;
 
 ASTContext *Parser::parse() {
-  context_.set_module(module());
-  return &context_;
+  module();
+  return sema_.get_context();
 }
 
 /* module = "MODULE" ident ";"
  *          DeclarationSequence
  *          [ "BEGIN" StatementSequence ]
  *          "END" ident "." */
-std::unique_ptr<ModuleNode> Parser::module() {
+void Parser::module() {
   if (!expect_token_type(TokenType::kw_module)) {
     logger_.info("You might be missing MODULE.");
   }
@@ -27,10 +27,11 @@ std::unique_ptr<ModuleNode> Parser::module() {
 
   auto module_ident = Parser::ident();
 
-  auto module = sema_.onModuleStart(curr->start(), std::move(module_ident));
+  sema_.onModuleStart(curr->start(), std::move(module_ident));
+  //
   expect_token_type(TokenType::semicolon);
 
-  declaration_sequence(module.get());
+  declaration_sequence(sema_.get_context()->get_module());
 
   // [
   unique_ptr<StatementSequenceNode> statement_sequence;
@@ -45,8 +46,6 @@ std::unique_ptr<ModuleNode> Parser::module() {
   expect_token_type(TokenType::eof);
 
   sema_.onModuleEnd(module_ident->pos(), std::move(module_ident));
-
-  return module;
 }
 
 /* ident = letter {letter | digit} */
@@ -122,6 +121,8 @@ std::unique_ptr<RecordTypeNode> Parser::record_type() {
     std::unique_ptr<TypeNode> u_type = Parser::type();
     TypeNode *type = u_type.get();
 
+    sema_.get_context()->add_type(std::move(u_type));
+
     for (unique_ptr<IdentNode> &ident : idents) {
       auto field = make_unique<FieldNode>(ident->pos(), std::move(ident), type);
       field_lists.push_back(std::move(field));
@@ -164,8 +165,8 @@ void Parser::declaration_sequence(DeclarationSequenceNode *decls) {
   if (peek_check_token_type(TokenType::kw_var, ADVANCE_ON_TRUE)) {
     do {
       auto new_vars = var_declarations();
-      for (unique_ptr<VarDeclarationNode> &var : new_vars) {
-        decls->add_var(std::move(var));
+      for (size_t i = 0; i < new_vars.size(); i++) {
+        decls->add_var(std::move(new_vars[i]));
       }
     } while (peek_var_declaration());
   }
@@ -200,7 +201,7 @@ std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
 
   auto type_declaration = make_unique<TypeDeclarationNode>(
       curr->start(), std::move(ident), type.get());
-  context_.add_type(std::move(type));
+  sema_.get_context()->add_type(std::move(type));
   // symbol_table_.insert(ident->value, type_declaration.get());
 
   return type_declaration;
@@ -216,11 +217,10 @@ vector<unique_ptr<VarDeclarationNode>> Parser::var_declarations() {
   vector<unique_ptr<IdentNode>> idents = ident_list();
   expect_token_type(TokenType::colon);
   std::unique_ptr<TypeNode> u_type = Parser::type();
-  TypeNode *type = u_type.get();
 
   for (size_t i = 0; i < idents.size(); i++) {
-    auto var_declaration = make_unique<VarDeclarationNode>(
-        idents[i]->pos(), std::move(idents[i]), type);
+    auto pos = idents[i]->pos();
+    auto var_declaration = sema_.onVar(pos, std::move(idents[i]), u_type.get());
     // symbol_table_.insert(var_declaration->ident->value,
     // var_declaration.get());
     vars.push_back(std::move(var_declaration));
@@ -590,7 +590,8 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
   expect_token_type(TokenType::semicolon);
 
   // symbol_table_.endScope();
-  sema_.onProcedureEnd(last_token_->start(), std::move(proc_name));
+  sema_.onProcedureEnd(last_token_->start(), procedure_declaration.get(),
+                       std::move(proc_name));
 
   return procedure_declaration;
 }

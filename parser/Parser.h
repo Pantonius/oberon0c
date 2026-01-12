@@ -1,8 +1,6 @@
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
-#include "ast/ASTContext.h"
-
 #include "SemanticChecker.h"
 #include "scanner/Scanner.h"
 #include "scanner/Token.h"
@@ -24,7 +22,6 @@ using std::unique_ptr;
 class Parser {
 
 private:
-  ASTContext context_;
   Scanner &scanner_;
   Logger &logger_;
   unique_ptr<const Token> last_token_;
@@ -41,7 +38,7 @@ private:
   unique_ptr<ExpressionNode> factor();
   unique_ptr<ExpressionNode> term();
   unique_ptr<IfStatementNode> if_statement();
-  unique_ptr<ModuleNode> module();
+  void module();
   unique_ptr<ProcedureCallNode> procedure();
   unique_ptr<RecordTypeNode> record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();

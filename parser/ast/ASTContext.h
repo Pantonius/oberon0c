@@ -1,4 +1,5 @@
 #include "ModuleNode.h"
+#include "parser/ast/TypeNode.h"
 
 class ASTContext {
 private:
@@ -10,7 +11,12 @@ public:
   ~ASTContext() = default;
 
   // NOTE for multi-module use this should be a vector
-  void set_module(unique_ptr<ModuleNode> module);
+  ModuleNode *get_module();
+  void set_module(unique_ptr<ModuleNode>);
 
-  void add_type(unique_ptr<TypeNode> type);
+  void add_type(unique_ptr<TypeNode>);
+
+  TypeNode *find_type(IdentTypeNode *);
+  TypeNode *find_type(ArrayTypeNode *);
+  TypeNode *find_type(RecordTypeNode *);
 };

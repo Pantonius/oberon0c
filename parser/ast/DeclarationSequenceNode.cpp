@@ -44,7 +44,7 @@ void TypeDeclarationNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void TypeDeclarationNode::print(ostream &stream) const {
   stream << "TYPE ";
   ident->print(stream);
-  stream << " = ";
+  stream << " : ";
   type->print(stream);
 }
 
