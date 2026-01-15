@@ -29,3 +29,13 @@ const Node *SymbolTable::lookup(const std::string &ident) const {
 
   return {};
 }
+
+bool SymbolTable::contains(const std::string &ident) const {
+  for (auto &scope : std::ranges::views::reverse(table_)) {
+    if (scope.contains(ident)) {
+      return true;
+    }
+  }
+
+  return false;
+}

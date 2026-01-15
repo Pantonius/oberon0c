@@ -12,7 +12,6 @@ public:
   virtual void visit(ArrayTypeNode &array_type) = 0;
   virtual void visit(AssignmentNode &assignment) = 0;
   virtual void visit(ConstDeclarationNode &const_declaration) = 0;
-  virtual void visit(DeclarationSequenceNode &declaration_sequence) = 0;
   virtual void visit(ExpressionNode &expression) = 0;
   virtual void visit(FPSectionNode &fp_section) = 0;
   virtual void visit(IfStatementNode &if_statement) = 0;
@@ -24,6 +23,8 @@ public:
   virtual void visit(SelectorNode &selector) = 0;
   virtual void visit(StatementNode &statement) = 0;
   virtual void visit(StatementSequenceNode &statement_sequence) = 0;
+  virtual void visit(IdentNode &ident) = 0;
+  virtual void visit(FieldNode &field) = 0;
   virtual void visit(TypeNode &type) = 0;
   virtual void visit(TypeDeclarationNode &type_declaration) = 0;
   virtual void visit(VarDeclarationNode &var_declaration) = 0;

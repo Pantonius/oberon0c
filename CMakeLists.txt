@@ -51,19 +51,19 @@ set(SCANNER_SOURCES
 
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h
-        parser/ast/DeclarationSequenceNode.h
+        parser/ast/ASTContext.h parser/ast/ASTContext.cpp
+        parser/ast/DeclarationSequenceNode.h parser/ast/DeclarationSequenceNode.cpp
         parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
-        parser/ast/FPSectionNode.h
-        parser/ast/IdentNode.h
-        parser/ast/ModuleNode.h
+        parser/ast/FPSectionNode.h parser/ast/FPSectionNode.cpp
+        parser/ast/IdentNode.h parser/ast/IdentNode.cpp
+        parser/ast/ModuleNode.h parser/ast/ModuleNode.cpp
         parser/ast/Node.cpp parser/ast/Node.h
-        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h
-        parser/ast/NodeVisitor.cpp
-        parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h
-        parser/ast/StatementNode.h
-        parser/ast/StatementSequenceNode.h
-        parser/ast/TypeNode.h
+        parser/ast/NodeVisitor.h parser/ast/NodeVisitor.cpp
+        parser/ast/StatementNode.h parser/ast/StatementNode.cpp
+        parser/ast/StatementSequenceNode.h parser/ast/StatementSequenceNode.cpp
+        parser/ast/TypeNode.h parser/ast/TypeNode.cpp
         parser/SymbolTable.h parser/SymbolTable.cpp
+        parser/SemanticChecker.h parser/SemanticChecker.cpp
       )
 
 

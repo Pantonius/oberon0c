@@ -15,6 +15,7 @@ public:
   void endScope();
   void insert(const std::string &name, const Node *node);
   const Node *lookup(const std::string &name) const;
+  bool contains(const std::string &name) const;
 
 private:
   Logger &logger_;
