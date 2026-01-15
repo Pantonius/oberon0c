@@ -1,65 +1,62 @@
 {
   pkgs,
-  makeWrapper,
   lib,
+  writeShellScriptBin,
+  makeWrapper,
 }:
 let
   fs = lib.fileset;
   sourceFiles = ./.;
 in
 
-fs.trace sourceFiles
+pkgs.stdenv.mkDerivation rec {
+  pname = "oberon0c-fuzz";
+  version = "0.1.0";
 
-  pkgs.stdenv.mkDerivation
-  rec {
-    pname = "oberon0c-fuzz";
-    version = "0.1.0";
+  src = fs.toSource {
+    root = ./.;
+    fileset = sourceFiles;
+  };
 
-    src = fs.toSource {
-      root = ./.;
-      fileset = sourceFiles;
-    };
+  buildInputs =
+    (import ./dependencies.nix {
+      inherit pkgs;
+    })
+    ++ [
+      makeWrapper
+      pkgs.aflplusplus
+    ];
 
+  dontConfigure = true;
 
-    buildInputs =
-      (import ./dependencies.nix {
-        inherit pkgs;
-      })
-      ++ [
-        makeWrapper
-        pkgs.aflplusplus
-      ];
+  buildPhase = ''
+    cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib .
+    cmake --build . --parallel $NIX_BUILD_CORES
 
-    dontConfigure = true;
+    export AFL_USE_ASAN=1 AFL_SAN_NO_INST=1
+    cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib -DCMAKE_EXECUTABLE_SUFFIX_CXX=_asan .
+    cmake --build . --parallel $NIX_BUILD_CORES
+  '';
 
-    buildPhase = ''
-      cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib .
-      cmake --build . --parallel $NIX_BUILD_CORES
+  installPhase = ''
+    runHook preInstall
 
-      export AFL_USE_ASAN=1 AFL_SAN_NO_INST=1
-      cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib -DCMAKE_EXECUTABLE_SUFFIX_CXX=_asan .
-      cmake --build . --parallel $NIX_BUILD_CORES
-    '';
+    mkdir -p $out/bin
+    mv oberon0c $out/bin
+    mv oberon0c_asan $out/bin
 
-    postInstall = ''
-      afl-cmin -i test -o test_unique -- $out/bin/oberon0c @@
-      mv test_unique $out
-    '';
+    runHook postInstall
+  '';
 
-    installPhase = ''
-      runHook preInstall
+  postInstall = ''
+    afl-cmin -i test -o test_unique -- $out/bin/oberon0c @@
+    mv test_unique $out
+  '';
 
-      mkdir -p $out/bin
-      mv oberon0c $out/bin
-      mv oberon0c_asan $out/bin
-
-      runHook postInstall
-    '';
-
-    meta = with pkgs.lib; {
-      description = "Basic setup for the Oberon-0 Compiler project of the course \"Compiler Construction\".";
-      homepage = "https://gitlab.inf.uni-konstanz.de/anton.pogrebnjak/${pname}";
-      license = licenses.mit;
-      platforms = platforms.unix;
-    };
-  }
+  meta = with pkgs.lib; {
+    description = "Basic setup for the Oberon-0 Compiler project of the course \"Compiler Construction\".";
+    homepage = "https://gitlab.inf.uni-konstanz.de/anton.pogrebnjak/${pname}";
+    license = licenses.mit;
+    platforms = platforms.unix;
+  };
+}
