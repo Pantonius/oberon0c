@@ -57,3 +57,4 @@ result
 results/
 output/default
 test_unique
+compile_commands.json
