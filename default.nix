@@ -14,9 +14,15 @@ pkgs.stdenv.mkDerivation rec {
     })
     ++ [ makeWrapper ];
 
+  doCheck = true;
+
   buildPhase = ''
-    cmake . 
+    cmake .
     cmake --build . --parallel $NIX_BUILD_CORES
+  '';
+
+  checkPhase = ''
+    make test
   '';
 
   installPhase = ''

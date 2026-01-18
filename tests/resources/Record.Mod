@@ -9,4 +9,6 @@ ARRAYRECORD = RECORD x, y: INTARRAY END;
 VAR a: INTARRAY;
 b: ARRAYRECORD;
 
+BEGIN
+  b.x[2] := 4;
 END Record.

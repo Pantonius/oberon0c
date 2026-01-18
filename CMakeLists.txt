@@ -100,3 +100,15 @@ endif ()
 
 configure_file(config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+enable_testing()
+
+# Configure Unit Tests
+find_package(Catch2 3 REQUIRED)
+# These tests can use the Catch2-provided main
+add_executable(oberon0c_tests tests/parser_tests.cpp ${ALL_SOURCES})
+target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
