@@ -52,3 +52,6 @@ const FieldNode *RecordTypeNode::find_field(const IdentNode &ident) const {
 
   return {};
 }
+
+void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
