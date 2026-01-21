@@ -47,7 +47,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
 
   SECTION("Test 'rec' lookup") {
     IdentNode rec_ident(EMPTY_POS, "rec");
-    auto rec_lookup = symbol_table.lookup_type(rec_ident);
+    auto rec_lookup = symbol_table.lookup(rec_ident);
 
     REQUIRE(rec_lookup == rec_var.type);
   }
@@ -59,7 +59,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
 
-    auto field1_lookup = symbol_table.lookup_type(rec_ident, selectors);
+    auto field1_lookup = symbol_table.lookup(rec_ident, selectors);
 
     // Should be the type of the record field
     REQUIRE(field1_lookup == rec_fields[0]->type);
@@ -75,7 +75,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
         EMPTY_POS,
         std::make_unique<NumberExpressionNode>(EMPTY_POS, 2, nullptr)));
 
-    auto field1_elem_lookup = symbol_table.lookup_type(rec_ident, selectors);
+    auto field1_elem_lookup = symbol_table.lookup(rec_ident, selectors);
 
     // Should be the type of the array
     REQUIRE(field1_elem_lookup == array_type.type);
@@ -88,7 +88,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field2")));
 
-    auto field2_lookup = symbol_table.lookup_type(rec_ident, selectors);
+    auto field2_lookup = symbol_table.lookup(rec_ident, selectors);
 
     // Should be the type of the record field
     REQUIRE(field2_lookup == rec_fields[1]->type);
