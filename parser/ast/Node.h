@@ -23,6 +23,7 @@ enum class NodeType : char {
   procedure_call,
   procedure_declaration,
   procedure_heading,
+  procedure_type,
   record_type,
   repeat_statement,
   array_selector,

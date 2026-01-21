@@ -13,8 +13,8 @@ public:
       : Node(NodeType::ident, pos), value(ident) {}
   ~IdentNode() override = default;
 
-  void accept(NodeVisitor &visitor) override {};
-  void print(std::ostream &stream) const override {};
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 
   const string value;
 };

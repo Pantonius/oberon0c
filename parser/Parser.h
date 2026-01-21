@@ -1,11 +1,7 @@
 #ifndef OBERON0C_PARSER_H
 #define OBERON0C_PARSER_H
 
-#include "global.h"
-
-#include "ast/ModuleNode.h"
-
-#include "parser/SymbolTable.h"
+#include "SemanticChecker.h"
 #include "scanner/Scanner.h"
 #include "scanner/Token.h"
 #include <memory>
@@ -29,34 +25,33 @@ private:
   Scanner &scanner_;
   Logger &logger_;
   unique_ptr<const Token> last_token_;
-  SymbolTable symbol_table_;
+  SemanticChecker sema_;
 
-  // TODO condense everything down
-  RelationType relation();
+  BinaryOpType relation();
   int number();
   unique_ptr<IdentNode> ident();
-  unique_ptr<ArrayTypeNode> array_type();
+  const ArrayTypeNode *array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
-  DeclarationSequence declaration_sequence();
+  void declaration_sequence(DeclarationSequenceNode *);
   unique_ptr<ExpressionNode> expression();
   unique_ptr<ExpressionNode> simple_expr();
   unique_ptr<ExpressionNode> factor();
   unique_ptr<ExpressionNode> term();
   unique_ptr<IfStatementNode> if_statement();
-  unique_ptr<ModuleNode> module();
+  void module();
   unique_ptr<ProcedureCallNode> procedure();
-  unique_ptr<RecordTypeNode> record_type();
+  const RecordTypeNode *record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();
-  unique_ptr<TypeNode> type();
+  const TypeNode *type();
   unique_ptr<WhileStatementNode> while_statement();
   std::vector<unique_ptr<IdentNode>> ident_list();
   vector<unique_ptr<VarDeclarationNode>> var_declarations();
-  AddOperatorType add_operator();
-  MulOperatorType mul_operator();
+  BinaryOpType add_operator();
+  BinaryOpType mul_operator();
   unique_ptr<AssignmentNode> assignment();
   unique_ptr<AssignmentNode> assignment(unique_ptr<IdentNode> ident);
   unique_ptr<FPSectionNode> fp_section();
@@ -98,9 +93,10 @@ private:
 
 public:
   explicit Parser(Scanner &scanner, Logger &logger)
-      : scanner_(scanner), logger_(logger), symbol_table_(logger) {};
+      : scanner_(scanner), logger_(logger), sema_(logger) {};
   ~Parser() = default;
-  unique_ptr<ModuleNode> parse();
+
+  ASTContext *parse();
 };
 
 #endif // OBERON0C_PARSER_H
