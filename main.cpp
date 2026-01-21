@@ -6,11 +6,11 @@
 
 #include "parser/Parser.h"
 #include "scanner/Scanner.h"
+#include "util/Logger.h"
 #include <iostream>
 #include <string>
 
 using std::cerr;
-using std::cout;
 using std::endl;
 using std::string;
 
@@ -43,7 +43,8 @@ int main(const int argc, const char *argv[]) {
 
   // Parsing
   Parser parser(scanner, logger);
-  parser.parse();
+  auto context = parser.parse();
+  // context->get_module()->print(cout);
 
   // Status print
   string status = (logger.getErrorCount() == 0 ? "complete" : "failed");

@@ -24,6 +24,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # define DEBUG macro
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -51,19 +52,19 @@ set(SCANNER_SOURCES
 
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h
-        parser/ast/DeclarationSequenceNode.h
+        parser/ast/ASTContext.h parser/ast/ASTContext.cpp
+        parser/ast/DeclarationSequenceNode.h parser/ast/DeclarationSequenceNode.cpp
         parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
-        parser/ast/FPSectionNode.h
-        parser/ast/IdentNode.h
-        parser/ast/ModuleNode.h
+        parser/ast/FPSectionNode.h parser/ast/FPSectionNode.cpp
+        parser/ast/IdentNode.h parser/ast/IdentNode.cpp
+        parser/ast/ModuleNode.h parser/ast/ModuleNode.cpp
         parser/ast/Node.cpp parser/ast/Node.h
-        parser/ast/NodePrettyPrinter.cpp parser/ast/NodePrettyPrinter.h
-        parser/ast/NodeVisitor.cpp
-        parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h
-        parser/ast/StatementNode.h
-        parser/ast/StatementSequenceNode.h
-        parser/ast/TypeNode.h
+        parser/ast/NodeVisitor.h parser/ast/NodeVisitor.cpp
+        parser/ast/StatementNode.h parser/ast/StatementNode.cpp
+        parser/ast/StatementSequenceNode.h parser/ast/StatementSequenceNode.cpp
+        parser/ast/TypeNode.h parser/ast/TypeNode.cpp
         parser/SymbolTable.h parser/SymbolTable.cpp
+        parser/SemanticChecker.h parser/SemanticChecker.cpp
       )
 
 
@@ -103,12 +104,19 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 enable_testing()
 
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+
+set(TEST_SOURCES
+  tests/parser_tests.cpp
+  tests/symbol_table_tests.cpp
+)
+
 # Configure Unit Tests
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main
-add_executable(oberon0c_tests tests/parser_tests.cpp ${ALL_SOURCES})
+add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
 target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain)
 
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER "console::out=-::colour-mode=ansi")

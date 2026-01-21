@@ -22,7 +22,16 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = (if system == "aarch64-darwin" then [ ] else [ pkgs.gdb ]);
+          packages = (
+            if system == "aarch64-darwin" then
+              [ ]
+            else
+              with pkgs;
+              [
+                gdb
+                valgrind
+              ]
+          );
           inputsFrom = [
             self.packages.${system}.oberon0c
             self.packages.${system}.oberon0c_fuzz
