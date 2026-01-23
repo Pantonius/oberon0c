@@ -4,7 +4,6 @@
 #include "IdentNode.h"
 #include "Node.h"
 #include "global.h"
-#include "parser/ast/FPSectionNode.h"
 #include <memory>
 #include <ostream>
 #include <vector>
@@ -13,6 +12,7 @@ using std::string;
 using std::unique_ptr;
 
 class ExpressionNode;
+class VarDeclarationNode;
 class TypeNode : public Node {
 public:
   TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
@@ -64,16 +64,32 @@ public:
 
 class RecordTypeNode final : public TypeNode {
 public:
-  RecordTypeNode(const FilePos &pos, vector<unique_ptr<FieldNode>> &field_lists)
-      : TypeNode(NodeType::record_type, pos), field_lists(field_lists) {}
+  RecordTypeNode(const FilePos &pos,
+                 std::vector<unique_ptr<VarDeclarationNode>> field_lists)
+      : TypeNode(NodeType::record_type, pos),
+        field_lists(std::move(field_lists)) {}
   ~RecordTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const FieldNode *find_field(const IdentNode &ident) const;
+  const VarDeclarationNode *find_field(const IdentNode &ident) const;
 
-  const vector<unique_ptr<FieldNode>> &field_lists;
+  const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
+};
+
+class FieldNotFoundException : public std::exception {
+private:
+  const IdentNode &ident_;
+  const string msg;
+
+public:
+  FieldNotFoundException(const IdentNode &ident)
+      : ident_(ident),
+        msg("Record does not have a field '" + to_string(ident_) + "'") {}
+
+  const char *what() const noexcept override { return msg.c_str(); }
+  const IdentNode &field() const noexcept { return ident_; }
 };
 
 class ProcedureTypeNode final : public TypeNode {
