@@ -433,10 +433,10 @@ unique_ptr<const Token> Scanner::scanString() {
   auto pos = current();
   read();
   while (ch_ != '"') {
-    if (eof_) {
-      logger_.error(pos, "Missing closing \" for string");
-      exit(1);
-    }
+    // if (eof_) {
+    //   logger_.error(pos, "Missing closing \" for string");
+    //   exit(1);
+    // }
     ss << ch_;
     if (ch_ == '\\') {
       read();

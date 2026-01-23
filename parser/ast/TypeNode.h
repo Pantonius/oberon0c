@@ -3,17 +3,22 @@
 
 #include "IdentNode.h"
 #include "Node.h"
-#include "parser/ast/FPSectionNode.h"
+#include "global.h"
 #include <memory>
+#include <ostream>
+#include <vector>
 
 using std::string;
 using std::unique_ptr;
 
 class ExpressionNode;
+class VarDeclarationNode;
 class TypeNode : public Node {
 public:
   TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
   ~TypeNode() override = default;
+
+  bool is_equivalent(TypeNode *) const;
 };
 
 class IdentTypeNode final : public TypeNode {
@@ -31,21 +36,22 @@ public:
 class ArrayTypeNode final : public TypeNode {
 public:
   ArrayTypeNode(const FilePos &pos, unique_ptr<ExpressionNode> expression,
-                unique_ptr<TypeNode> type)
+                const TypeNode *type)
       : TypeNode(NodeType::array_type, pos), expression(std::move(expression)),
-        type(std::move(type)) {}
+        type(type) {}
   ~ArrayTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> expression;
-  const unique_ptr<TypeNode> type;
+  const TypeNode *type;
 };
 
 class FieldNode final : public Node {
 public:
-  FieldNode(const FilePos &pos, unique_ptr<IdentNode> ident, TypeNode *type)
+  FieldNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+            const TypeNode *type)
       : Node(NodeType::field, pos), ident(std::move(ident)), type(type) {}
   ~FieldNode() override = default;
 
@@ -58,14 +64,42 @@ public:
 
 class RecordTypeNode final : public TypeNode {
 public:
-  RecordTypeNode(const FilePos &pos, vector<unique_ptr<FieldNode>> &field_lists)
-      : TypeNode(NodeType::record_type, pos), field_lists(field_lists) {}
+  RecordTypeNode(const FilePos &pos,
+                 std::vector<unique_ptr<VarDeclarationNode>> field_lists)
+      : TypeNode(NodeType::record_type, pos),
+        field_lists(std::move(field_lists)) {}
   ~RecordTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const vector<unique_ptr<FieldNode>> &field_lists;
+  const VarDeclarationNode *find_field(const IdentNode &ident) const;
+
+  const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
+};
+
+class FieldNotFoundException : public std::exception {
+private:
+  const IdentNode &ident_;
+  const string msg;
+
+public:
+  FieldNotFoundException(const IdentNode &ident)
+      : ident_(ident),
+        msg("Record does not have a field '" + to_string(ident_) + "'") {}
+
+  const char *what() const noexcept override { return msg.c_str(); }
+  const IdentNode &field() const noexcept { return ident_; }
+};
+
+class ProcedureTypeNode final : public TypeNode {
+public:
+  ProcedureTypeNode(const FilePos &pos)
+      : TypeNode(NodeType::procedure_type, pos) {}
+  ~ProcedureTypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) final;
+  void print(std::ostream &stream) const final;
 };
 
 #endif // OBERON0C_TYPENODE_H

@@ -24,6 +24,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # define DEBUG macro
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -100,3 +101,22 @@ endif ()
 
 configure_file(config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+enable_testing()
+
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+
+set(TEST_SOURCES
+  tests/parser_tests.cpp
+  tests/symbol_table_tests.cpp
+)
+
+# Configure Unit Tests
+find_package(Catch2 3 REQUIRED)
+# These tests can use the Catch2-provided main
+add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
+target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER "console::out=-::colour-mode=ansi")

@@ -124,7 +124,7 @@ void RecordFieldNode::print(ostream &stream) const {
 }
 
 void ExpressionNode::setType(TypeNode *type_node) { type_ = type_node; }
-TypeNode *ExpressionNode::getType() const { return type_; }
+const TypeNode *ExpressionNode::getType() const { return type_; }
 
 void NumberExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);

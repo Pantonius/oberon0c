@@ -15,19 +15,19 @@ class DeclarationNode : public Node {
 private:
 public:
   DeclarationNode(const NodeType &type, const FilePos &pos,
-                  unique_ptr<IdentNode> ident, TypeNode *type_node)
+                  unique_ptr<IdentNode> ident, const TypeNode *type_node)
       : Node(type, pos), ident(std::move(ident)), type(type_node) {}
   ~DeclarationNode() override = default;
 
   const unique_ptr<IdentNode> ident;
-  TypeNode *type;
+  const TypeNode *type;
 };
 
 class ConstDeclarationNode final : public DeclarationNode {
 public:
   ConstDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
                        unique_ptr<ExpressionNode> expression,
-                       TypeNode *type_node)
+                       const TypeNode *type_node)
       : DeclarationNode(NodeType::const_declaration, pos, std::move(ident),
                         type_node),
         expression(std::move(expression)) {}
@@ -42,7 +42,7 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 public:
   TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                      TypeNode *type_node)
+                      const TypeNode *type_node)
       : DeclarationNode(NodeType::type_declaration, pos, std::move(ident),
                         type_node) {}
   ~TypeDeclarationNode() override = default;
@@ -54,7 +54,7 @@ public:
 class VarDeclarationNode final : public DeclarationNode {
 public:
   VarDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                     TypeNode *type_node)
+                     const TypeNode *type_node)
       : DeclarationNode(NodeType::var_declaration, pos, std::move(ident),
                         type_node) {}
   ~VarDeclarationNode() override = default;
@@ -96,18 +96,18 @@ private:
 
 public:
   ProcedureDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> proc_name,
-                           vector<unique_ptr<FPSectionNode>> &formal_parameters,
-                           TypeNode *type_node)
+                           vector<unique_ptr<FPSectionNode>> formal_parameters,
+                           const TypeNode *type_node)
       : DeclarationNode(NodeType::procedure_declaration, pos,
                         std::move(proc_name), type_node),
-        formal_parameters(formal_parameters) {}
+        formal_parameters(std::move(formal_parameters)) {}
   ~ProcedureDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
   // ProcedureHeading
-  const vector<unique_ptr<FPSectionNode>> &formal_parameters;
+  const vector<unique_ptr<FPSectionNode>> formal_parameters;
 
   void set_statement_sequence(unique_ptr<StatementSequenceNode>);
 };

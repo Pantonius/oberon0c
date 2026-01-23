@@ -31,6 +31,7 @@
 /cmake-build-debug/
 /CMakeFiles/
 build
+compile_commands.json
 
 # Visual Studio
 /.vs/
@@ -57,3 +58,4 @@ result
 results/
 output/default
 test_unique
+compile_commands.json

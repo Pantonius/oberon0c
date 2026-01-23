@@ -30,7 +30,7 @@ private:
   BinaryOpType relation();
   int number();
   unique_ptr<IdentNode> ident();
-  unique_ptr<ArrayTypeNode> array_type();
+  const ArrayTypeNode *array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
   void declaration_sequence(DeclarationSequenceNode *);
   unique_ptr<ExpressionNode> expression();
@@ -40,13 +40,13 @@ private:
   unique_ptr<IfStatementNode> if_statement();
   void module();
   unique_ptr<ProcedureCallNode> procedure();
-  unique_ptr<RecordTypeNode> record_type();
+  const RecordTypeNode *record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();
-  unique_ptr<TypeNode> type();
+  const TypeNode *type();
   unique_ptr<WhileStatementNode> while_statement();
   std::vector<unique_ptr<IdentNode>> ident_list();
   vector<unique_ptr<VarDeclarationNode>> var_declarations();

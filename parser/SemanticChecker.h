@@ -1,6 +1,8 @@
 #include "SymbolTable.h"
 #include "ast/ASTContext.h"
 #include "ast/ModuleNode.h"
+#include "ast/TypeNode.h"
+#include "parser/ast/DeclarationSequenceNode.h"
 #include "util/Logger.h"
 #include <memory>
 
@@ -16,10 +18,19 @@ public:
 
   unique_ptr<ConstDeclarationNode>
   onConst(const FilePos &, unique_ptr<IdentNode>, unique_ptr<ExpressionNode>);
-  unique_ptr<TypeDeclarationNode> onType(const FilePos &, unique_ptr<IdentNode>,
-                                         unique_ptr<TypeNode>);
-  unique_ptr<VarDeclarationNode> onVar(const FilePos &, unique_ptr<IdentNode>,
-                                       TypeNode *);
+
+  unique_ptr<TypeDeclarationNode>
+  onTypeDeclaration(const FilePos &, unique_ptr<IdentNode>, const TypeNode *);
+
+  const TypeNode *onIdentType(const FilePos &, unique_ptr<IdentNode>);
+
+  const ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
+                                   const TypeNode *);
+  const RecordTypeNode *onRecordType(const FilePos &,
+                                     vector<unique_ptr<VarDeclarationNode>>);
+
+  vector<unique_ptr<VarDeclarationNode>>
+  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
 
   unique_ptr<ProcedureDeclarationNode>
   onProcedureStart(const FilePos &, unique_ptr<IdentNode>,
@@ -29,7 +40,7 @@ public:
 
   ASTContext *get_context() { return &context_; }
 
-  void expect_unique(const IdentNode *, const Node *);
+  void expect_unique(const IdentNode *, const DeclarationNode *);
 
 private:
   Logger &logger_;

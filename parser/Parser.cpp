@@ -72,12 +72,12 @@ std::vector<unique_ptr<IdentNode>> Parser::ident_list() {
 }
 
 // type = ident | ArrayType | RecordType
-std::unique_ptr<TypeNode> Parser::type() {
+const TypeNode *Parser::type() {
   const Token *curr = scanner_.peek();
 
   if (peek_ident()) {
     auto ident = Parser::ident();
-    return make_unique<IdentTypeNode>(curr->start(), std::move(ident));
+    return sema_.onIdentType(curr->start(), std::move(ident));
   } else if (peek_array_type()) {
     return array_type();
   } else if (peek_record_type()) {
@@ -90,7 +90,7 @@ std::unique_ptr<TypeNode> Parser::type() {
 }
 
 // ArrayType = "ARRAY" expression "OF" type
-std::unique_ptr<ArrayTypeNode> Parser::array_type() {
+const ArrayTypeNode *Parser::array_type() {
   const Token *curr = scanner_.peek();
 
   expect_token_type(TokenType::kw_array);
@@ -98,8 +98,7 @@ std::unique_ptr<ArrayTypeNode> Parser::array_type() {
   expect_token_type(TokenType::kw_of);
   auto type = Parser::type();
 
-  return make_unique<ArrayTypeNode>(curr->start(), std::move(expression),
-                                    std::move(type));
+  return sema_.onArrayType(curr->start(), std::move(expression), type);
 }
 
 bool Parser::peek_array_type() {
@@ -107,30 +106,28 @@ bool Parser::peek_array_type() {
 }
 
 // RecordType = "RECORD" FieldList {";" FieldList} "END"
-std::unique_ptr<RecordTypeNode> Parser::record_type() {
+const RecordTypeNode *Parser::record_type() {
   const Token *curr = scanner_.peek();
 
   expect_token_type(TokenType::kw_record);
 
   // symbol_table_.beginScope();
 
-  vector<unique_ptr<FieldNode>> field_lists;
+  vector<unique_ptr<VarDeclarationNode>> field_lists;
   do {
     vector<unique_ptr<IdentNode>> idents = ident_list();
     expect_token_type(TokenType::colon);
-    std::unique_ptr<TypeNode> u_type = Parser::type();
-    TypeNode *type = u_type.get();
-
-    sema_.get_context()->add_type(std::move(u_type));
+    const TypeNode *type = Parser::type();
 
     for (unique_ptr<IdentNode> &ident : idents) {
-      auto field = make_unique<FieldNode>(ident->pos(), std::move(ident), type);
+      auto field =
+          make_unique<VarDeclarationNode>(ident->pos(), std::move(ident), type);
       field_lists.push_back(std::move(field));
     }
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
   expect_token_type(TokenType::kw_end);
 
-  return make_unique<RecordTypeNode>(curr->start(), field_lists);
+  return sema_.onRecordType(curr->start(), std::move(field_lists));
 }
 
 bool Parser::peek_record_type() {
@@ -199,9 +196,12 @@ std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
   auto type = Parser::type();
   expect_token_type(TokenType::semicolon);
 
-  auto type_declaration = make_unique<TypeDeclarationNode>(
-      curr->start(), std::move(ident), type.get());
-  sema_.get_context()->add_type(std::move(type));
+  auto type_declaration =
+      sema_.onTypeDeclaration(curr->start(), std::move(ident), std::move(type));
+
+  // auto type_declaration = make_unique<TypeDeclarationNode>(
+  //     curr->start(), std::move(ident), type.get());
+  // sema_.get_context()->add_type(std::move(type));
   // symbol_table_.insert(ident->value, type_declaration.get());
 
   return type_declaration;
@@ -212,23 +212,17 @@ bool Parser::peek_type_declaration() { return peek_ident(); }
 // VarDeclaration = IdentList ":" type ";"
 // IdentList = ident {"," ident}
 vector<unique_ptr<VarDeclarationNode>> Parser::var_declarations() {
-  vector<unique_ptr<VarDeclarationNode>> vars;
+  auto curr_pos = last_token_->start();
 
   vector<unique_ptr<IdentNode>> idents = ident_list();
   expect_token_type(TokenType::colon);
-  std::unique_ptr<TypeNode> u_type = Parser::type();
+  const TypeNode *type = Parser::type();
 
-  for (size_t i = 0; i < idents.size(); i++) {
-    auto pos = idents[i]->pos();
-    auto var_declaration = sema_.onVar(pos, std::move(idents[i]), u_type.get());
-    // symbol_table_.insert(var_declaration->ident->value,
-    // var_declaration.get());
-    vars.push_back(std::move(var_declaration));
-  }
+  auto var_declarations = sema_.onVars(curr_pos, std::move(idents), type);
 
   expect_token_type(TokenType::semicolon);
 
-  return vars;
+  return var_declarations;
 }
 
 bool Parser::peek_var_declaration() { return peek_ident(); }
@@ -348,8 +342,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto ident = Parser::ident();
     auto selectors = Parser::selectors();
     return make_unique<IdentExpressionNode>(curr->start(), std::move(ident),
-                                            selectors,
-                                            nullptr); // TODO type
+                                            std::move(selectors)); // TODO type
   } else if (peek_number()) {
     auto number = Parser::number();
     return make_unique<NumberExpressionNode>(curr->start(), number,
@@ -434,7 +427,8 @@ Parser::assignment(unique_ptr<IdentNode> ident) {
   expect_token_type(TokenType::op_becomes);
   auto expression = Parser::expression();
 
-  return make_unique<AssignmentNode>(curr->start(), std::move(ident), selectors,
+  return make_unique<AssignmentNode>(curr->start(), std::move(ident),
+                                     std::move(selectors),
                                      std::move(expression));
 }
 

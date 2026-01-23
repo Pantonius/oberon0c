@@ -1,5 +1,10 @@
 #include "ASTContext.h"
 #include "TypeNode.h"
+#include "global.h"
+#include <memory>
+
+const std::shared_ptr<ProcedureTypeNode> ASTContext::STD_PROCEDURE_TYPE =
+    std::make_shared<ProcedureTypeNode>(EMPTY_POS);
 
 ModuleNode *ASTContext::get_module() { return module_.get(); }
 
@@ -7,44 +12,21 @@ void ASTContext::set_module(unique_ptr<ModuleNode> module) {
   module_ = std::move(module);
 }
 
-void ASTContext::add_type(unique_ptr<TypeNode> type) {
+IdentTypeNode *ASTContext::add_type(unique_ptr<IdentTypeNode> type) {
+  auto ptr = type.get();
   types_.push_back(std::move(type));
+
+  return ptr;
 }
+ArrayTypeNode *ASTContext::add_type(unique_ptr<ArrayTypeNode> type) {
+  auto ptr = type.get();
+  types_.push_back(std::move(type));
 
-TypeNode *ASTContext::find_type(IdentTypeNode *type) {
-  for (size_t i = 0; i < types_.size(); i++) {
-    if (type->getNodeType() == types_[i]->getNodeType()) {
-      auto symb_type = dynamic_cast<const IdentTypeNode *>(types_[i].get());
-
-      if (type->ident->value == symb_type->ident->value) {
-        return types_[i].get();
-      }
-    }
-  }
-
-  return nullptr;
+  return ptr;
 }
+RecordTypeNode *ASTContext::add_type(unique_ptr<RecordTypeNode> type) {
+  auto ptr = type.get();
+  types_.push_back(std::move(type));
 
-// TypeNode *ASTContext::find_type(ArrayTypeNode *type) {
-//   for (size_t i = 0; i < types_.size(); i++) {
-//     if (type->getNodeType() == types_[i]->getNodeType()) {
-//       auto symb_type = dynamic_cast<const ArrayTypeNode *>(types_[i].get());
-//
-//       // TODO
-//     }
-//   }
-//
-//   return nullptr;
-// }
-//
-// TypeNode *ASTContext::find_type(RecordTypeNode *type) {
-//   for (size_t i = 0; i < types_.size(); i++) {
-//     if (type->getNodeType() == types_[i]->getNodeType()) {
-//       auto symb_type = dynamic_cast<const RecordTypeNode *>(types_[i].get());
-//
-//       // TODO
-//     }
-//   }
-//
-//   return nullptr;
-// }
+  return ptr;
+}
