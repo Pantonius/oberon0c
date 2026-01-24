@@ -30,7 +30,7 @@ public:
   [[nodiscard]] virtual bool is_const() const = 0;
 
   void setType(TypeNode *type);
-  [[nodiscard]] virtual TypeNode *getType() const;
+  [[nodiscard]] virtual const TypeNode *getType() const;
 };
 
 class SelectorNode : public Node {
@@ -90,14 +90,14 @@ public:
   const unique_ptr<ExpressionNode> expression;
 };
 
-// TODO think about merge with IdentNode
+// TODO: think about merge with IdentNode
 class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                      vector<unique_ptr<SelectorNode>> &selectors,
-                      TypeNode *type_node)
+                      vector<unique_ptr<SelectorNode>> selectors,
+                      TypeNode *type_node = nullptr)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
-        ident(std::move(ident)), selectors(selectors) {}
+        ident(std::move(ident)), selectors(std::move(selectors)) {}
   ~IdentExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
@@ -105,7 +105,7 @@ public:
   bool is_const() const final;
 
   const unique_ptr<IdentNode> ident;
-  const vector<unique_ptr<SelectorNode>> &selectors;
+  const vector<unique_ptr<SelectorNode>> selectors;
 };
 
 class NumberExpressionNode final : public ExpressionNode {

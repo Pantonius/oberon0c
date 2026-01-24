@@ -1,7 +1,11 @@
 #include "SymbolTable.h"
+#include "global.h"
+#include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/IdentNode.h"
 #include "parser/ast/TypeNode.h"
+#include <cassert>
+#include <exception>
 #include <memory>
 #include <ranges>
 #include <stdexcept>
@@ -10,16 +14,14 @@
 #include <utility>
 
 void SymbolTable::beginScope() {
-  table_.push_back(
-      std::unordered_map<std::string,
-                         std::pair<const IdentNode, const TypeNode *>>());
+  table_.push_back(std::unordered_map<std::string, const DeclarationNode *>());
 };
 
 void SymbolTable::endScope() { table_.pop_back(); }
 
-void SymbolTable::insert(const IdentNode &ident, const TypeNode *node) {
-  std::unordered_map<std::string, std::pair<const IdentNode, const TypeNode *>>
-      &current_scope = table_.back();
+void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
+  std::unordered_map<std::string, const DeclarationNode *> &current_scope =
+      table_.back();
 
   if (current_scope.contains(ident.value)) {
     logger_.error(node->pos(),
@@ -27,77 +29,78 @@ void SymbolTable::insert(const IdentNode &ident, const TypeNode *node) {
     return;
   }
 
-  current_scope.insert({ident.value, {ident, node}});
+  current_scope.insert({ident.value, node});
 }
 
-const TypeNode *SymbolTable::lookup(const std::string &ident) const {
+const DeclarationNode *SymbolTable::lookup(const std::string &ident) const {
   for (auto &scope : std::ranges::views::reverse(table_)) {
-    if (scope.contains(ident)) {
-      return scope.at(ident).second;
+    if (auto node = scope.at(ident)) {
+      return node;
     }
   }
 
   return {};
 }
 
+const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
+  return this->lookup(ident.value);
+}
+
 const TypeNode *
-SymbolTable::lookup(const IdentNode &ident,
-                    const vector<unique_ptr<SelectorNode>> &selectors) {
+SymbolTable::lookup_type(const IdentExpressionNode &ident_expr) {
 
-  const TypeNode *type_node;
-  // WARN: Should either be a reference or a smart pointer
-  const Node *to_check = &ident;
+  const DeclarationNode *decl_node = this->lookup(*ident_expr.ident);
 
-  for (auto &scope : std::ranges::views::reverse(table_)) {
+  // Handle nullptr
+  if (!decl_node) {
+    logger_.error(ident_expr.ident->pos(),
+                  ident_expr.ident->value + " is not declared!");
+    throw NotDeclaredException(ident_expr);
+    return {};
+  }
 
+  const TypeNode *type = decl_node->type;
+  const Node *prev_selector = ident_expr.ident.get();
+  for (unsigned long i = 0; i < ident_expr.selectors.size(); i++) {
+    auto curr_selector = ident_expr.selectors.at(i).get();
     try {
-      type_node = scope.at(ident.value).second;
-    } catch (std::out_of_range e) {
-      return {};
+      prev_selector = ident_expr.selectors.at(i - 1).get();
+    } catch (std::out_of_range &e) {
     }
 
-    for (auto &selector : selectors) {
-      if (auto array_selector =
-              dynamic_cast<const ArrayIndexNode *>(selector.get())) {
-        if (auto array_type_node =
-                dynamic_cast<const ArrayTypeNode *>(type_node)) {
-          type_node = array_type_node->type;
-          to_check = array_selector;
-        } else {
-          // TODO: Handle type error!
+    if (auto array_selector =
+            dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
+      if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
+        type = array_type_node->type;
+      } else {
 
-          stringstream ss;
-          string s_node;
-          to_check->print(ss);
-          ss >> s_node;
-          logger_.error(to_check->pos(), s_node + " is not of type ARRAY");
+        logger_.error(prev_selector->pos(),
+                      to_string(prev_selector) + " is not of type ARRAY");
+        throw WrongTypeException(*prev_selector, "ARRAY");
 
+        return {};
+      }
+    } else if (auto record_selector =
+                   dynamic_cast<const RecordFieldNode *>(curr_selector)) {
+      if (auto record_type_node = dynamic_cast<const RecordTypeNode *>(type)) {
+        try {
+          auto record_field =
+              record_type_node->find_field(*record_selector->ident);
+          type = record_field->type;
+        } catch (FieldNotFoundException &e) {
+          logger_.error(prev_selector->pos(), e.what());
+          throw;
           return {};
         }
-      } else if (auto record_selector =
-                     dynamic_cast<const RecordFieldNode *>(selector.get())) {
-        if (auto record_type_node =
-                dynamic_cast<const RecordTypeNode *>(type_node)) {
-          if (auto record_field =
-                  record_type_node->find_field(*record_selector->ident)) {
-            type_node = record_field->type;
-            to_check = record_selector;
-          } else {
-            // TODO: Handle type error!
-
-            stringstream ss;
-            string s_node;
-            to_check->print(ss);
-            ss >> s_node;
-            logger_.error(to_check->pos(),
-                          s_node + " is not of type RECORD or missing field '" +
-                              record_selector->ident->value + "'");
-
-            return {};
-          }
-        }
+      } else {
+        logger_.error(prev_selector->pos(),
+                      to_string(prev_selector) + " is not of type RECORD");
+        throw WrongTypeException(*prev_selector, "RECORD");
+        return {};
       }
+    } else {
+      assert((void("Encountered unhandled SelectorNode type"), false));
     }
   }
-  return type_node;
+  return type;
 }
