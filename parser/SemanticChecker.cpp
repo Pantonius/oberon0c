@@ -1,6 +1,7 @@
 #include "SemanticChecker.h"
 #include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
+#include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cstdlib>
 #include <memory>
@@ -40,7 +41,7 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
 
   auto const_decl = make_unique<ConstDeclarationNode>(
       pos, std::move(ident), std::move(expr), expr ? expr->getType() : nullptr);
-  expect_unique(const_decl->ident.get(), const_decl->type);
+  expect_unique(const_decl->ident.get(), const_decl.get());
 
   return const_decl;
 }
@@ -59,7 +60,7 @@ SemanticChecker::onVars(const FilePos &pos,
     auto var_decl =
         make_unique<VarDeclarationNode>(pos, std::move(ident), type);
 
-    expect_unique(var_decl->ident.get(), var_decl->type);
+    expect_unique(var_decl->ident.get(), var_decl.get());
   }
 
   return var_decls;
@@ -70,7 +71,7 @@ unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
   auto type_declaration =
       make_unique<TypeDeclarationNode>(pos, std::move(ident), type);
 
-  expect_unique(type_declaration->ident.get(), type_declaration->type);
+  expect_unique(type_declaration->ident.get(), type_declaration.get());
 
   return type_declaration;
 }
@@ -116,8 +117,8 @@ const ArrayTypeNode *SemanticChecker::onArrayType(
 
 const RecordTypeNode *
 SemanticChecker::onRecordType(const FilePos &pos,
-                              vector<unique_ptr<FieldNode>> fields) {
-  auto record_type = std::make_unique<RecordTypeNode>(pos, fields);
+                              vector<unique_ptr<VarDeclarationNode>> fields) {
+  auto record_type = std::make_unique<RecordTypeNode>(pos, std::move(fields));
   // TODO check fields?
 
   auto ptr = context_.add_type(std::move(record_type));
@@ -132,7 +133,7 @@ unique_ptr<ProcedureDeclarationNode> SemanticChecker::onProcedureStart(
   auto proc = make_unique<ProcedureDeclarationNode>(
       pos, std::move(ident), std::move(formal_paramenters),
       ASTContext::STD_PROCEDURE_TYPE.get());
-  expect_unique(proc->ident.get(), proc->type);
+  expect_unique(proc->ident.get(), proc.get());
 
   symbol_table_.beginScope();
 
@@ -157,7 +158,7 @@ void SemanticChecker::onProcedureEnd(const FilePos &pos,
  *  UTILITY FUNCTIONS
  * ------------------- */
 void SemanticChecker::expect_unique(const IdentNode *ident,
-                                    const TypeNode *value) {
+                                    const DeclarationNode *value) {
   if (symbol_table_.lookup(*ident)) {
     logger_.error(ident->pos(),
                   "Identifier already declared: " + ident->value + ".");

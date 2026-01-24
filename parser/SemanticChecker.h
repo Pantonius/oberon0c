@@ -2,6 +2,7 @@
 #include "ast/ASTContext.h"
 #include "ast/ModuleNode.h"
 #include "ast/TypeNode.h"
+#include "parser/ast/DeclarationSequenceNode.h"
 #include "util/Logger.h"
 #include <memory>
 
@@ -26,7 +27,7 @@ public:
   const ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
                                    const TypeNode *);
   const RecordTypeNode *onRecordType(const FilePos &,
-                                     vector<unique_ptr<FieldNode>>);
+                                     vector<unique_ptr<VarDeclarationNode>>);
 
   vector<unique_ptr<VarDeclarationNode>>
   onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
@@ -39,7 +40,7 @@ public:
 
   ASTContext *get_context() { return &context_; }
 
-  void expect_unique(const IdentNode *, const TypeNode *);
+  void expect_unique(const IdentNode *, const DeclarationNode *);
 
 private:
   Logger &logger_;

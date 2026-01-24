@@ -43,14 +43,15 @@ void RecordTypeNode::print(ostream &stream) const {
   stream << " END";
 }
 
-const FieldNode *RecordTypeNode::find_field(const IdentNode &ident) const {
+const VarDeclarationNode *
+RecordTypeNode::find_field(const IdentNode &ident) const {
   for (auto &field : field_lists) {
     if (ident.value == field->ident->value) {
       return field.get();
     }
   }
 
-  return {};
+  throw FieldNotFoundException(ident);
 }
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }

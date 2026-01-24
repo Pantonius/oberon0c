@@ -113,14 +113,15 @@ const RecordTypeNode *Parser::record_type() {
 
   // symbol_table_.beginScope();
 
-  vector<unique_ptr<FieldNode>> field_lists;
+  vector<unique_ptr<VarDeclarationNode>> field_lists;
   do {
     vector<unique_ptr<IdentNode>> idents = ident_list();
     expect_token_type(TokenType::colon);
     const TypeNode *type = Parser::type();
 
     for (unique_ptr<IdentNode> &ident : idents) {
-      auto field = make_unique<FieldNode>(ident->pos(), std::move(ident), type);
+      auto field =
+          make_unique<VarDeclarationNode>(ident->pos(), std::move(ident), type);
       field_lists.push_back(std::move(field));
     }
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
@@ -341,8 +342,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto ident = Parser::ident();
     auto selectors = Parser::selectors();
     return make_unique<IdentExpressionNode>(curr->start(), std::move(ident),
-                                            selectors,
-                                            nullptr); // TODO type
+                                            std::move(selectors)); // TODO type
   } else if (peek_number()) {
     auto number = Parser::number();
     return make_unique<NumberExpressionNode>(curr->start(), number,
