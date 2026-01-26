@@ -10,6 +10,7 @@ else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
+  set(CMAKE_CXX_FLAGS_DEBUG "-g")
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wweak-vtables)
     if (WIN32)

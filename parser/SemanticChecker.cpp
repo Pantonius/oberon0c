@@ -1,10 +1,15 @@
 #include "SemanticChecker.h"
 #include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
+#include "global.h"
+#include "parser/SymbolTable.h"
 #include "parser/ast/DeclarationSequenceNode.h"
+#include "parser/ast/ExpressionNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cstdlib>
 #include <memory>
+#include <utility>
+#include <vector>
 
 void SemanticChecker::onModuleStart(const FilePos &pos,
                                     unique_ptr<IdentNode> ident) {
@@ -40,8 +45,9 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
     exit(EXIT_FAILURE);
   }
 
-  auto const_decl = make_unique<ConstDeclarationNode>(
-      pos, std::move(ident), std::move(expr), expr ? expr->type : nullptr);
+  auto type = expr->type;
+  auto const_decl = make_unique<ConstDeclarationNode>(pos, std::move(ident),
+                                                      std::move(expr), type);
   expect_unique(const_decl->ident.get(), const_decl.get());
 
   return const_decl;
@@ -404,18 +410,59 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
   return std::make_unique<BinaryExpressionNode>(pos, std::move(left_expr), op,
                                                 std::move(right_expr), type);
 }
+unique_ptr<AssignmentNode>
+SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
+                          vector<unique_ptr<SelectorNode>> selectors,
+                          unique_ptr<ExpressionNode> expr) {
+  logger_.debug("Checking assignment types");
+  try {
+    auto lhs_type = symbol_table_.lookup_type(*ident, selectors);
+    auto ident_expr = std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), lhs_type);
+    if (ident_expr->type == nullptr) {
+      logger_.error(pos,
+                    to_string(ident_expr.get()) + " has no associated type");
+      exit(EXIT_FAILURE);
+    }
+
+    if (expr->type == nullptr) {
+      logger_.error(pos, to_string(expr.get()) + " has no associated type");
+      exit(EXIT_FAILURE);
+    }
+
+    if ((ident_expr->type != expr->type)) {
+      logger_.error(pos, "Can not assign '" + to_string(expr.get()) + ": " +
+                             to_string(expr->type) + "' to '" +
+                             to_string(ident_expr.get()) + ": " +
+                             to_string(ident_expr->type) + "'");
+      exit(EXIT_FAILURE);
+    }
+
+    return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
+                                            std::move(expr));
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    exit(EXIT_FAILURE);
+  }
+}
 
 /* -------------------
  *  UTILITY FUNCTIONS
  * ------------------- */
 void SemanticChecker::expect_unique(const IdentNode *ident,
                                     const DeclarationNode *value) {
-  if (symbol_table_.lookup(*ident)) {
-    logger_.error(ident->pos(),
-                  "Identifier already declared: " + ident->value + ".");
-    exit(EXIT_FAILURE);
+  try {
+    auto decl = symbol_table_.lookup(*ident);
+    if (decl != nullptr) {
+      logger_.error(ident->pos(), "Identifier already declared here: " +
+                                      to_string(decl->pos()) + ":" +
+                                      to_string(decl));
+      exit(EXIT_FAILURE);
+    }
+  } catch (LookupException &e) {
+    symbol_table_.insert(*ident, value);
+    return;
   }
-  symbol_table_.insert(*ident, value);
 }
 
 void SemanticChecker::expect_bool(ExpressionNode *expr) {

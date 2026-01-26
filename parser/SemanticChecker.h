@@ -2,9 +2,14 @@
 #include "ast/ASTContext.h"
 #include "ast/ModuleNode.h"
 #include "ast/TypeNode.h"
+#include "global.h"
 #include "parser/ast/DeclarationSequenceNode.h"
+#include "parser/ast/ExpressionNode.h"
+#include "parser/ast/IdentNode.h"
+#include "parser/ast/StatementNode.h"
 #include "util/Logger.h"
 #include <memory>
+#include <vector>
 
 using std::unique_ptr;
 
@@ -19,6 +24,9 @@ public:
   unique_ptr<ConstDeclarationNode>
   onConst(const FilePos &, unique_ptr<IdentNode>, unique_ptr<ExpressionNode>);
 
+  vector<unique_ptr<VarDeclarationNode>>
+  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
+
   unique_ptr<TypeDeclarationNode>
   onTypeDeclaration(const FilePos &, unique_ptr<IdentNode>, const TypeNode *);
 
@@ -26,11 +34,9 @@ public:
 
   const ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
                                    const TypeNode *);
+
   const RecordTypeNode *onRecordType(const FilePos &,
                                      vector<unique_ptr<VarDeclarationNode>>);
-
-  vector<unique_ptr<VarDeclarationNode>>
-  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
 
   unique_ptr<ProcedureDeclarationNode>
   onProcedureStart(const FilePos &, unique_ptr<IdentNode>,
@@ -47,6 +53,9 @@ public:
   unique_ptr<ExpressionNode>
   onIdentExpression(const FilePos &, unique_ptr<IdentNode>,
                     vector<unique_ptr<SelectorNode>>);
+  unique_ptr<AssignmentNode> onAssign(const FilePos &, unique_ptr<IdentNode>,
+                                      vector<unique_ptr<SelectorNode>>,
+                                      unique_ptr<ExpressionNode>);
 
   ASTContext *get_context() { return &context_; }
 

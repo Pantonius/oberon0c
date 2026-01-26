@@ -6,6 +6,7 @@
 #include "scanner/Token.h"
 #include <cstdlib>
 #include <memory>
+#include <utility>
 #include <vector>
 
 using std::make_unique;
@@ -409,21 +410,21 @@ Parser::procedure_call(unique_ptr<IdentNode> ident) {
 }
 
 // assignment = ident selector ":=" expression
-std::unique_ptr<AssignmentNode> Parser::assignment() {
+inline std::unique_ptr<AssignmentNode> Parser::assignment() {
   return Parser::assignment(ident());
 }
 
 std::unique_ptr<AssignmentNode>
 Parser::assignment(unique_ptr<IdentNode> ident) {
+  logger_.debug("Parsing assignment");
   const Token *curr = scanner_.peek();
 
   auto selectors = Parser::selectors();
   expect_token_type(TokenType::op_becomes);
   auto expression = Parser::expression();
 
-  return make_unique<AssignmentNode>(curr->start(), std::move(ident),
-                                     std::move(selectors),
-                                     std::move(expression));
+  return sema_.onAssign(curr->start(), std::move(ident), std::move(selectors),
+                        std::move(expression));
 }
 
 bool Parser::peek_ident() {

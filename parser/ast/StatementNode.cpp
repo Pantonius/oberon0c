@@ -4,11 +4,7 @@
 
 void AssignmentNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void AssignmentNode::print(ostream &stream) const {
-  ident->print(stream);
-
-  for (size_t i = 0; i < selectors.size(); i++) {
-    selectors[i]->print(stream);
-  }
+  ident_expr->print(stream);
 
   stream << " = ";
   expression->print(stream);

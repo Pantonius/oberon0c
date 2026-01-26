@@ -16,18 +16,17 @@ public:
 
 class AssignmentNode final : public StatementNode {
 public:
-  explicit AssignmentNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                          vector<unique_ptr<SelectorNode>> selectors,
+  explicit AssignmentNode(const FilePos &pos,
+                          unique_ptr<IdentExpressionNode> ident_expr,
                           unique_ptr<ExpressionNode> expression)
-      : StatementNode(NodeType::assignment, pos), ident(std::move(ident)),
-        selectors(std::move(selectors)), expression(std::move(expression)) {}
+      : StatementNode(NodeType::assignment, pos),
+        ident_expr(std::move(ident_expr)), expression(std::move(expression)) {}
   ~AssignmentNode() override = default;
 
   void accept(NodeVisitor &) final;
   void print(std::ostream &) const final;
 
-  const unique_ptr<IdentNode> ident;
-  const vector<unique_ptr<SelectorNode>> selectors;
+  const unique_ptr<IdentExpressionNode> ident_expr;
   const unique_ptr<ExpressionNode> expression;
 };
 

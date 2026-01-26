@@ -39,11 +39,8 @@ const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
     }
   }
 
+  throw NotDeclaredException(ident);
   return {};
-}
-
-const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
-  return this->lookup(ident.value);
 }
 
 const TypeNode *
@@ -73,9 +70,6 @@ SymbolTable::lookup_type(const IdentNode &ident,
       if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
         type = array_type_node->type;
       } else {
-
-        logger_.error(prev_selector->pos(),
-                      to_string(prev_selector) + " is not of type ARRAY");
         throw WrongTypeException(*prev_selector, "ARRAY");
 
         return {};
@@ -88,13 +82,10 @@ SymbolTable::lookup_type(const IdentNode &ident,
               record_type_node->find_field(*record_selector->ident);
           type = record_field->type;
         } catch (FieldNotFoundException &e) {
-          logger_.error(prev_selector->pos(), e.what());
-          throw;
+          throw LookupException(*prev_selector, e.what());
           return {};
         }
       } else {
-        logger_.error(prev_selector->pos(),
-                      to_string(prev_selector) + " is not of type RECORD");
         throw WrongTypeException(*prev_selector, "RECORD");
         return {};
       }
