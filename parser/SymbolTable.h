@@ -22,8 +22,6 @@ public:
   void insert(const DeclarationNode *node);
   void insert(const IdentNode &ident, const DeclarationNode *node);
 
-  const DeclarationNode *lookup(const std::string &ident) const;
-
   /**
    * Lookup `ident` in `SymbolTable`.
    *
@@ -33,7 +31,9 @@ public:
    */
   const DeclarationNode *lookup(const IdentNode &ident) const;
 
-  const TypeNode *lookup_type(const IdentExpressionNode &ident_expr);
+  const TypeNode *
+  lookup_type(const IdentNode &ident,
+              const vector<unique_ptr<SelectorNode>> &selectors);
 
 private:
   Logger &logger_;
@@ -47,7 +47,7 @@ private:
 
 public:
   LookupException(const Node &node)
-      : node_(node), msg_(to_string(&node) + "is not declared") {}
+      : node_(node), msg_(to_string(&node) + " is not declared") {}
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 
@@ -69,6 +69,11 @@ public:
 class NotDeclaredException : public LookupException {
 public:
   NotDeclaredException(const Node &node) : LookupException(node) {}
+};
+
+class NullIdentException {
+public:
+  NullIdentException() {}
 };
 
 #endif // !OBERON0C_SYMBOLTABLE_H

@@ -5,13 +5,11 @@
 #include "parser/ast/IdentNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cassert>
-#include <exception>
-#include <memory>
+#include <cstdlib>
 #include <ranges>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
-#include <utility>
 
 void SymbolTable::beginScope() {
   table_.push_back(std::unordered_map<std::string, const DeclarationNode *>());
@@ -32,39 +30,37 @@ void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
   current_scope.insert({ident.value, node});
 }
 
-const DeclarationNode *SymbolTable::lookup(const std::string &ident) const {
+const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
   for (auto &scope : std::ranges::views::reverse(table_)) {
-    if (auto node = scope.at(ident)) {
+    try {
+      auto node = scope.at(ident.value);
       return node;
+    } catch (const std::out_of_range e) {
     }
   }
 
   return {};
 }
 
-const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
-  return this->lookup(ident.value);
-}
-
 const TypeNode *
-SymbolTable::lookup_type(const IdentExpressionNode &ident_expr) {
+SymbolTable::lookup_type(const IdentNode &ident,
+                         const vector<unique_ptr<SelectorNode>> &selectors) {
 
-  const DeclarationNode *decl_node = this->lookup(*ident_expr.ident);
+  const DeclarationNode *decl_node = this->lookup(ident);
 
   // Handle nullptr
   if (!decl_node) {
-    logger_.error(ident_expr.ident->pos(),
-                  ident_expr.ident->value + " is not declared!");
-    throw NotDeclaredException(ident_expr);
+    logger_.error(ident.pos(), ident.value + " is not declared!");
+    throw NotDeclaredException(ident);
     return {};
   }
 
   const TypeNode *type = decl_node->type;
-  const Node *prev_selector = ident_expr.ident.get();
-  for (unsigned long i = 0; i < ident_expr.selectors.size(); i++) {
-    auto curr_selector = ident_expr.selectors.at(i).get();
+  const Node *prev_selector = &ident;
+  for (unsigned long i = 0; i < selectors.size(); i++) {
+    auto curr_selector = selectors.at(i).get();
     try {
-      prev_selector = ident_expr.selectors.at(i - 1).get();
+      prev_selector = selectors.at(i - 1).get();
     } catch (std::out_of_range &e) {
     }
 
