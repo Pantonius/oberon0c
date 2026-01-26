@@ -1,20 +1,35 @@
 #include "ModuleNode.h"
+#include "functional"
 #include "parser/ast/TypeNode.h"
-#include <memory>
 
-class ASTContext {
+using std::function;
+
+class StdType {
 private:
-  vector<unique_ptr<TypeNode>> types_;
-  unique_ptr<ModuleNode> module_;
-
+  const unique_ptr<IdentTypeNode> type_;
   unique_ptr<IdentTypeNode> std_ident_type_(string name) {
     return std::make_unique<IdentTypeNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, name));
   };
 
 public:
+  StdType(const string name) : type_(std_ident_type_(name)) {};
+  ~StdType() = default;
+
+  const IdentTypeNode *get() const { return type_.get(); };
+  const string get_name() const { return type_->ident->value; };
+};
+
+class ASTContext {
+private:
+  vector<unique_ptr<TypeNode>> types_;
+  unique_ptr<ModuleNode> module_;
+
+public:
   ASTContext() {}; // TODO add standard environment
   ~ASTContext() = default;
+  static const StdType INTEGER;
+  static const StdType BOOLEAN;
 
   // NOTE for multi-module use this should be a vector
   ModuleNode *get_module();
@@ -23,9 +38,6 @@ public:
   IdentTypeNode *add_type(unique_ptr<IdentTypeNode> type);
   ArrayTypeNode *add_type(unique_ptr<ArrayTypeNode> type);
   RecordTypeNode *add_type(unique_ptr<RecordTypeNode> type);
-
-  const unique_ptr<IdentTypeNode> STD_TYPES[2] = {std_ident_type_("INTEGER"),
-                                                  std_ident_type_("BOOLEAN")};
 
   const static std::shared_ptr<ProcedureTypeNode> STD_PROCEDURE_TYPE;
 };

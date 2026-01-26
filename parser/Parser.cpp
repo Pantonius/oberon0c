@@ -240,10 +240,8 @@ std::unique_ptr<ExpressionNode> Parser::expression() {
   auto op = relation();
   auto right_expression = simple_expr();
 
-  return make_unique<BinaryExpressionNode>(curr->start(),
-                                           std::move(left_expression), op,
-                                           std::move(right_expression),
-                                           nullptr); // TODO sema type
+  return sema_.onBinaryExpression(curr->start(), std::move(left_expression), op,
+                                  std::move(right_expression));
 }
 
 bool Parser::peek_expression() { return peek_simple_expr(); }
@@ -265,9 +263,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expr() {
     auto op = sign();
     auto expression = term();
 
-    expr = make_unique<UnaryExpressionNode>(curr->start(), op,
-                                            std::move(expression),
-                                            nullptr); // TODO sema type
+    expr = sema_.onUnaryExpression(curr->start(), std::move(expression), op);
   } else {
     // just term
     expr = term();
@@ -281,10 +277,8 @@ std::unique_ptr<ExpressionNode> Parser::simple_expr() {
     auto left_expression = std::move(expr); // old expression
     auto op = add_operator();
     auto right_expression = term(); // new term
-    expr = make_unique<BinaryExpressionNode>(curr->start(),
-                                             std::move(left_expression), op,
-                                             std::move(right_expression),
-                                             nullptr); // TODO sema type
+    expr = sema_.onBinaryExpression(curr->start(), std::move(left_expression),
+                                    op, std::move(right_expression));
   }
 
   return expr;
@@ -318,10 +312,8 @@ std::unique_ptr<ExpressionNode> Parser::term() {
     auto left_expression = std::move(expr);
     auto op = Parser::mul_operator();
     auto right_expression = Parser::factor();
-    expr = make_unique<BinaryExpressionNode>(curr->start(),
-                                             std::move(left_expression), op,
-                                             std::move(right_expression),
-                                             nullptr); // TODO sema type
+    expr = sema_.onBinaryExpression(curr->start(), std::move(left_expression),
+                                    op, std::move(right_expression));
   }
 
   return expr;
@@ -341,12 +333,16 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
   if (peek_ident()) {
     auto ident = Parser::ident();
     auto selectors = Parser::selectors();
-    return make_unique<IdentExpressionNode>(curr->start(), std::move(ident),
-                                            std::move(selectors)); // TODO type
+
+    return sema_.onIdentExpression(curr->start(), std::move(ident),
+                                   std::move(selectors));
+    // return make_unique<IdentExpressionNode>(curr->start(), std::move(ident),
+    //                                         selectors,
+    //                                         nullptr); // TODO type
   } else if (peek_number()) {
     auto number = Parser::number();
     return make_unique<NumberExpressionNode>(curr->start(), number,
-                                             nullptr); // TODO type
+                                             ASTContext::INTEGER.get());
   } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     auto expression = Parser::expression();
     expect_token_type(TokenType::rparen);
@@ -354,9 +350,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
   } else if (peek_check_token_type(TokenType::op_not, ADVANCE_ON_TRUE)) {
     auto op = UnaryOpType::u_not;
     auto expression = Parser::expression();
-    return make_unique<UnaryExpressionNode>(curr->start(), op,
-                                            std::move(expression),
-                                            nullptr); // TODO type
+    return sema_.onUnaryExpression(curr->start(), std::move(expression), op);
   } else {
     logger_.error(curr->start(),
                   "Expected factor found " + to_string(curr->type()));
@@ -606,7 +600,7 @@ std::unique_ptr<FPSectionNode> Parser::fp_section() {
 
   auto type = Parser::type();
 
-  return make_unique<FPSectionNode>(curr->start(), idents, std::move(type));
+  return make_unique<FPSectionNode>(curr->start(), std::move(idents), type);
 }
 
 /* selector = {"." ident | "[" expression "]"} */

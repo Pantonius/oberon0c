@@ -13,15 +13,16 @@ class TypeNode;
 
 class FPSectionNode final : public Node {
 public:
-  FPSectionNode(const FilePos &pos, vector<unique_ptr<IdentNode>> &idents,
+  FPSectionNode(const FilePos &pos, vector<unique_ptr<IdentNode>> idents,
                 const TypeNode *type)
-      : Node(NodeType::fp_section, pos), idents(idents), type(type) {}
+      : Node(NodeType::fp_section, pos), idents(std::move(idents)), type(type) {
+  }
   ~FPSectionNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const vector<unique_ptr<IdentNode>> &idents;
+  const vector<unique_ptr<IdentNode>> idents;
   const TypeNode *type;
 };
 
