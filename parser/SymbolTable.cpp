@@ -6,6 +6,8 @@
 #include "parser/ast/TypeNode.h"
 #include <cassert>
 #include <cstdlib>
+#include <exception>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string>
@@ -30,12 +32,13 @@ void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
   current_scope.insert({ident.value, node});
 }
 
-const DeclarationNode *SymbolTable::lookup(const IdentNode &ident) const {
+std::optional<const DeclarationNode *>
+SymbolTable::lookup(const IdentNode &ident) const {
   for (auto &scope : std::ranges::views::reverse(table_)) {
     try {
       auto node = scope.at(ident.value);
       return node;
-    } catch (const std::out_of_range e) {
+    } catch (const std::exception &e) {
     }
   }
 
@@ -46,14 +49,16 @@ const TypeNode *
 SymbolTable::lookup_type(const IdentNode &ident,
                          const vector<unique_ptr<SelectorNode>> &selectors) {
 
-  const DeclarationNode *decl_node = this->lookup(ident);
+  auto lookup_node = this->lookup(ident);
 
   // Handle nullptr
-  if (!decl_node) {
+  if (!lookup_node) {
     logger_.error(ident.pos(), ident.value + " is not declared!");
     throw NotDeclaredException(ident);
     return {};
   }
+
+  auto decl_node = lookup_node.value();
 
   const TypeNode *type = decl_node->type;
   const Node *prev_selector = &ident;

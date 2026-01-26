@@ -85,7 +85,8 @@ const TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
     return context_.BOOLEAN.get();
 
   TypeDeclarationNode const *type_decl =
-      dynamic_cast<const TypeDeclarationNode *>(symbol_table_.lookup(*ident));
+      dynamic_cast<const TypeDeclarationNode *>(
+          symbol_table_.lookup(*ident).value());
 
   if (!type_decl) {
     logger_.error(pos, "Specified type \"" + ident->value +
@@ -130,11 +131,13 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
                                    unique_ptr<IdentNode> ident,
                                    vector<unique_ptr<SelectorNode>> selectors) {
   // lookup ident declaration
-  const Node *node = symbol_table_.lookup(*ident);
-  if (!node) {
+  auto node_lookup = symbol_table_.lookup(*ident);
+  if (!node_lookup) {
     logger_.error(pos, "Undeclared identifier.");
     exit(EXIT_FAILURE);
   }
+
+  auto node = node_lookup.value();
 
   if (node->getNodeType() == NodeType::const_declaration) {
     auto const_decl = dynamic_cast<const ConstDeclarationNode *>(node);
