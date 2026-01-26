@@ -3,6 +3,9 @@
 #include "global.h"
 #include <memory>
 
+const StdType ASTContext::INTEGER = StdType("INTEGER");
+const StdType ASTContext::BOOLEAN = StdType("BOOLEAN");
+
 const std::shared_ptr<ProcedureTypeNode> ASTContext::STD_PROCEDURE_TYPE =
     std::make_shared<ProcedureTypeNode>(EMPTY_POS);
 

@@ -38,9 +38,25 @@ public:
   void onProcedureEnd(const FilePos &, const ProcedureDeclarationNode *,
                       const unique_ptr<IdentNode> &);
 
+  unique_ptr<ExpressionNode>
+  onUnaryExpression(const FilePos &, unique_ptr<ExpressionNode>, UnaryOpType);
+  unique_ptr<ExpressionNode> onBinaryExpression(const FilePos &,
+                                                unique_ptr<ExpressionNode>,
+                                                BinaryOpType,
+                                                unique_ptr<ExpressionNode>);
+  unique_ptr<ExpressionNode>
+  onIdentExpression(const FilePos &, unique_ptr<IdentNode>,
+                    vector<unique_ptr<SelectorNode>>);
+
   ASTContext *get_context() { return &context_; }
 
   void expect_unique(const IdentNode *, const DeclarationNode *);
+  void expect_number(ExpressionNode *expr);
+  void expect_bool(ExpressionNode *expr);
+
+  template <typename L, typename T>
+  unique_ptr<LiteralExpressionNode<T>>
+  clone_literal(LiteralExpressionNode<T> *);
 
 private:
   Logger &logger_;

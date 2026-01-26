@@ -123,13 +123,15 @@ void RecordFieldNode::print(ostream &stream) const {
   ident->print(stream);
 }
 
-void ExpressionNode::setType(TypeNode *type_node) { type_ = type_node; }
-const TypeNode *ExpressionNode::getType() const { return type_; }
-
 void NumberExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }
-void NumberExpressionNode::print(ostream &stream) const { stream << number; }
+void NumberExpressionNode::print(ostream &stream) const { stream << value; }
+
+void BooleanExpressionNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void BooleanExpressionNode::print(ostream &stream) const { stream << value; }
 
 void IdentExpressionNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void IdentExpressionNode::print(ostream &stream) const {
