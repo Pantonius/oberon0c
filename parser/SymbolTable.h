@@ -9,6 +9,7 @@
 #include "parser/ast/TypeNode.h"
 #include "util/Logger.h"
 #include <exception>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -27,9 +28,9 @@ public:
    *
    * @param ident the identifier to search for
    *
-   * @returns ptr to `DeclarationNode` or `nullptr` if no entyr is found
+   * @returns `std::optional<const DeclarationNode *>`
    */
-  const DeclarationNode *lookup(const IdentNode &ident) const;
+  std::optional<const DeclarationNode *> lookup(const IdentNode &ident) const;
 
   const TypeNode *
   lookup_type(const IdentNode &ident,
