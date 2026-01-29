@@ -40,6 +40,18 @@ void VarDeclarationNode::print(ostream &stream) const {
   type->print(stream);
 }
 
+void ParamDeclarationNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void ParamDeclarationNode::print(ostream &stream) const {
+  if (this->by_reference)
+    stream << "VAR ";
+
+  ident->print(stream);
+  stream << " : ";
+  type->print(stream);
+}
+
 void TypeDeclarationNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void TypeDeclarationNode::print(ostream &stream) const {
   stream << "TYPE ";
@@ -54,19 +66,20 @@ void ProcedureDeclarationNode::accept(NodeVisitor &visitor) {
 void ProcedureDeclarationNode::print(ostream &stream) const {
   stream << "PROCEDURE ";
   ident->print(stream);
-  stream << "(";
-
-  int fp_size = formal_parameters.size();
-  if (fp_size > 0) {
-    formal_parameters[0]->print(stream);
-
-    for (size_t i = 1; i < formal_parameters.size(); i++) {
-      stream << ", ";
-      formal_parameters[i]->print(stream);
-    }
-  }
-
-  stream << ")";
+  // stream << "(";
+  //
+  // int fp_size = type.size();
+  // if (fp_size > 0) {
+  //   formal_parameters[0]->print(stream);
+  //
+  //   for (size_t i = 1; i < formal_parameters.size(); i++) {
+  //     stream << ", ";
+  //     formal_parameters[i]->print(stream);
+  //   }
+  // }
+  //
+  // stream << ")";
+  stream << "\n";
   statement_sequence_->print(stream);
   stream << "END ";
   ident->print(stream);

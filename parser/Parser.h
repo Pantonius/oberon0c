@@ -54,7 +54,7 @@ private:
   BinaryOpType mul_operator();
   unique_ptr<AssignmentNode> assignment();
   unique_ptr<AssignmentNode> assignment(unique_ptr<IdentNode> ident);
-  unique_ptr<FPSectionNode> fp_section();
+  vector<unique_ptr<ParamDeclarationNode>> fp_section();
   unique_ptr<ProcedureCallNode> procedure_call();
   unique_ptr<ProcedureCallNode> procedure_call(unique_ptr<IdentNode> ident);
   unique_ptr<ProcedureDeclarationNode> procedure_declaration();

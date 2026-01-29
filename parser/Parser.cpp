@@ -111,19 +111,18 @@ const RecordTypeNode *Parser::record_type() {
 
   expect_token_type(TokenType::kw_record);
 
-  // symbol_table_.beginScope();
-
-  vector<unique_ptr<VarDeclarationNode>> field_lists;
+  // begin scope
+  // vector<unique_ptr<VarDeclarationNode>> field_lists;
+  vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>>
+      field_lists;
   do {
+    auto curr_pos = last_token_->start();
+
     vector<unique_ptr<IdentNode>> idents = ident_list();
     expect_token_type(TokenType::colon);
     const TypeNode *type = Parser::type();
 
-    for (unique_ptr<IdentNode> &ident : idents) {
-      auto field =
-          make_unique<VarDeclarationNode>(ident->pos(), std::move(ident), type);
-      field_lists.push_back(std::move(field));
-    }
+    field_lists.emplace_back(std::move(idents), type);
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
   expect_token_type(TokenType::kw_end);
 
@@ -404,8 +403,9 @@ Parser::procedure_call(unique_ptr<IdentNode> ident) {
     expect_token_type(TokenType::rparen);
   }
 
-  return make_unique<ProcedureCallNode>(curr->start(), std::move(ident),
-                                        selectors, actual_parameters);
+  return sema_.onProcedureCall(curr->start(), std::move(ident),
+                               std::move(selectors),
+                               std::move(actual_parameters));
 }
 
 // assignment = ident selector ":=" expression
@@ -479,6 +479,8 @@ std::unique_ptr<IfStatementNode> Parser::if_statement() {
 
   expect_token_type(TokenType::kw_if);
   auto condition = expression();
+  sema_.expect_bool(condition.get());
+
   expect_token_type(TokenType::kw_then);
   auto body = statement_sequence();
 
@@ -487,6 +489,7 @@ std::unique_ptr<IfStatementNode> Parser::if_statement() {
     const Token *local_curr = scanner_.peek();
 
     auto elsif_condition = Parser::expression();
+    sema_.expect_bool(elsif_condition.get());
     expect_token_type(TokenType::kw_then);
     auto elsif_body = statement_sequence();
 
@@ -514,6 +517,8 @@ std::unique_ptr<WhileStatementNode> Parser::while_statement() {
 
   expect_token_type(TokenType::kw_while);
   auto condition = expression();
+  sema_.expect_bool(condition.get());
+
   expect_token_type(TokenType::kw_do);
   auto body = statement_sequence();
 
@@ -531,6 +536,7 @@ std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
   auto body = statement_sequence();
   expect_token_type(TokenType::kw_until);
   auto condition = expression();
+  sema_.expect_bool(condition.get());
 
   return make_unique<RepeatStatementNode>(curr->start(), std::move(condition),
                                           std::move(body));
@@ -547,19 +553,35 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 
   /* FormalParameters =
    *        "(" [FPSection {";" FPSection}] ")" */
-  vector<unique_ptr<FPSectionNode>> formal_parameters;
+  vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>
+      formal_parameters;
   if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     if (!peek_check_token_type(TokenType::rparen, NO_ADVANCE_ON_TRUE)) {
       do {
-        formal_parameters.push_back(fp_section());
+        // FPSection
+        auto is_reference =
+            peek_check_token_type(TokenType::kw_var, ADVANCE_ON_TRUE);
+
+        vector<unique_ptr<IdentNode>> idents;
+        do {
+          idents.push_back(ident());
+        } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
+
+        expect_token_type(TokenType::colon);
+
+        auto type = Parser::type();
+
+        formal_parameters.emplace_back(std::move(idents), is_reference, type);
       } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
     }
-
     expect_token_type(TokenType::rparen);
   }
   expect_token_type(TokenType::semicolon);
-  auto procedure_declaration = sema_.onProcedureStart(
-      curr->start(), std::move(proc_name), std::move(formal_parameters));
+
+  auto proc_type =
+      sema_.onProcedureType(curr->start(), std::move(formal_parameters));
+  auto procedure_declaration = sema_.onProcedureDeclaration(
+      curr->start(), std::move(proc_name), proc_type);
 
   // ProcedureBody = DeclarationSequence ["BEGIN" StatementSequence] "END"
   // ident
@@ -577,30 +599,10 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 
   expect_token_type(TokenType::semicolon);
 
-  // symbol_table_.endScope();
   sema_.onProcedureEnd(last_token_->start(), procedure_declaration.get(),
                        std::move(proc_name));
 
   return procedure_declaration;
-}
-
-/* FPSection = ["VAR"] ident {"," ident} ":" type */
-std::unique_ptr<FPSectionNode> Parser::fp_section() {
-  const Token *curr = scanner_.peek();
-
-  peek_check_token_type(TokenType::kw_var,
-                        ADVANCE_ON_TRUE); // NOTE optional without consequence
-
-  vector<unique_ptr<IdentNode>> idents;
-  do {
-    idents.push_back(ident());
-  } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
-
-  expect_token_type(TokenType::colon);
-
-  auto type = Parser::type();
-
-  return make_unique<FPSectionNode>(curr->start(), std::move(idents), type);
 }
 
 /* selector = {"." ident | "[" expression "]"} */

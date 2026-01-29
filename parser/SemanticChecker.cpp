@@ -1,8 +1,9 @@
 #include "SemanticChecker.h"
+#include "ast/DeclarationSequenceNode.h"
 #include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
-#include "parser/ast/DeclarationSequenceNode.h"
-#include "parser/ast/TypeNode.h"
+#include "ast/TypeNode.h"
+#include "util/Logger.h"
 #include <cstdlib>
 #include <memory>
 
@@ -109,18 +110,47 @@ const ArrayTypeNode *SemanticChecker::onArrayType(
     exit(EXIT_FAILURE);
   }
 
+  if (expr->getNodeType() != NodeType::number) {
+    logger_.error(expr->pos(), "Array size is not a number.");
+    exit(EXIT_FAILURE);
+  }
+
+  auto num = dynamic_cast<NumberExpressionNode *>(expr.get());
+
+  if (num->value < 0) {
+    logger_.error(expr->pos(), "Negative array size.");
+    exit(EXIT_FAILURE);
+  }
+
   auto array_type = std::make_unique<ArrayTypeNode>(pos, std::move(expr), type);
   auto ptr = context_.add_type(std::move(array_type));
 
   return ptr;
 }
 
-const RecordTypeNode *
-SemanticChecker::onRecordType(const FilePos &pos,
-                              vector<unique_ptr<VarDeclarationNode>> fields) {
-  auto record_type = std::make_unique<RecordTypeNode>(pos, std::move(fields));
-  // TODO check fields?
+const RecordTypeNode *SemanticChecker::onRecordType(
+    const FilePos &pos,
+    vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>> fields) {
 
+  symbol_table_.beginScope();
+
+  vector<unique_ptr<VarDeclarationNode>> vars;
+  for (size_t i = 0; i < fields.size(); i++) {
+    auto decls = std::move(fields[i].first);
+    auto type = fields[i].second;
+
+    for (size_t j = 0; j < decls.size(); j++) {
+      auto var_decl =
+          make_unique<VarDeclarationNode>(pos, std::move(decls[j]), type);
+
+      expect_unique_within_scope(var_decl->ident.get(), var_decl.get());
+      vars.push_back(std::move(var_decl));
+    }
+  }
+
+  symbol_table_.endScope();
+
+  auto record_type = std::make_unique<RecordTypeNode>(pos, std::move(vars));
   auto ptr = context_.add_type(std::move(record_type));
 
   return ptr;
@@ -155,8 +185,8 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
       logger_.error(pos, "Constant of invalid node type.");
       exit(EXIT_FAILURE);
     }
-  } else if (node->getNodeType() == NodeType::var_declaration) {
-    auto var_decl = dynamic_cast<const VarDeclarationNode *>(node);
+  } else if (node->getNodeType() == NodeType::var_declaration ||
+             node->getNodeType() == NodeType::param_declaration) {
     auto type = symbol_table_.lookup_type(*ident, selectors);
 
     return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
@@ -165,43 +195,55 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
     logger_.error(pos, "Identifier is not a constant or variable.");
     exit(EXIT_FAILURE);
   }
-
-  // const TypeNode *type = decl->type;
-  // switch (decl->getNodeType()) {
-  // case NodeType::var_declaration:
-  //   // TODO value lookup
-  //   break;
-  // case NodeType::const_declaration:
-  //   // TODO value lookup
-  //   break;
-  // case NodeType::type_declaration:
-  //   logger_.error(pos, "Types can not be used as expressions.");
-  //   exit(EXIT_FAILURE);
-  // case NodeType::procedure_declaration:
-  //   logger_.error(pos, "Procedure identifiers can not be used as
-  //   expressions."); exit(EXIT_FAILURE);
-  // default:
-  //   logger_.error(decl->pos(), "Unknown declaration node type.");
-  //   exit(EXIT_FAILURE);
-  // }
-  //
-  // return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
-  //                                              std::move(selectors), type);
 }
 
-unique_ptr<ProcedureDeclarationNode> SemanticChecker::onProcedureStart(
-    const FilePos &pos, unique_ptr<IdentNode> ident,
-    vector<unique_ptr<FPSectionNode>> formal_parameters) {
-  auto proc = make_unique<ProcedureDeclarationNode>(
-      pos, std::move(ident), std::move(formal_parameters),
-      ASTContext::STD_PROCEDURE_TYPE.get());
-  expect_unique(proc->ident.get(), proc.get());
+const ProcedureTypeNode *SemanticChecker::onProcedureType(
+    const FilePos &pos,
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>
+        formal_parameters) {
+  symbol_table_.beginScope();
+
+  vector<unique_ptr<ParamDeclarationNode>> params;
+  for (size_t i = 0; i < formal_parameters.size(); i++) {
+    auto idents = std::get<0>(std::move(formal_parameters[i]));
+    auto by_reference = std::get<1>(formal_parameters[i]);
+    auto type = std::get<2>(formal_parameters[i]);
+
+    for (size_t j = 0; j < idents.size(); j++) {
+      auto ident_pos = idents[j]->pos();
+      auto param = std::make_unique<ParamDeclarationNode>(
+          ident_pos, std::move(idents[j]), by_reference, type);
+
+      expect_unique_within_scope(param->ident.get(), param.get());
+
+      params.push_back(std::move(param));
+    }
+  }
+  symbol_table_.endScope();
+
+  auto proc_type = std::make_unique<ProcedureTypeNode>(pos, std::move(params));
+  auto ptr = context_.add_type(std::move(proc_type));
+
+  return ptr;
+}
+
+unique_ptr<ProcedureDeclarationNode>
+SemanticChecker::onProcedureDeclaration(const FilePos &pos,
+                                        unique_ptr<IdentNode> ident,
+                                        const ProcedureTypeNode *type) {
+  auto proc_decl =
+      std::make_unique<ProcedureDeclarationNode>(pos, std::move(ident), type);
+  expect_unique(proc_decl->ident.get(), proc_decl.get());
 
   symbol_table_.beginScope();
 
-  // TODO checks
+  // introduce formal parameters into scope
+  for (size_t i = 0; i < type->formal_parameters.size(); i++) {
+    symbol_table_.insert(*type->formal_parameters[i]->ident,
+                         type->formal_parameters[i].get());
+  }
 
-  return proc;
+  return proc_decl;
 }
 
 void SemanticChecker::onProcedureEnd(const FilePos &pos,
@@ -216,8 +258,70 @@ void SemanticChecker::onProcedureEnd(const FilePos &pos,
   symbol_table_.endScope();
 }
 
+unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
+    const FilePos &pos, unique_ptr<IdentNode> ident,
+    vector<unique_ptr<SelectorNode>> selectors,
+    vector<unique_ptr<ExpressionNode>> actual_params) {
+
+  // get procedure declaration
+  auto opt_decl = symbol_table_.lookup(*ident);
+  if (!opt_decl) {
+    logger_.error(pos, "Undeclared procedure identifier.");
+    exit(EXIT_FAILURE);
+  }
+  if (opt_decl.value()->getNodeType() != NodeType::procedure_declaration) {
+    logger_.error(pos,
+                  "Identifier is not associated with a procedure declaration.");
+    exit(EXIT_FAILURE);
+  }
+  auto proc_decl =
+      dynamic_cast<const ProcedureDeclarationNode *>(opt_decl.value());
+
+  // look into procedure type
+  auto proc_type = dynamic_cast<const ProcedureTypeNode *>(proc_decl->type);
+
+  // match argument types
+  if (proc_type->formal_parameters.size() != actual_params.size()) {
+    logger_.error(pos, "Number of given parameters does not match declared "
+                       "procedure parameters.");
+    exit(EXIT_FAILURE);
+  }
+
+  for (size_t i = 0; i < proc_type->formal_parameters.size(); i++) {
+    // NOTE type compatibility for now just means identity
+    // TODO add logic for type casting
+    if (proc_type->formal_parameters[i]->type != actual_params[i]->type) {
+      logger_.error(actual_params[i]->pos(),
+                    "Parameter type does not match declared formal type.");
+      exit(EXIT_FAILURE);
+    }
+
+    if (proc_type->formal_parameters[i]->by_reference) {
+      if (actual_params[i]->getNodeType() != NodeType::ident_expression) {
+        logger_.error(actual_params[i]->pos(),
+                      "Passed parameter is not a variable.");
+        exit(EXIT_FAILURE);
+      }
+
+      auto ident_expr =
+          dynamic_cast<const IdentExpressionNode *>(actual_params[i].get());
+
+      auto opt_decl = symbol_table_.lookup(*ident_expr->ident);
+      if (!opt_decl ||
+          opt_decl.value()->getNodeType() != NodeType::var_declaration) {
+        logger_.error(actual_params[i]->pos(),
+                      "Identifier is not associated with a var declaration.");
+        exit(EXIT_FAILURE);
+      }
+    }
+  }
+
+  return std::make_unique<ProcedureCallNode>(
+      pos, std::move(ident), std::move(selectors), std::move(actual_params));
+}
+
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
-    const FilePos &pos, unique_ptr<ExpressionNode> expr, UnaryOpType op) {
+    const FilePos &pos, unique_ptr<ExpressionNode> expr, const UnaryOpType op) {
 
   if (!expr) {
     logger_.error(pos, "Undefined expression.");
@@ -270,11 +374,16 @@ unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
-    const FilePos &pos, unique_ptr<ExpressionNode> left_expr, BinaryOpType op,
-    unique_ptr<ExpressionNode> right_expr) {
+    const FilePos &pos, unique_ptr<ExpressionNode> left_expr,
+    const BinaryOpType op, unique_ptr<ExpressionNode> right_expr) {
 
   if (!left_expr || !right_expr) {
     logger_.error(pos, "Undefined expression.");
+    exit(EXIT_FAILURE);
+  }
+
+  if (left_expr->type != right_expr->type) {
+    logger_.error(right_expr->pos(), "Expression types do not match.");
     exit(EXIT_FAILURE);
   }
 
@@ -310,10 +419,6 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
   case BinaryOpType::div:
   case BinaryOpType::divide:
   case BinaryOpType::mod:
-  case BinaryOpType::gt:
-  case BinaryOpType::geq:
-  case BinaryOpType::lt:
-  case BinaryOpType::leq:
     expect_number(left_expr.get());
     expect_number(right_expr.get());
 
@@ -331,6 +436,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         break;
       case BinaryOpType::minus:
         value = left_number->value - right_number->value;
+        type = ASTContext::INTEGER.get();
         break;
       case BinaryOpType::times:
         value = left_number->value * right_number->value;
@@ -342,18 +448,9 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
       case BinaryOpType::mod:
         value = left_number->value % right_number->value;
         break;
-      case BinaryOpType::gt:
-        value = left_number->value > right_number->value;
-        break;
-      case BinaryOpType::geq:
-        value = left_number->value >= right_number->value;
-        break;
-      case BinaryOpType::lt:
-        value = left_number->value < right_number->value;
-        break;
-      case BinaryOpType::leq:
-        value = left_number->value <= right_number->value;
-        break;
+      default:
+        logger_.error(pos, "INTERNAL ERROR");
+        exit(EXIT_FAILURE);
       }
 
       return std::make_unique<NumberExpressionNode>(pos, value,
@@ -363,11 +460,6 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
     type = ASTContext::INTEGER.get();
     break;
   default:
-    if (left_expr->type != right_expr->type) {
-      logger_.error(right_expr->pos(), "Expression types do not match.");
-      exit(EXIT_FAILURE);
-    }
-
     if (left_expr->getNodeType() == NodeType::number &&
         right_expr->getNodeType() == NodeType::number) {
       auto left_number = dynamic_cast<NumberExpressionNode *>(left_expr.get());
@@ -375,10 +467,28 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
           dynamic_cast<NumberExpressionNode *>(right_expr.get());
 
       bool value;
-      if (op == BinaryOpType::eq) {
+      switch (op) {
+      case BinaryOpType::eq:
         value = left_number->value == right_number->value;
-      } else {
+        break;
+      case BinaryOpType::neq:
         value = left_number->value != right_number->value;
+        break;
+      case BinaryOpType::lt:
+        value = left_number->value < right_number->value;
+        break;
+      case BinaryOpType::leq:
+        value = left_number->value <= right_number->value;
+        break;
+      case BinaryOpType::gt:
+        value = left_number->value > right_number->value;
+        break;
+      case BinaryOpType::geq:
+        value = left_number->value >= right_number->value;
+        break;
+      default:
+        logger_.error(pos, "INTERNAL ERROR");
+        exit(EXIT_FAILURE);
       }
       return std::make_unique<BooleanExpressionNode>(pos, value,
                                                      ASTContext::BOOLEAN.get());
@@ -390,16 +500,34 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
           dynamic_cast<BooleanExpressionNode *>(right_expr.get());
 
       bool value;
-      if (op == BinaryOpType::eq) {
+      switch (op) {
+      case BinaryOpType::eq:
         value = left_boolean->value == right_boolean->value;
-      } else {
+        break;
+      case BinaryOpType::neq:
         value = left_boolean->value != right_boolean->value;
+        break;
+      case BinaryOpType::lt:
+        value = left_boolean->value < right_boolean->value;
+        break;
+      case BinaryOpType::leq:
+        value = left_boolean->value <= right_boolean->value;
+        break;
+      case BinaryOpType::gt:
+        value = left_boolean->value > right_boolean->value;
+        break;
+      case BinaryOpType::geq:
+        value = left_boolean->value >= right_boolean->value;
+        break;
+      default:
+        logger_.error(pos, "INTERNAL ERROR");
+        exit(EXIT_FAILURE);
       }
       return std::make_unique<BooleanExpressionNode>(pos, value,
                                                      ASTContext::BOOLEAN.get());
     }
 
-    type = left_expr->type;
+    type = ASTContext::BOOLEAN.get();
     break;
   }
 
@@ -411,13 +539,19 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
  *  UTILITY FUNCTIONS
  * ------------------- */
 void SemanticChecker::expect_unique(const IdentNode *ident,
-                                    const DeclarationNode *value) {
-  if (symbol_table_.lookup(*ident)) {
+                                    const DeclarationNode *value,
+                                    bool thisScope) {
+  if (symbol_table_.lookup(*ident, thisScope)) {
     logger_.error(ident->pos(),
                   "Identifier already declared: " + ident->value + ".");
     exit(EXIT_FAILURE);
   }
   symbol_table_.insert(*ident, value);
+}
+
+void SemanticChecker::expect_unique_within_scope(const IdentNode *ident,
+                                                 const DeclarationNode *value) {
+  expect_unique(ident, value, true);
 }
 
 void SemanticChecker::expect_bool(ExpressionNode *expr) {
@@ -430,8 +564,6 @@ void SemanticChecker::expect_bool(ExpressionNode *expr) {
 
 void SemanticChecker::expect_number(ExpressionNode *expr) {
   if (expr->type != ASTContext::INTEGER.get()) {
-    expr->print(cout);
-    expr->type->print(cout);
     logger_.error(expr->pos(), "Expression should be of type " +
                                    ASTContext::INTEGER.get_name() + ".");
     exit(EXIT_FAILURE);

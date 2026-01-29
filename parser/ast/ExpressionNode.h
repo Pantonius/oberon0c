@@ -67,6 +67,7 @@ public:
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
 enum class UnaryOpType { plus, minus, u_not };
+std::ostream &operator<<(std::ostream &, const UnaryOpType &);
 
 const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
                                          TokenType::op_minus};
@@ -75,7 +76,7 @@ UnaryOpType sign_from_token_type(TokenType tokenType);
 
 class UnaryExpressionNode final : public ExpressionNode {
 public:
-  UnaryExpressionNode(const FilePos &pos, UnaryOpType &op,
+  UnaryExpressionNode(const FilePos &pos, const UnaryOpType op,
                       unique_ptr<ExpressionNode> expression,
                       const TypeNode *type_node)
       : ExpressionNode(NodeType::unary_expression, pos, type_node), op(op),
@@ -86,7 +87,7 @@ public:
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 
-  const UnaryOpType &op;
+  const UnaryOpType op;
   const unique_ptr<ExpressionNode> expression;
 };
 
@@ -162,6 +163,8 @@ enum class BinaryOpType {
   gt,
   geq
 };
+std::ostream &operator<<(std::ostream &, const BinaryOpType &);
+
 BinaryOpType relation_from_token_type(TokenType tokenType);
 const set<TokenType> ADD_OPERATOR_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_or};
@@ -178,7 +181,7 @@ class BinaryExpressionNode final : public ExpressionNode {
 public:
   BinaryExpressionNode(const FilePos &pos,
                        unique_ptr<ExpressionNode> left_expression,
-                       const BinaryOpType &op,
+                       const BinaryOpType op,
                        unique_ptr<ExpressionNode> right_expression,
                        const TypeNode *type_node)
       : ExpressionNode(NodeType::binary_expression, pos, type_node),
@@ -191,7 +194,7 @@ public:
   bool is_const() const final;
 
   const unique_ptr<ExpressionNode> left_expression;
-  const BinaryOpType &op;
+  const BinaryOpType op;
   const unique_ptr<ExpressionNode> right_expression;
 };
 

@@ -13,7 +13,6 @@ public:
   virtual void visit(AssignmentNode &assignment) = 0;
   virtual void visit(ConstDeclarationNode &const_declaration) = 0;
   virtual void visit(ExpressionNode &expression) = 0;
-  virtual void visit(FPSectionNode &fp_section) = 0;
   virtual void visit(IfStatementNode &if_statement) = 0;
   virtual void visit(ModuleNode &module_node) = 0;
   virtual void visit(ProcedureCallNode &procedure_call) = 0;
@@ -27,6 +26,7 @@ public:
   virtual void visit(FieldNode &field) = 0;
   virtual void visit(TypeNode &type) = 0;
   virtual void visit(TypeDeclarationNode &type_declaration) = 0;
+  virtual void visit(ParamDeclarationNode &param_declaration) = 0;
   virtual void visit(VarDeclarationNode &var_declaration) = 0;
   virtual void visit(WhileStatementNode &while_statement) = 0;
 };

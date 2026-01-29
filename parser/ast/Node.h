@@ -20,6 +20,7 @@ enum class NodeType : char {
   if_statement,
   module,
   number,
+  param_declaration,
   procedure_body,
   procedure_call,
   procedure_declaration,
