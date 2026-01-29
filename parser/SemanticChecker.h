@@ -20,27 +20,26 @@ public:
   onConst(const FilePos &, unique_ptr<IdentNode>, unique_ptr<ExpressionNode>);
 
   unique_ptr<TypeDeclarationNode>
-  onTypeDeclaration(const FilePos &, unique_ptr<IdentNode>, const TypeNode *);
+  onTypeDeclaration(const FilePos &, unique_ptr<IdentNode>, TypeNode *);
 
-  const TypeNode *onIdentType(const FilePos &, unique_ptr<IdentNode>);
+  TypeNode *onIdentType(const FilePos &, unique_ptr<IdentNode>);
 
-  const ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
-                                   const TypeNode *);
-  const RecordTypeNode *onRecordType(
-      const FilePos &,
-      vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>>);
+  ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
+                             TypeNode *);
+  RecordTypeNode *
+  onRecordType(const FilePos &,
+               vector<std::pair<vector<unique_ptr<IdentNode>>, TypeNode *>>);
 
   vector<unique_ptr<VarDeclarationNode>>
-  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
+  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, TypeNode *);
 
-  const ProcedureTypeNode *onProcedureType(
+  ProcedureTypeNode *onProcedureType(
       const FilePos &,
-      vector<
-          std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>);
+      vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>);
 
   unique_ptr<ProcedureDeclarationNode>
   onProcedureDeclaration(const FilePos &, unique_ptr<IdentNode>,
-                         const ProcedureTypeNode *);
+                         ProcedureTypeNode *);
   void onProcedureEnd(const FilePos &, const ProcedureDeclarationNode *,
                       const IdentNode &);
 

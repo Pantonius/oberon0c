@@ -19,7 +19,7 @@ public:
   StdType(const string name) : type_(std_ident_type_(name)) {};
   ~StdType() = default;
 
-  const IdentTypeNode *get() const { return type_.get(); };
+  IdentTypeNode *get() const { return type_.get(); };
   const string get_name() const { return type_->ident->value; };
 };
 

@@ -37,17 +37,15 @@ public:
 
 class ArrayTypeNode final : public TypeNode {
 public:
-  ArrayTypeNode(const FilePos &pos, unique_ptr<ExpressionNode> expression,
-                const TypeNode *type)
-      : TypeNode(NodeType::array_type, pos), expression(std::move(expression)),
-        type(type) {}
+  ArrayTypeNode(const FilePos &pos, uint dimension, TypeNode *type)
+      : TypeNode(NodeType::array_type, pos), dimension(dimension), type(type) {}
   ~ArrayTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const unique_ptr<ExpressionNode> expression;
-  const TypeNode *type;
+  uint dimension;
+  TypeNode *type;
 };
 
 class FieldNode final : public Node {

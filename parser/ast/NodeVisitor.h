@@ -9,26 +9,26 @@ public:
   explicit NodeVisitor() = default;
   virtual ~NodeVisitor() noexcept;
 
-  virtual void visit(ArrayTypeNode &array_type) = 0;
-  virtual void visit(AssignmentNode &assignment) = 0;
-  virtual void visit(ConstDeclarationNode &const_declaration) = 0;
-  virtual void visit(ExpressionNode &expression) = 0;
-  virtual void visit(IfStatementNode &if_statement) = 0;
-  virtual void visit(ModuleNode &module_node) = 0;
-  virtual void visit(ProcedureCallNode &procedure_call) = 0;
-  virtual void visit(ProcedureDeclarationNode &procedure_declaration) = 0;
-  virtual void visit(RecordTypeNode &record_type) = 0;
-  virtual void visit(RepeatStatementNode &repeat_statement) = 0;
-  virtual void visit(SelectorNode &selector) = 0;
-  virtual void visit(StatementNode &statement) = 0;
-  virtual void visit(StatementSequenceNode &statement_sequence) = 0;
-  virtual void visit(IdentNode &ident) = 0;
-  virtual void visit(FieldNode &field) = 0;
-  virtual void visit(TypeNode &type) = 0;
-  virtual void visit(TypeDeclarationNode &type_declaration) = 0;
-  virtual void visit(ParamDeclarationNode &param_declaration) = 0;
-  virtual void visit(VarDeclarationNode &var_declaration) = 0;
-  virtual void visit(WhileStatementNode &while_statement) = 0;
+  virtual void visit(ArrayTypeNode &) = 0;
+  virtual void visit(AssignmentNode &) = 0;
+  virtual void visit(ConstDeclarationNode &) = 0;
+  virtual void visit(ExpressionNode &) = 0;
+  virtual void visit(IfStatementNode &) = 0;
+  virtual void visit(ModuleNode &) = 0;
+  virtual void visit(ProcedureTypeNode &) = 0;
+  virtual void visit(ProcedureCallNode &) = 0;
+  virtual void visit(ProcedureDeclarationNode &) = 0;
+  virtual void visit(RecordTypeNode &) = 0;
+  virtual void visit(RepeatStatementNode &) = 0;
+  virtual void visit(SelectorNode &) = 0;
+  virtual void visit(StatementNode &) = 0;
+  virtual void visit(StatementSequenceNode &) = 0;
+  virtual void visit(IdentNode &) = 0;
+  virtual void visit(FieldNode &) = 0;
+  virtual void visit(TypeDeclarationNode &) = 0;
+  virtual void visit(ParamDeclarationNode &) = 0;
+  virtual void visit(VarDeclarationNode &) = 0;
+  virtual void visit(WhileStatementNode &) = 0;
 };
 
 #endif // OBERON0C_NODEVISITOR_H

@@ -47,7 +47,7 @@ SymbolTable::lookup(const IdentNode &ident, bool this_scope) const {
   return {};
 }
 
-const TypeNode *
+TypeNode *
 SymbolTable::lookup_type(const IdentNode &ident,
                          const vector<unique_ptr<SelectorNode>> &selectors) {
 
@@ -62,7 +62,7 @@ SymbolTable::lookup_type(const IdentNode &ident,
 
   auto decl_node = lookup_node.value();
 
-  const TypeNode *type = decl_node->type;
+  TypeNode *type = decl_node->type;
   const Node *prev_selector = &ident;
   for (unsigned long i = 0; i < selectors.size(); i++) {
     auto curr_selector = selectors.at(i).get();
@@ -71,8 +71,7 @@ SymbolTable::lookup_type(const IdentNode &ident,
     } catch (std::out_of_range &e) {
     }
 
-    if (auto array_selector =
-            dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
+    if (dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
       if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
         type = array_type_node->type;
       } else {

@@ -3,9 +3,10 @@
 
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/NodeVisitor.h"
-#include <iostream>
+#include "util/Logger.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/DataLayout.h>
+#include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
@@ -19,46 +20,59 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 
+using std::map;
+
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
 class CodeGenBuilder final : private NodeVisitor {
 public:
-  CodeGenBuilder(llvm::LLVMContext &ctx) : builder_(ctx) {};
+  CodeGenBuilder(Logger &logger, llvm::Module *mod, llvm::LLVMContext &ctx)
+      : logger_(logger), builder_(ctx), module_(mod) {};
   ~CodeGenBuilder() override = default;
 
   void build(ASTContext &);
 
 private:
+  Logger &logger_;
   llvm::IRBuilder<> builder_;
+  llvm::Module *module_;
+  map<const TypeNode *, llvm::Type *> types_;
+  map<string, llvm::Value *> values_;
+  map<string, llvm::Function *> functions_;
 
-  void visit(ArrayTypeNode &array_type) override final;
-  void visit(AssignmentNode &assignment) override final;
-  void visit(ConstDeclarationNode &const_declaration) override final;
-  void visit(ExpressionNode &expression) override final;
-  void visit(IfStatementNode &if_statement) override final;
-  void visit(ModuleNode &module_node) override final;
-  void visit(ProcedureCallNode &procedure_call) override final;
-  void visit(ProcedureDeclarationNode &procedure_declaration) override final;
-  void visit(RecordTypeNode &record_type) override final;
-  void visit(RepeatStatementNode &repeat_statement) override final;
-  void visit(SelectorNode &selector) override final;
-  void visit(StatementNode &statement) override final;
-  void visit(StatementSequenceNode &statement_sequence) override final;
-  void visit(IdentNode &ident) override final;
-  void visit(FieldNode &field) override final;
-  void visit(TypeNode &type) override final;
-  void visit(TypeDeclarationNode &type_declaration) override final;
-  void visit(ParamDeclarationNode &param_declaration) override final;
-  void visit(VarDeclarationNode &var_declaration) override final;
-  void visit(WhileStatementNode &while_statement) override final;
+  void visit(ArrayTypeNode &) override final;
+  void visit(AssignmentNode &) override final;
+  void visit(ConstDeclarationNode &) override final;
+  void visit(ExpressionNode &) override final;
+  void visit(IfStatementNode &) override final;
+  void visit(ModuleNode &) override final;
+  void visit(ProcedureCallNode &) override final;
+  void visit(ProcedureDeclarationNode &) override final;
+  void visit(ProcedureTypeNode &) override final;
+  void visit(RecordTypeNode &) override final;
+  void visit(RepeatStatementNode &) override final;
+  void visit(SelectorNode &) override final;
+  void visit(StatementNode &) override final;
+  void visit(StatementSequenceNode &) override final;
+  void visit(IdentNode &) override final;
+  void visit(FieldNode &) override final;
+  void visit(TypeDeclarationNode &) override final;
+  void visit(ParamDeclarationNode &) override final;
+  void visit(VarDeclarationNode &) override final;
+  void visit(WhileStatementNode &) override final;
+
+  llvm::Type *getLLVMType(TypeNode *);
 };
 
 class CodeGen final {
+private:
+  Logger &logger_;
+
 public:
-  CodeGen() {};
+  CodeGen(Logger &logger) : logger_(logger) {};
   ~CodeGen() = default;
 
-  void build(ASTContext &, string name);
+  void build(ASTContext &, string);
 };
 
 #endif // OBERON0C_CODEGEN_H

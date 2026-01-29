@@ -21,16 +21,13 @@ using std::vector;
 class ExpressionNode : public Node {
 private:
 public:
-  ExpressionNode(const NodeType &type, const FilePos &pos,
-                 const TypeNode *type_node)
+  ExpressionNode(const NodeType &type, const FilePos &pos, TypeNode *type_node)
       : Node(type, pos), type(type_node) {};
   ~ExpressionNode() = default;
 
-  const TypeNode *type;
+  TypeNode *type;
 
   [[nodiscard]] virtual bool is_const() const = 0;
-
-  // virtual unique_ptr<ExpressionNode> clone() const = 0;
 };
 
 class SelectorNode : public Node {
@@ -78,7 +75,7 @@ class UnaryExpressionNode final : public ExpressionNode {
 public:
   UnaryExpressionNode(const FilePos &pos, const UnaryOpType op,
                       unique_ptr<ExpressionNode> expression,
-                      const TypeNode *type_node)
+                      TypeNode *type_node)
       : ExpressionNode(NodeType::unary_expression, pos, type_node), op(op),
         expression(std::move(expression)) {}
   ~UnaryExpressionNode() override = default;
@@ -96,7 +93,7 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos &pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      const TypeNode *type_node)
+                      TypeNode *type_node)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
         ident(std::move(ident)), selectors(std::move(selectors)) {}
   ~IdentExpressionNode() override = default;
@@ -112,7 +109,7 @@ public:
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
 public:
   LiteralExpressionNode(const NodeType &type, const FilePos &pos, T value,
-                        const TypeNode *type_node)
+                        TypeNode *type_node)
       : ExpressionNode(type, pos, type_node), value(value) {};
   ~LiteralExpressionNode() = default;
 
@@ -121,8 +118,7 @@ public:
 
 class NumberExpressionNode final : public LiteralExpressionNode<int64_t> {
 public:
-  NumberExpressionNode(const FilePos &pos, int number,
-                       const TypeNode *type_node)
+  NumberExpressionNode(const FilePos &pos, int number, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}
   ~NumberExpressionNode() override = default;
 
@@ -133,8 +129,7 @@ public:
 
 class BooleanExpressionNode final : public LiteralExpressionNode<bool> {
 public:
-  BooleanExpressionNode(const FilePos &pos, bool boolean,
-                        const TypeNode *type_node)
+  BooleanExpressionNode(const FilePos &pos, bool boolean, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::boolean, pos, boolean, type_node) {};
   ~BooleanExpressionNode() override = default;
 
@@ -183,7 +178,7 @@ public:
                        unique_ptr<ExpressionNode> left_expression,
                        const BinaryOpType op,
                        unique_ptr<ExpressionNode> right_expression,
-                       const TypeNode *type_node)
+                       TypeNode *type_node)
       : ExpressionNode(NodeType::binary_expression, pos, type_node),
         left_expression(std::move(left_expression)), op(op),
         right_expression(std::move(right_expression)) {}

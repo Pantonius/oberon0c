@@ -35,9 +35,8 @@ public:
   std::optional<const DeclarationNode *> lookup(const IdentNode &ident,
                                                 bool this_scope = false) const;
 
-  const TypeNode *
-  lookup_type(const IdentNode &ident,
-              const vector<unique_ptr<SelectorNode>> &selectors);
+  TypeNode *lookup_type(const IdentNode &ident,
+                        const vector<unique_ptr<SelectorNode>> &selectors);
 
 private:
   Logger &logger_;

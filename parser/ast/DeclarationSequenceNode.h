@@ -14,19 +14,19 @@ class DeclarationNode : public Node {
 private:
 public:
   DeclarationNode(const NodeType &type, const FilePos &pos,
-                  unique_ptr<IdentNode> ident, const TypeNode *type_node)
+                  unique_ptr<IdentNode> ident, TypeNode *type_node)
       : Node(type, pos), ident(std::move(ident)), type(type_node) {}
   ~DeclarationNode() override = default;
 
   const unique_ptr<IdentNode> ident;
-  const TypeNode *type;
+  TypeNode *type;
 };
 
 class ConstDeclarationNode final : public DeclarationNode {
 public:
   ConstDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
                        unique_ptr<ExpressionNode> expression,
-                       const TypeNode *type_node)
+                       TypeNode *type_node)
       : DeclarationNode(NodeType::const_declaration, pos, std::move(ident),
                         type_node),
         expression(std::move(expression)) {}
@@ -41,7 +41,7 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 public:
   TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                      const TypeNode *type_node)
+                      TypeNode *type_node)
       : DeclarationNode(NodeType::type_declaration, pos, std::move(ident),
                         type_node) {}
   ~TypeDeclarationNode() override = default;
@@ -53,7 +53,7 @@ public:
 class VarDeclarationNode final : public DeclarationNode {
 public:
   VarDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                     const TypeNode *type_node)
+                     TypeNode *type_node)
       : DeclarationNode(NodeType::var_declaration, pos, std::move(ident),
                         type_node) {}
   ~VarDeclarationNode() override = default;
@@ -70,7 +70,7 @@ public:
 class ParamDeclarationNode final : public DeclarationNode {
 public:
   ParamDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
-                       bool by_reference, const TypeNode *type_node)
+                       bool by_reference, TypeNode *type_node)
       : DeclarationNode(NodeType::param_declaration, pos, std::move(ident),
                         type_node),
         by_reference(by_reference) {}
@@ -115,7 +115,7 @@ private:
 
 public:
   ProcedureDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> proc_name,
-                           const ProcedureTypeNode *type_node)
+                           ProcedureTypeNode *type_node)
       : DeclarationNode(NodeType::procedure_declaration, pos,
                         std::move(proc_name), type_node) {}
   ~ProcedureDeclarationNode() override = default;

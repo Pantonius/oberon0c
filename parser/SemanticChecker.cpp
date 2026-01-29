@@ -40,7 +40,7 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
   }
 
   auto const_decl = make_unique<ConstDeclarationNode>(
-      pos, std::move(ident), std::move(expr), expr ? expr->type : nullptr);
+      pos, std::move(ident), std::move(expr), expr->type);
   expect_unique(const_decl->ident.get(), const_decl.get());
 
   return const_decl;
@@ -48,8 +48,7 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
 
 vector<unique_ptr<VarDeclarationNode>>
 SemanticChecker::onVars(const FilePos &pos,
-                        vector<unique_ptr<IdentNode>> idents,
-                        const TypeNode *type) {
+                        vector<unique_ptr<IdentNode>> idents, TypeNode *type) {
   if (!type) {
     logger_.error(pos, "Unspecified variable type.");
     exit(EXIT_FAILURE);
@@ -68,7 +67,7 @@ SemanticChecker::onVars(const FilePos &pos,
 }
 
 unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
-    const FilePos &pos, unique_ptr<IdentNode> ident, const TypeNode *type) {
+    const FilePos &pos, unique_ptr<IdentNode> ident, TypeNode *type) {
   auto type_declaration =
       make_unique<TypeDeclarationNode>(pos, std::move(ident), type);
 
@@ -77,8 +76,8 @@ unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
   return type_declaration;
 }
 
-const TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
-                                             unique_ptr<IdentNode> ident) {
+TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
+                                       unique_ptr<IdentNode> ident) {
   if (ident->value == ASTContext::INTEGER.get_name())
     return ASTContext::INTEGER.get();
   if (ident->value == context_.BOOLEAN.get_name())
@@ -97,8 +96,9 @@ const TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
   return type_decl->type;
 }
 
-const ArrayTypeNode *SemanticChecker::onArrayType(
-    const FilePos &pos, unique_ptr<ExpressionNode> expr, const TypeNode *type) {
+ArrayTypeNode *SemanticChecker::onArrayType(const FilePos &pos,
+                                            unique_ptr<ExpressionNode> expr,
+                                            TypeNode *type) {
   if (!expr) {
     logger_.error(pos, "Undefined array size.");
     exit(EXIT_FAILURE);
@@ -121,15 +121,15 @@ const ArrayTypeNode *SemanticChecker::onArrayType(
     exit(EXIT_FAILURE);
   }
 
-  auto array_type = std::make_unique<ArrayTypeNode>(pos, std::move(expr), type);
+  auto array_type = std::make_unique<ArrayTypeNode>(pos, num->value, type);
   auto ptr = context_.add_type(std::move(array_type));
 
   return ptr;
 }
 
-const RecordTypeNode *SemanticChecker::onRecordType(
+RecordTypeNode *SemanticChecker::onRecordType(
     const FilePos &pos,
-    vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>> fields) {
+    vector<std::pair<vector<unique_ptr<IdentNode>>, TypeNode *>> fields) {
 
   symbol_table_.beginScope();
 
@@ -196,9 +196,9 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
   }
 }
 
-const ProcedureTypeNode *SemanticChecker::onProcedureType(
+ProcedureTypeNode *SemanticChecker::onProcedureType(
     const FilePos &pos,
-    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
         formal_parameters) {
   symbol_table_.beginScope();
 
@@ -226,10 +226,8 @@ const ProcedureTypeNode *SemanticChecker::onProcedureType(
   return ptr;
 }
 
-unique_ptr<ProcedureDeclarationNode>
-SemanticChecker::onProcedureDeclaration(const FilePos &pos,
-                                        unique_ptr<IdentNode> ident,
-                                        const ProcedureTypeNode *type) {
+unique_ptr<ProcedureDeclarationNode> SemanticChecker::onProcedureDeclaration(
+    const FilePos &pos, unique_ptr<IdentNode> ident, ProcedureTypeNode *type) {
   auto proc_decl =
       std::make_unique<ProcedureDeclarationNode>(pos, std::move(ident), type);
   expect_unique(proc_decl->ident.get(), proc_decl.get());
@@ -327,7 +325,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
     exit(EXIT_FAILURE);
   }
 
-  const TypeNode *type;
+  TypeNode *type;
   switch (op) {
   case UnaryOpType::u_not:
     expect_bool(expr.get());
@@ -387,7 +385,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
   }
 
   // check type according to op
-  const TypeNode *type;
+  TypeNode *type;
   switch (op) {
   case BinaryOpType::b_and:
   case BinaryOpType::b_or:

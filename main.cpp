@@ -46,7 +46,7 @@ int main(const int argc, const char *argv[]) {
   Parser parser(scanner, logger);
   auto context = parser.parse();
 
-  CodeGen gen;
+  CodeGen gen(logger);
   gen.build(*context, filename);
 
   // Status print

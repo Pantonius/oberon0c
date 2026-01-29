@@ -30,7 +30,7 @@ private:
   BinaryOpType relation();
   int number();
   unique_ptr<IdentNode> ident();
-  const ArrayTypeNode *array_type();
+  ArrayTypeNode *array_type();
   unique_ptr<ConstDeclarationNode> const_declaration();
   void declaration_sequence(DeclarationSequenceNode *);
   unique_ptr<ExpressionNode> expression();
@@ -40,13 +40,13 @@ private:
   unique_ptr<IfStatementNode> if_statement();
   void module();
   unique_ptr<ProcedureCallNode> procedure();
-  const RecordTypeNode *record_type();
+  RecordTypeNode *record_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();
-  const TypeNode *type();
+  TypeNode *type();
   unique_ptr<WhileStatementNode> while_statement();
   std::vector<unique_ptr<IdentNode>> ident_list();
   vector<unique_ptr<VarDeclarationNode>> var_declarations();
@@ -66,11 +66,9 @@ private:
   optional<TokenType>
   peek_check_token_type_within(std::set<TokenType> expectedTypes,
                                bool advanceOnTrue = false);
-  bool expect_token_type(TokenType expectedType, bool advanceOnTrue = true,
-                         bool advanceOnFalse = false);
+  bool expect_token_type(TokenType expectedType, bool advanceOnTrue = true);
   bool expect_token_type_within(std::set<TokenType> expectedTypes,
-                                bool advanceOnTrue = true,
-                                bool advanceOnFalse = false);
+                                bool advanceOnTrue = true);
 
   bool peek_array_type();
   bool peek_assignment();

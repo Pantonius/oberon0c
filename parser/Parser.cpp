@@ -71,7 +71,7 @@ std::vector<unique_ptr<IdentNode>> Parser::ident_list() {
 }
 
 // type = ident | ArrayType | RecordType
-const TypeNode *Parser::type() {
+TypeNode *Parser::type() {
   const FilePos &pos = scanner_.peek()->start();
   const TokenType &node_type = scanner_.peek()->type();
 
@@ -89,7 +89,7 @@ const TypeNode *Parser::type() {
 }
 
 // ArrayType = "ARRAY" expression "OF" type
-const ArrayTypeNode *Parser::array_type() {
+ArrayTypeNode *Parser::array_type() {
   const FilePos &pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_array);
@@ -105,19 +105,18 @@ bool Parser::peek_array_type() {
 }
 
 // RecordType = "RECORD" FieldList {";" FieldList} "END"
-const RecordTypeNode *Parser::record_type() {
+RecordTypeNode *Parser::record_type() {
   const FilePos &pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_record);
 
   // begin scope
   // vector<unique_ptr<VarDeclarationNode>> field_lists;
-  vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>>
-      field_lists;
+  vector<std::pair<vector<unique_ptr<IdentNode>>, TypeNode *>> field_lists;
   do {
     vector<unique_ptr<IdentNode>> idents = ident_list();
     expect_token_type(TokenType::colon);
-    const TypeNode *type = Parser::type();
+    TypeNode *type = Parser::type();
 
     field_lists.emplace_back(std::move(idents), type);
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
@@ -212,7 +211,7 @@ vector<unique_ptr<VarDeclarationNode>> Parser::var_declarations() {
 
   vector<unique_ptr<IdentNode>> idents = ident_list();
   expect_token_type(TokenType::colon);
-  const TypeNode *type = Parser::type();
+  TypeNode *type = Parser::type();
 
   auto var_declarations = sema_.onVars(curr_pos, std::move(idents), type);
 
@@ -545,7 +544,7 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 
   /* FormalParameters =
    *        "(" [FPSection {";" FPSection}] ")" */
-  vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>
+  vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
       formal_parameters;
   if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     if (!peek_check_token_type(TokenType::rparen, NO_ADVANCE_ON_TRUE)) {
@@ -682,19 +681,13 @@ Parser::peek_check_token_type_within(std::set<TokenType> expectedTypes,
   return std::optional(token->type());
 }
 
-bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue,
-                               bool advanceOnFalse) {
+bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue) {
   auto token = scanner_.peek();
   if (token->type() != expectedType) {
     logger_.error(token->start(), to_string(expectedType) +
                                       " expected, found " +
                                       to_string(token->type()) + ".");
     exit(EXIT_FAILURE);
-
-    //   if (advanceOnFalse)
-    //     last_token_ = scanner_.next();
-    //
-    //   return false;
   }
 
   if (advanceOnTrue) {
@@ -705,7 +698,7 @@ bool Parser::expect_token_type(TokenType expectedType, bool advanceOnTrue,
 }
 
 bool Parser::expect_token_type_within(std::set<TokenType> expectedTypes,
-                                      bool advanceOnTrue, bool advanceOnFalse) {
+                                      bool advanceOnTrue) {
   auto token = scanner_.peek();
   if (!expectedTypes.contains(token->type())) {
     std::string s_expectedTypes = "{ ";
@@ -718,10 +711,6 @@ bool Parser::expect_token_type_within(std::set<TokenType> expectedTypes,
                                       " expected, found " +
                                       to_string(token->type()) + ".");
     exit(EXIT_FAILURE);
-    // if (advanceOnFalse)
-    //   last_token_ = scanner_.next();
-    //
-    // return false;
   }
 
   if (advanceOnTrue) {
