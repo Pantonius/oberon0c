@@ -35,9 +35,8 @@ public:
   ModuleNode *get_module();
   void set_module(unique_ptr<ModuleNode>);
 
-  IdentTypeNode *add_type(unique_ptr<IdentTypeNode> type);
-  ArrayTypeNode *add_type(unique_ptr<ArrayTypeNode> type);
-  RecordTypeNode *add_type(unique_ptr<RecordTypeNode> type);
-
-  const static std::shared_ptr<ProcedureTypeNode> STD_PROCEDURE_TYPE;
+  IdentTypeNode *add_type(unique_ptr<IdentTypeNode>);
+  ArrayTypeNode *add_type(unique_ptr<ArrayTypeNode>);
+  RecordTypeNode *add_type(unique_ptr<RecordTypeNode>);
+  ProcedureTypeNode *add_type(unique_ptr<ProcedureTypeNode>);
 };

@@ -1,13 +1,9 @@
 #include "ASTContext.h"
 #include "TypeNode.h"
 #include "global.h"
-#include <memory>
 
 const StdType ASTContext::INTEGER = StdType("INTEGER");
 const StdType ASTContext::BOOLEAN = StdType("BOOLEAN");
-
-const std::shared_ptr<ProcedureTypeNode> ASTContext::STD_PROCEDURE_TYPE =
-    std::make_shared<ProcedureTypeNode>(EMPTY_POS);
 
 ModuleNode *ASTContext::get_module() { return module_.get(); }
 
@@ -28,6 +24,12 @@ ArrayTypeNode *ASTContext::add_type(unique_ptr<ArrayTypeNode> type) {
   return ptr;
 }
 RecordTypeNode *ASTContext::add_type(unique_ptr<RecordTypeNode> type) {
+  auto ptr = type.get();
+  types_.push_back(std::move(type));
+
+  return ptr;
+}
+ProcedureTypeNode *ASTContext::add_type(unique_ptr<ProcedureTypeNode> type) {
   auto ptr = type.get();
   types_.push_back(std::move(type));
 

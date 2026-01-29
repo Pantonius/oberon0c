@@ -2,7 +2,7 @@
 #include "NodeVisitor.h"
 #include "util/Logger.h"
 
-ostream &operator<<(ostream &os, UnaryOpType op) {
+ostream &operator<<(ostream &os, const UnaryOpType &op) {
   switch (op) {
   case UnaryOpType::plus:
     return os << "+";
@@ -15,7 +15,7 @@ ostream &operator<<(ostream &os, UnaryOpType op) {
   }
 }
 
-ostream &operator<<(ostream &os, BinaryOpType op) {
+ostream &operator<<(ostream &os, const BinaryOpType &op) {
   switch (op) {
   case BinaryOpType::b_or:
     return os << "OR";
