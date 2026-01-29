@@ -9,6 +9,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
+  # add_compile_options(-fsanitize=address -g)
+  # add_link_options(-fsanitize=address)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wweak-vtables)

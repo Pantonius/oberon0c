@@ -15,9 +15,8 @@ void SemanticChecker::onModuleStart(const FilePos &pos,
   context_.set_module(std::move(module));
 }
 
-void SemanticChecker::onModuleEnd(const FilePos &pos,
-                                  const unique_ptr<IdentNode> &ident) {
-  if (context_.get_module()->ident->value != ident->value) {
+void SemanticChecker::onModuleEnd(const FilePos &pos, const IdentNode &ident) {
+  if (context_.get_module()->ident->value != ident.value) {
     logger_.error(pos, "End identifier does not match module identifier.");
     exit(EXIT_FAILURE);
   }
@@ -248,8 +247,8 @@ SemanticChecker::onProcedureDeclaration(const FilePos &pos,
 
 void SemanticChecker::onProcedureEnd(const FilePos &pos,
                                      const ProcedureDeclarationNode *procedure,
-                                     const unique_ptr<IdentNode> &ident) {
-  if (procedure->ident->value != ident->value) {
+                                     const IdentNode &ident) {
+  if (procedure->ident->value != ident.value) {
     logger_.error(pos, "End identifier does not match procedure identifier.");
     exit(EXIT_FAILURE);
   }

@@ -12,14 +12,14 @@ using std::vector;
 class StatementSequenceNode final : public Node {
 public:
   StatementSequenceNode(const FilePos &pos,
-                        vector<unique_ptr<StatementNode>> &stmts)
-      : Node(NodeType::statement_sequence, pos), stmts(stmts) {}
+                        vector<unique_ptr<StatementNode>> stmts)
+      : Node(NodeType::statement_sequence, pos), stmts(std::move(stmts)) {}
   ~StatementSequenceNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const vector<unique_ptr<StatementNode>> &stmts;
+  vector<unique_ptr<StatementNode>> stmts;
 };
 
 #endif // OBERON0C_STATEMENTSEQUENCENODE_H

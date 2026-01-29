@@ -14,7 +14,7 @@ public:
   ~SemanticChecker() = default;
 
   void onModuleStart(const FilePos &, unique_ptr<IdentNode>);
-  void onModuleEnd(const FilePos &, const unique_ptr<IdentNode> &);
+  void onModuleEnd(const FilePos &, const IdentNode &);
 
   unique_ptr<ConstDeclarationNode>
   onConst(const FilePos &, unique_ptr<IdentNode>, unique_ptr<ExpressionNode>);
@@ -42,7 +42,7 @@ public:
   onProcedureDeclaration(const FilePos &, unique_ptr<IdentNode>,
                          const ProcedureTypeNode *);
   void onProcedureEnd(const FilePos &, const ProcedureDeclarationNode *,
-                      const unique_ptr<IdentNode> &);
+                      const IdentNode &);
 
   unique_ptr<ProcedureCallNode>
   onProcedureCall(const FilePos &, unique_ptr<IdentNode>,

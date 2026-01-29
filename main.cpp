@@ -44,7 +44,6 @@ int main(const int argc, const char *argv[]) {
   // Parsing
   Parser parser(scanner, logger);
   auto context = parser.parse();
-  // context->get_module()->print(cout);
 
   // Status print
   string status = (logger.getErrorCount() == 0 ? "complete" : "failed");

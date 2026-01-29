@@ -50,10 +50,11 @@ class IfStatementNode final : public StatementNode {
 public:
   IfStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> condition,
                   unique_ptr<StatementSequenceNode> body,
-                  vector<unique_ptr<ElsIfStatementNode>> &elsifs,
+                  vector<unique_ptr<ElsIfStatementNode>> elsifs,
                   unique_ptr<StatementSequenceNode> else_statement_sequence)
       : StatementNode(NodeType::if_statement, pos),
-        condition(std::move(condition)), body(std::move(body)), elsifs(elsifs),
+        condition(std::move(condition)), body(std::move(body)),
+        elsifs(std::move(elsifs)),
         else_statement_sequence(std::move(else_statement_sequence)) {}
   ~IfStatementNode() override = default;
 
@@ -62,7 +63,7 @@ public:
 
   const unique_ptr<ExpressionNode> condition;
   const unique_ptr<StatementSequenceNode> body;
-  const vector<unique_ptr<ElsIfStatementNode>> &elsifs;
+  const vector<unique_ptr<ElsIfStatementNode>> elsifs;
   const unique_ptr<StatementSequenceNode> else_statement_sequence;
 };
 
