@@ -66,8 +66,11 @@ set(PARSER_SOURCES
         parser/SemanticChecker.h parser/SemanticChecker.cpp
       )
 
+set(CODEGEN_SOURCES
+  codegen/CodeGen.h codegen/CodeGen.cpp
+)
 
-set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES})
+set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${CODEGEN_SOURCES})
 
 add_executable(${OBERON0_C} main.cpp ${ALL_SOURCES})
 
@@ -115,7 +118,7 @@ set(TEST_SOURCES
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main
 add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
-target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
 
 include(CTest)
 include(Catch)
