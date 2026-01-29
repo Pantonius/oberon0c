@@ -1,8 +1,8 @@
 #include "CodeGen.h"
-#include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
@@ -92,4 +92,44 @@ inline void emit(llvm::TargetMachine *tm, llvm::Module *module,
   output.flush();
 }
 
-void CodeGen::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
+void CodeGen::build(ASTContext &ast_ctx, string name) {
+  if (const auto tm = init()) {
+    // set up LLVM module
+    llvm::LLVMContext ctx;
+    const auto module = new llvm::Module(name, ctx);
+    module->setDataLayout(tm->createDataLayout());
+    module->setTargetTriple(tm->getTargetTriple());
+
+    // set up a builder to generate the LLVM intermediate representation
+    auto builder = CodeGenBuilder(ctx);
+
+    // verify the module
+    verifyModule(*module, &llvm::errs());
+
+    emit(tm, module, name,
+         OutputFileType::LLVMIRFile); // TODO OutputFileType may be an argument
+  }
+  exit(EXIT_FAILURE); // TODO may be an exception
+}
+
+void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
+void CodeGenBuilder::visit(ArrayTypeNode &array_type) {}
+void CodeGenBuilder::visit(AssignmentNode &assignment) {}
+void CodeGenBuilder::visit(ConstDeclarationNode &const_declaration) {}
+void CodeGenBuilder::visit(ExpressionNode &expression) {}
+void CodeGenBuilder::visit(IfStatementNode &if_statement) {}
+void CodeGenBuilder::visit(ModuleNode &module_node) {}
+void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
+void CodeGenBuilder::visit(ProcedureDeclarationNode &procedure_declaration) {}
+void CodeGenBuilder::visit(RecordTypeNode &record_type) {}
+void CodeGenBuilder::visit(RepeatStatementNode &repeat_statement) {}
+void CodeGenBuilder::visit(SelectorNode &selector) {}
+void CodeGenBuilder::visit(StatementNode &statement) {}
+void CodeGenBuilder::visit(StatementSequenceNode &statement_sequence) {}
+void CodeGenBuilder::visit(IdentNode &ident) {}
+void CodeGenBuilder::visit(FieldNode &field) {}
+void CodeGenBuilder::visit(TypeNode &type) {}
+void CodeGenBuilder::visit(TypeDeclarationNode &type_declaration) {}
+void CodeGenBuilder::visit(ParamDeclarationNode &param_declaration) {}
+void CodeGenBuilder::visit(VarDeclarationNode &var_declaration) {}
+void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}

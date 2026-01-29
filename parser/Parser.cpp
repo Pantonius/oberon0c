@@ -34,9 +34,8 @@ void Parser::module() {
   declaration_sequence(sema_.get_context()->get_module());
 
   // [
-  unique_ptr<StatementSequenceNode> statement_sequence;
   if (peek_check_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE)) {
-    statement_sequence = Parser::statement_sequence();
+    sema_.get_context()->get_module()->set_statements(statement_sequence());
   }
   // ]
 

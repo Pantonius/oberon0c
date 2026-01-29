@@ -96,16 +96,16 @@ public:
   ~DeclarationSequenceNode() = default;
 
   void add_const(unique_ptr<ConstDeclarationNode> con);
-  vector<unique_ptr<ConstDeclarationNode>> get_consts();
+  vector<unique_ptr<ConstDeclarationNode>> *get_consts();
 
   void add_type(unique_ptr<TypeDeclarationNode> type);
-  vector<unique_ptr<TypeDeclarationNode>> get_types();
+  vector<unique_ptr<TypeDeclarationNode>> *get_types();
 
   void add_var(unique_ptr<VarDeclarationNode> var);
-  vector<unique_ptr<VarDeclarationNode>> get_vars();
+  vector<unique_ptr<VarDeclarationNode>> *get_vars();
 
   void add_procedure(unique_ptr<ProcedureDeclarationNode> proc);
-  vector<unique_ptr<ProcedureDeclarationNode>> get_procs();
+  vector<unique_ptr<ProcedureDeclarationNode>> *get_procs();
 };
 
 class ProcedureDeclarationNode final : public DeclarationNode,

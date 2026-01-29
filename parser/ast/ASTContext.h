@@ -1,3 +1,6 @@
+#ifndef OBERON0C_ASTCONTEXT_H
+#define OBERON0C_ASTCONTEXT_H
+
 #include "ModuleNode.h"
 #include "functional"
 #include "parser/ast/TypeNode.h"
@@ -40,3 +43,5 @@ public:
   RecordTypeNode *add_type(unique_ptr<RecordTypeNode>);
   ProcedureTypeNode *add_type(unique_ptr<ProcedureTypeNode>);
 };
+
+#endif

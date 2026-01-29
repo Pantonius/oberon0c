@@ -3,9 +3,11 @@
 
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/NodeVisitor.h"
+#include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
@@ -19,14 +21,16 @@
 
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
-class CodeGen final : private NodeVisitor {
+class CodeGenBuilder final : private NodeVisitor {
 public:
-  explicit CodeGen() = default;
-  virtual ~CodeGen() noexcept;
+  CodeGenBuilder(llvm::LLVMContext &ctx) : builder_(ctx) {};
+  ~CodeGenBuilder() override = default;
 
   void build(ASTContext &);
 
 private:
+  llvm::IRBuilder<> builder_;
+
   void visit(ArrayTypeNode &array_type) override final;
   void visit(AssignmentNode &assignment) override final;
   void visit(ConstDeclarationNode &const_declaration) override final;
@@ -47,6 +51,14 @@ private:
   void visit(ParamDeclarationNode &param_declaration) override final;
   void visit(VarDeclarationNode &var_declaration) override final;
   void visit(WhileStatementNode &while_statement) override final;
+};
+
+class CodeGen final {
+public:
+  CodeGen() {};
+  ~CodeGen() = default;
+
+  void build(ASTContext &, string name);
 };
 
 #endif // OBERON0C_CODEGEN_H

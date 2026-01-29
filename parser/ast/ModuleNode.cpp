@@ -16,3 +16,10 @@ void ModuleNode::print(ostream &stream) const {
   ident->print(stream);
   stream << ";";
 }
+
+void ModuleNode::set_statements(unique_ptr<StatementSequenceNode> statements) {
+  statement_sequence_ = std::move(statements);
+}
+StatementSequenceNode *ModuleNode::get_statements() {
+  return statement_sequence_.get();
+}

@@ -22,6 +22,9 @@ public:
   void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> ident;
+
+  void set_statements(unique_ptr<StatementSequenceNode>);
+  StatementSequenceNode *get_statements();
 };
 
 #endif // OBERON0C_MODULENODE_H
