@@ -63,7 +63,7 @@ TYPE MaybeInt = Some : INTEGER | None;
 
 VAR b : BOOLEAN;
 
-PROCEDURE Frac(n, m : INTEGER) : MayberInt;
+PROCEDURE Frac(n, m : INTEGER) : MaybeInt;
 BEGIN
     IF n % m = 0 THEN RETURN Some(n / m)
     ELSE None END
