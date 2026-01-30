@@ -14,9 +14,7 @@ void IdentTypeNode::print(ostream &stream) const { ident->print(stream); }
 
 void ArrayTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ArrayTypeNode::print(ostream &stream) const {
-  stream << "ARRAY ";
-  expression->print(stream);
-  stream << " OF ";
+  stream << "ARRAY " << dimension << " OF ";
   type->print(stream);
 }
 

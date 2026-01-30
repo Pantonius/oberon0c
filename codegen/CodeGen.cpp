@@ -7,9 +7,11 @@
 #include <llvm/IR/GlobalValue.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/FileSystem.h>
@@ -19,9 +21,7 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 
-using llvm::legacy::PassManager;
-
-inline llvm::TargetMachine *init() {
+llvm::TargetMachine *CodeGen::init() {
   // initialize LLVM
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
@@ -34,7 +34,7 @@ inline llvm::TargetMachine *init() {
   string error;
   if (const auto target = llvm::TargetRegistry::lookupTarget(triple, error);
       !target) {
-    std::cerr << error << std::endl;
+    logger_.error(EMPTY_POS, error);
   } else {
     // set up target machine to match host
     const string cpu = "generic";
@@ -47,8 +47,8 @@ inline llvm::TargetMachine *init() {
   return nullptr;
 }
 
-inline void emit(llvm::TargetMachine *tm, llvm::Module *module,
-                 const string &name, const OutputFileType type) {
+void CodeGen::emit(llvm::TargetMachine *tm, llvm::Module *module,
+                   const string &name, const OutputFileType type) {
   string ext;
   switch (type) {
   case OutputFileType::AssemblyFile:
@@ -72,7 +72,7 @@ inline void emit(llvm::TargetMachine *tm, llvm::Module *module,
   // open an output stream with open flags "None"
   llvm::raw_fd_ostream output(file, ec, llvm::sys::fs::OF_None);
   if (ec) {
-    std::cerr << ec.message() << std::endl;
+    logger_.error(EMPTY_POS, ec.message());
     exit(ec.value());
   }
   if (type == OutputFileType::LLVMIRFile) {
@@ -91,8 +91,8 @@ inline void emit(llvm::TargetMachine *tm, llvm::Module *module,
   }
   llvm::legacy::PassManager pass;
   if (tm->addPassesToEmitFile(pass, output, nullptr, ft)) {
-    std::cerr << "Error: target machine cannot emit a file of this type."
-              << std::endl;
+    logger_.error(EMPTY_POS,
+                  "Error: target machine cannot emit a file of this type.");
     return;
   }
   pass.run(*module);
@@ -101,6 +101,7 @@ inline void emit(llvm::TargetMachine *tm, llvm::Module *module,
 
 void CodeGen::build(ASTContext &ast_ctx, string name) {
   if (const auto tm = init()) {
+    logger_.debug("HERE WE ARE NOW");
     // set up LLVM module
     llvm::LLVMContext ctx;
     const auto module = new llvm::Module(name, ctx);
@@ -109,13 +110,16 @@ void CodeGen::build(ASTContext &ast_ctx, string name) {
 
     // set up a builder to generate the LLVM intermediate representation
     auto builder = CodeGenBuilder(logger_, module, ctx);
+    builder.build(ast_ctx);
 
     // verify the module
     verifyModule(*module, &llvm::errs());
 
     emit(tm, module, name,
          OutputFileType::LLVMIRFile); // TODO OutputFileType may be an argument
+    return;
   }
+  logger_.error(EMPTY_POS, "LLVM TargetMachine could not be intialized.");
   exit(EXIT_FAILURE); // TODO may be an exception
 }
 
@@ -124,14 +128,22 @@ void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
 void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
   auto type =
       llvm::ArrayType::get(getLLVMType(array_type.type), array_type.dimension);
-  types_[array_type.type] = type;
+  types_[&array_type] = type;
 }
 void CodeGenBuilder::visit(AssignmentNode &assignment) {}
 void CodeGenBuilder::visit(ConstDeclarationNode &const_declaration) {}
 void CodeGenBuilder::visit(ExpressionNode &expression) {}
-void CodeGenBuilder::visit(IfStatementNode &if_statement) {}
+void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
+void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_->setModuleIdentifier(module_node.ident->value);
+
+  for (auto &type : *module_node.get_types()) {
+    // NOTE TypeDeclarations are simply new key:value pairs in types_
+    // differentiation of semantically different types is gone now;
+    // the parser / sema checker did that
+    getLLVMType(type->type);
+  }
 
   for (auto &var : *module_node.get_vars()) {
     auto type = getLLVMType(var->type);
@@ -139,7 +151,11 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
         *module_, type, false, llvm::GlobalValue::InternalLinkage,
         llvm::Constant::getNullValue(type), var->ident->value);
 
-    values_[var->ident->value] = value;
+    values_[var.get()] = value;
+  }
+
+  for (auto &proc : *module_node.get_procs()) {
+    proc->accept(*this);
   }
 
   auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
@@ -147,15 +163,104 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   const auto entry =
       llvm::BasicBlock::Create(builder_.getContext(), "entry", function);
   builder_.SetInsertPoint(entry);
+
+  // statements
+  if (module_node.get_statements()->stmts.size() > 0) {
+    module_node.get_statements()->accept(*this);
+  }
+
+  builder_.CreateRet(builder_.getInt32(0));
 }
 void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
-void CodeGenBuilder::visit(ProcedureDeclarationNode &procedure_declaration) {}
-void CodeGenBuilder::visit(RecordTypeNode &record_type) {}
+void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
+  auto proc_type = dynamic_cast<ProcedureTypeNode *>(proc.type);
+
+  if (proc.get_procs()->size() > 0) {
+    logger_.error(proc.pos(), "CodeGen found nested procs (unsupported).");
+  }
+
+  // introduce types
+  for (size_t i = 0; i < proc.get_types()->size(); i++) {
+    proc.get_types()->at(i)->accept(*this);
+  }
+
+  vector<llvm::Type *> param_types;
+  bool has_by_ref = false;
+  for (auto &param : proc_type->formal_parameters) {
+    auto param_type = getLLVMType(param->type);
+    param_types.push_back(param->by_reference
+                              ? llvm::PointerType::get(builder_.getContext(), 0)
+                              : param_type);
+    if (param->by_reference)
+      has_by_ref = true;
+  }
+  // NOTE as of now, there are no return types; all procedures return void
+  auto fun_type =
+      llvm::FunctionType::get(builder_.getVoidTy(), param_types, has_by_ref);
+
+  auto callee = module_->getOrInsertFunction(proc.ident->value, fun_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+  const auto entry =
+      llvm::BasicBlock::Create(builder_.getContext(), "entry", func);
+  builder_.SetInsertPoint(entry);
+
+  const auto layout = module_->getDataLayout();
+
+  // allocate space for params
+  llvm::Function::arg_iterator curr_arg = func->arg_begin();
+  for (auto &param : proc_type->formal_parameters) {
+    auto *param_type =
+        param->by_reference ? builder_.getPtrTy() : getLLVMType(param->type);
+    auto *alloc =
+        builder_.CreateAlloca(param_type, nullptr, param->ident->value);
+    alloc->setAlignment(layout.getABITypeAlign(param_type));
+
+    // initialize memory with given value
+    builder_.CreateStore(curr_arg, alloc);
+    // associate param with memory area for any expressions that need the
+    // latest declared value
+    values_[param.get()] = alloc;
+
+    curr_arg++;
+  }
+
+  // allocate space for vars
+  for (size_t i = 0; i < proc.get_vars()->size(); i++) {
+    const auto &var = proc.get_vars()->at(i);
+    llvm::Type *type = getLLVMType(var->type);
+
+    auto *alloc = builder_.CreateAlloca(type, nullptr, var->ident->value);
+    alloc->setAlignment(layout.getABITypeAlign(type));
+
+    // associate var with memory area for any exprs that need latest value
+    values_[var.get()] = alloc;
+  }
+
+  // TODO body statements
+
+  builder_.CreateRetVoid();
+  llvm::verifyFunction(*func, &llvm::errs());
+}
+void CodeGenBuilder::visit(ProcedureTypeNode &procedure_type) {
+} // TODO probably not of interest for now
+void CodeGenBuilder::visit(RecordTypeNode &record_type) {
+
+  vector<llvm::Type *> field_types;
+  for (auto &field : record_type.field_lists) {
+    field_types.push_back(getLLVMType(field->type));
+  }
+  auto struct_type = llvm::StructType::get(builder_.getContext(), field_types);
+  types_[&record_type] = struct_type;
+}
 void CodeGenBuilder::visit(RepeatStatementNode &repeat_statement) {}
 void CodeGenBuilder::visit(SelectorNode &selector) {}
-void CodeGenBuilder::visit(StatementNode &statement) {}
-void CodeGenBuilder::visit(StatementSequenceNode &statement_sequence) {}
+void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
+  for (auto &stmt : stmts.stmts) {
+    stmt->accept(*this);
+  }
+}
 void CodeGenBuilder::visit(IdentNode &ident) {}
+void CodeGenBuilder::visit(IdentTypeNode &ident) {}
 void CodeGenBuilder::visit(FieldNode &field) {}
 void CodeGenBuilder::visit(TypeDeclarationNode &type_declaration) {}
 void CodeGenBuilder::visit(ParamDeclarationNode &param_declaration) {}

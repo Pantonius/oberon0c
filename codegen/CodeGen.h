@@ -25,6 +25,7 @@ using std::map;
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
 class CodeGenBuilder final : private NodeVisitor {
+
 public:
   CodeGenBuilder(Logger &logger, llvm::Module *mod, llvm::LLVMContext &ctx)
       : logger_(logger), builder_(ctx), module_(mod) {};
@@ -37,7 +38,7 @@ private:
   llvm::IRBuilder<> builder_;
   llvm::Module *module_;
   map<const TypeNode *, llvm::Type *> types_;
-  map<string, llvm::Value *> values_;
+  map<const DeclarationNode *, llvm::Value *> values_;
   map<string, llvm::Function *> functions_;
 
   void visit(ArrayTypeNode &) override final;
@@ -45,6 +46,7 @@ private:
   void visit(ConstDeclarationNode &) override final;
   void visit(ExpressionNode &) override final;
   void visit(IfStatementNode &) override final;
+  void visit(ElsIfStatementNode &) override final;
   void visit(ModuleNode &) override final;
   void visit(ProcedureCallNode &) override final;
   void visit(ProcedureDeclarationNode &) override final;
@@ -52,9 +54,9 @@ private:
   void visit(RecordTypeNode &) override final;
   void visit(RepeatStatementNode &) override final;
   void visit(SelectorNode &) override final;
-  void visit(StatementNode &) override final;
   void visit(StatementSequenceNode &) override final;
   void visit(IdentNode &) override final;
+  void visit(IdentTypeNode &) override final;
   void visit(FieldNode &) override final;
   void visit(TypeDeclarationNode &) override final;
   void visit(ParamDeclarationNode &) override final;
@@ -67,6 +69,10 @@ private:
 class CodeGen final {
 private:
   Logger &logger_;
+
+  llvm::TargetMachine *init();
+  void emit(llvm::TargetMachine *, llvm::Module *, const string &,
+            const OutputFileType);
 
 public:
   CodeGen(Logger &logger) : logger_(logger) {};

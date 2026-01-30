@@ -22,12 +22,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   //   field1 : ARRAY 4 OF INTEGER;
   //   field2 : INTEGER
   // END;
-  IdentTypeNode int_type(
-      EMPTY_POS, unique_ptr<IdentNode>(new IdentNode(EMPTY_POS, "INTEGER")));
-
-  ArrayTypeNode array_type(
-      EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, 4, nullptr),
-      &int_type);
+  ArrayTypeNode array_type(EMPTY_POS, 4, ASTContext::INTEGER.get());
 
   symbol_table.beginScope();
 
@@ -37,7 +32,8 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   symbol_table.insert(*rec_fields[0]->ident.get(), rec_fields[0].get());
 
   rec_fields.emplace_back(make_unique<VarDeclarationNode>(
-      EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field2"), &int_type));
+      EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field2"),
+      ASTContext::INTEGER.get()));
   symbol_table.insert(*rec_fields[1]->ident.get(), rec_fields[1].get());
 
   RecordTypeNode rec_type(EMPTY_POS, std::move(rec_fields));

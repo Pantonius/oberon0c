@@ -14,6 +14,7 @@ public:
   virtual void visit(ConstDeclarationNode &) = 0;
   virtual void visit(ExpressionNode &) = 0;
   virtual void visit(IfStatementNode &) = 0;
+  virtual void visit(ElsIfStatementNode &) = 0;
   virtual void visit(ModuleNode &) = 0;
   virtual void visit(ProcedureTypeNode &) = 0;
   virtual void visit(ProcedureCallNode &) = 0;
@@ -21,9 +22,9 @@ public:
   virtual void visit(RecordTypeNode &) = 0;
   virtual void visit(RepeatStatementNode &) = 0;
   virtual void visit(SelectorNode &) = 0;
-  virtual void visit(StatementNode &) = 0;
   virtual void visit(StatementSequenceNode &) = 0;
   virtual void visit(IdentNode &) = 0;
+  virtual void visit(IdentTypeNode &) = 0;
   virtual void visit(FieldNode &) = 0;
   virtual void visit(TypeDeclarationNode &) = 0;
   virtual void visit(ParamDeclarationNode &) = 0;
