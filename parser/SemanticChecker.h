@@ -53,9 +53,13 @@ public:
   unique_ptr<ExpressionNode>
   onIdentExpression(const FilePos &, unique_ptr<IdentNode>,
                     vector<unique_ptr<SelectorNode>>);
+
   unique_ptr<AssignmentNode> onAssign(const FilePos &, unique_ptr<IdentNode>,
                                       vector<unique_ptr<SelectorNode>>,
                                       unique_ptr<ExpressionNode>);
+
+  unique_ptr<ArrayIndexNode> onArrayIndex(const FilePos &,
+                                          unique_ptr<ExpressionNode>);
 
   ASTContext *get_context() { return &context_; }
 

@@ -12,6 +12,7 @@ using std::string;
 using std::unique_ptr;
 
 class ExpressionNode;
+class NumberExpressionNode;
 class VarDeclarationNode;
 class TypeNode : public Node {
 public:
@@ -35,7 +36,7 @@ public:
 
 class ArrayTypeNode final : public TypeNode {
 public:
-  ArrayTypeNode(const FilePos &pos, unique_ptr<ExpressionNode> expression,
+  ArrayTypeNode(const FilePos &pos, unique_ptr<NumberExpressionNode> expression,
                 const TypeNode *type)
       : TypeNode(NodeType::array_type, pos), expression(std::move(expression)),
         type(type) {}
@@ -44,8 +45,10 @@ public:
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
-  const unique_ptr<ExpressionNode> expression;
+  const unique_ptr<NumberExpressionNode> expression;
   const TypeNode *type;
+
+  bool is_in_bounds(const NumberExpressionNode *expr) const;
 };
 
 class FieldNode final : public Node {

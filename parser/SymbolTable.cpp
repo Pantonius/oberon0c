@@ -24,8 +24,6 @@ void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
       table_.back();
 
   if (current_scope.contains(ident.value)) {
-    logger_.error(node->pos(),
-                  "Identifier: \"" + ident.value + "\" already used!");
     return;
   }
 
@@ -41,8 +39,6 @@ SymbolTable::lookup(const IdentNode &ident) const {
     } catch (const std::exception &e) {
     }
   }
-
-  throw NotDeclaredException(ident);
   return {};
 }
 
@@ -73,6 +69,9 @@ SymbolTable::lookup_type(const IdentNode &ident,
     if (auto array_selector =
             dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
       if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
+        if (!array_type_node->is_in_bounds(array_selector->expression.get())) {
+          throw OutOfRangeException(*array_selector);
+        }
         type = array_type_node->type;
       } else {
         throw WrongTypeException(*prev_selector, "ARRAY");
@@ -87,7 +86,7 @@ SymbolTable::lookup_type(const IdentNode &ident,
               record_type_node->find_field(*record_selector->ident);
           type = record_field->type;
         } catch (FieldNotFoundException &e) {
-          throw LookupException(*prev_selector, e.what());
+          throw;
           return {};
         }
       } else {

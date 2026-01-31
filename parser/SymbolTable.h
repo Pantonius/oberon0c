@@ -20,7 +20,6 @@ public:
 
   void beginScope();
   void endScope();
-  void insert(const DeclarationNode *node);
   void insert(const IdentNode &ident, const DeclarationNode *node);
 
   /**
@@ -48,7 +47,8 @@ private:
 
 public:
   LookupException(const Node &node)
-      : node_(node), msg_(to_string(&node) + " is not declared") {}
+      : node_(node),
+        msg_(to_string(&node) + " could not be found in symbol table") {}
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 
@@ -70,6 +70,12 @@ public:
 class NotDeclaredException : public LookupException {
 public:
   NotDeclaredException(const Node &node) : LookupException(node) {}
+};
+
+class OutOfRangeException : public LookupException {
+public:
+  OutOfRangeException(const ArrayIndexNode &node)
+      : LookupException(node, "Index is out of bounds") {}
 };
 
 class NullIdentException {

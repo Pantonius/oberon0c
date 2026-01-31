@@ -416,7 +416,6 @@ inline std::unique_ptr<AssignmentNode> Parser::assignment() {
 
 std::unique_ptr<AssignmentNode>
 Parser::assignment(unique_ptr<IdentNode> ident) {
-  logger_.debug("Parsing assignment");
   const Token *curr = scanner_.peek();
 
   auto selectors = Parser::selectors();
@@ -621,7 +620,7 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
     case TokenType::lbrack: {
       auto expression = Parser::expression();
       selectors.push_back(
-          make_unique<ArrayIndexNode>(curr->start(), std::move(expression)));
+          sema_.onArrayIndex(curr->start(), std::move(expression)));
       expect_token_type(TokenType::rbrack);
       break;
     }

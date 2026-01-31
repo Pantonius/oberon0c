@@ -110,6 +110,7 @@ set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 set(TEST_SOURCES
   tests/parser_tests.cpp
   tests/symbol_table_tests.cpp
+  tests/semantic_checker/ident_use_tests.cpp
 )
 
 # Configure Unit Tests

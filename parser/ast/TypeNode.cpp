@@ -13,6 +13,10 @@ void ArrayTypeNode::print(ostream &stream) const {
   type->print(stream);
 }
 
+bool ArrayTypeNode::is_in_bounds(const NumberExpressionNode *expr) const {
+  return expr->value >= 0 && expr->value < expression->value;
+}
+
 void FieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void FieldNode::print(ostream &stream) const {
   ident->print(stream);
