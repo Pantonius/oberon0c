@@ -38,9 +38,6 @@ public:
       const FilePos &,
       vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>>);
 
-  vector<unique_ptr<VarDeclarationNode>>
-  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
-
   const ProcedureTypeNode *onProcedureType(
       const FilePos &,
       vector<

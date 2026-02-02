@@ -99,8 +99,9 @@ public:
 
 class ProcedureTypeNode final : public TypeNode {
 public:
-  ProcedureTypeNode(const FilePos &pos,
-                    vector<unique_ptr<ParamDeclarationNode>> formal_parameters)
+  ProcedureTypeNode(
+      const FilePos &pos,
+      vector<unique_ptr<ParamDeclarationNode>> formal_parameters = {})
       : TypeNode(NodeType::procedure_type, pos),
         formal_parameters(std::move(formal_parameters)) {}
   ~ProcedureTypeNode() override = default;

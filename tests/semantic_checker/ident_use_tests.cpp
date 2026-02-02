@@ -1,9 +1,7 @@
 #include "global.h"
 #include "parser/Parser.h"
-#include "parser/SymbolTable.h"
 #include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
-#include "parser/ast/FPSectionNode.h"
 #include "parser/ast/IdentNode.h"
 #include "parser/ast/TypeNode.h"
 #include <catch2/catch_test_macros.hpp>
@@ -25,8 +23,6 @@ TEST_CASE("Semantic Checker", "[sema]") {
   //   field1 : ARRAY 4 OF INTEGER;
   //   field2 : INTEGER
   // END;
-  IdentTypeNode int_type(
-      EMPTY_POS, unique_ptr<IdentNode>(new IdentNode(EMPTY_POS, "INTEGER")));
 
   auto array_type =
       sema.onArrayType(EMPTY_POS,
@@ -34,15 +30,17 @@ TEST_CASE("Semantic Checker", "[sema]") {
                            EMPTY_POS, 4, ASTContext::INTEGER.get()),
                        ASTContext::INTEGER.get());
 
-  vector<unique_ptr<VarDeclarationNode>> rec_fields;
-  rec_fields.emplace_back(make_unique<VarDeclarationNode>(
-      EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1"), array_type));
+  vector<unique_ptr<IdentNode>> field1;
+  field1.emplace_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
 
-  rec_fields.emplace_back(make_unique<VarDeclarationNode>(
-      EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field2"),
-      ASTContext::INTEGER.get()));
+  vector<unique_ptr<IdentNode>> field2;
+  field2.emplace_back(std::make_unique<IdentNode>(EMPTY_POS, "field2"));
 
-  auto rec_type = sema.onRecordType(EMPTY_POS, std::move(rec_fields));
+  vector<pair<vector<unique_ptr<IdentNode>>, const TypeNode *>> field_list;
+  field_list.emplace_back(std::move(field1), array_type);
+  field_list.emplace_back(std::move(field2), ASTContext::INTEGER.get());
+
+  auto rec_type = sema.onRecordType(EMPTY_POS, std::move(field_list));
 
   vector<unique_ptr<IdentNode>> idents;
 
@@ -58,8 +56,8 @@ TEST_CASE("Semantic Checker", "[sema]") {
 
     ProcedureTypeNode proc_type(EMPTY_POS);
     unique_ptr<IdentNode> proc_ident = make_unique<IdentNode>(EMPTY_POS, "a");
-    auto proc = sema.onProcedureStart(EMPTY_POS, std::move(proc_ident),
-                                      vector<unique_ptr<FPSectionNode>>());
+    auto proc = sema.onProcedureDeclaration(EMPTY_POS, std::move(proc_ident),
+                                            &proc_type);
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
@@ -72,5 +70,10 @@ TEST_CASE("Semantic Checker", "[sema]") {
                           EMPTY_POS, 3, ASTContext::INTEGER.get()));
 
     REQUIRE(logger.getErrorCount() == 0);
+  }
+
+  SECTION("Is in array bounds") {
+    // rec.field1[3]
+    // rec.field1[4]
   }
 }

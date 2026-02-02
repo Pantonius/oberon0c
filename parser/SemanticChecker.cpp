@@ -166,6 +166,18 @@ unique_ptr<ExpressionNode>
 SemanticChecker::onIdentExpression(const FilePos &pos,
                                    unique_ptr<IdentNode> ident,
                                    vector<unique_ptr<SelectorNode>> selectors) {
+
+  // get ident type for more detailed error messages
+  const TypeNode *type;
+  try {
+    type = symbol_table_.lookup_type(*ident, selectors);
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    exit(EXIT_FAILURE);
+    // return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
+    //                                              std::move(selectors), type);
+  }
+
   // lookup ident declaration
   auto node_lookup = symbol_table_.lookup(*ident);
   if (!node_lookup) {
@@ -192,7 +204,6 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
     }
   } else if (node->getNodeType() == NodeType::var_declaration ||
              node->getNodeType() == NodeType::param_declaration) {
-    auto type = symbol_table_.lookup_type(*ident, selectors);
 
     return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
                                                  std::move(selectors), type);
@@ -595,8 +606,9 @@ SemanticChecker::onArrayIndex(const FilePos &pos,
  *  UTILITY FUNCTIONS
  * ------------------- */
 void SemanticChecker::expect_unique(const IdentNode *ident,
-                                    const DeclarationNode *value) {
-  if (auto decl = symbol_table_.lookup(*ident)) {
+                                    const DeclarationNode *value,
+                                    bool this_scope) {
+  if (auto decl = symbol_table_.lookup(*ident, this_scope)) {
     logger_.error(ident->pos(), "Identifier already declared here: " +
                                     to_string(decl.value()->pos()) + ":" +
                                     to_string(*decl));
