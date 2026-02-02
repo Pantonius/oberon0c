@@ -10,10 +10,12 @@
 
 using std::string;
 using std::unique_ptr;
+using std::vector;
 
 class ExpressionNode;
 class NumberExpressionNode;
 class VarDeclarationNode;
+class ParamDeclarationNode;
 class TypeNode : public Node {
 public:
   TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
@@ -97,12 +99,16 @@ public:
 
 class ProcedureTypeNode final : public TypeNode {
 public:
-  ProcedureTypeNode(const FilePos &pos)
-      : TypeNode(NodeType::procedure_type, pos) {}
+  ProcedureTypeNode(const FilePos &pos,
+                    vector<unique_ptr<ParamDeclarationNode>> formal_parameters)
+      : TypeNode(NodeType::procedure_type, pos),
+        formal_parameters(std::move(formal_parameters)) {}
   ~ProcedureTypeNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
+
+  vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
 };
 
 #endif // OBERON0C_TYPENODE_H

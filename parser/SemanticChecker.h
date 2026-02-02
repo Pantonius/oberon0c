@@ -34,21 +34,36 @@ public:
 
   const ArrayTypeNode *onArrayType(const FilePos &, unique_ptr<ExpressionNode>,
                                    const TypeNode *);
+  const RecordTypeNode *onRecordType(
+      const FilePos &,
+      vector<std::pair<vector<unique_ptr<IdentNode>>, const TypeNode *>>);
 
-  const RecordTypeNode *onRecordType(const FilePos &,
-                                     vector<unique_ptr<VarDeclarationNode>>);
+  vector<unique_ptr<VarDeclarationNode>>
+  onVars(const FilePos &, vector<unique_ptr<IdentNode>>, const TypeNode *);
+
+  const ProcedureTypeNode *onProcedureType(
+      const FilePos &,
+      vector<
+          std::tuple<vector<unique_ptr<IdentNode>>, bool, const TypeNode *>>);
 
   unique_ptr<ProcedureDeclarationNode>
-  onProcedureStart(const FilePos &, unique_ptr<IdentNode>,
-                   vector<unique_ptr<FPSectionNode>>);
+  onProcedureDeclaration(const FilePos &, unique_ptr<IdentNode>,
+                         const ProcedureTypeNode *);
   void onProcedureEnd(const FilePos &, const ProcedureDeclarationNode *,
                       const unique_ptr<IdentNode> &);
 
-  unique_ptr<ExpressionNode>
-  onUnaryExpression(const FilePos &, unique_ptr<ExpressionNode>, UnaryOpType);
+  unique_ptr<ProcedureCallNode>
+  onProcedureCall(const FilePos &, unique_ptr<IdentNode>,
+                  vector<unique_ptr<SelectorNode>>,
+                  vector<unique_ptr<ExpressionNode>>);
+
+  unique_ptr<ExpressionNode> onUnaryExpression(const FilePos &,
+                                               unique_ptr<ExpressionNode>,
+                                               const UnaryOpType);
+
   unique_ptr<ExpressionNode> onBinaryExpression(const FilePos &,
                                                 unique_ptr<ExpressionNode>,
-                                                BinaryOpType,
+                                                const BinaryOpType,
                                                 unique_ptr<ExpressionNode>);
   unique_ptr<ExpressionNode>
   onIdentExpression(const FilePos &, unique_ptr<IdentNode>,
@@ -63,7 +78,8 @@ public:
 
   ASTContext *get_context() { return &context_; }
 
-  void expect_unique(const IdentNode *, const DeclarationNode *);
+  void expect_unique(const IdentNode *, const DeclarationNode *, bool = false);
+  void expect_unique_within_scope(const IdentNode *, const DeclarationNode *);
   void expect_number(ExpressionNode *expr);
   void expect_bool(ExpressionNode *expr);
 

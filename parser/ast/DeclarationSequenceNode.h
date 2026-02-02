@@ -1,7 +1,6 @@
 #ifndef OBERON0C_DECLARATIONSEQUENCENODE_H
 #define OBERON0C_DECLARATIONSEQUENCENODE_H
 
-#include "FPSectionNode.h"
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include "TypeNode.h"
@@ -63,6 +62,26 @@ public:
   void print(std::ostream &stream) const final;
 };
 
+class ProtoParam {
+public:
+  // TODO
+};
+
+class ParamDeclarationNode final : public DeclarationNode {
+public:
+  ParamDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+                       bool by_reference, const TypeNode *type_node)
+      : DeclarationNode(NodeType::param_declaration, pos, std::move(ident),
+                        type_node),
+        by_reference(by_reference) {}
+  ~ParamDeclarationNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const override final;
+
+  const bool by_reference;
+};
+
 class ProcedureDeclarationNode;
 
 class DeclarationSequenceNode {
@@ -96,18 +115,15 @@ private:
 
 public:
   ProcedureDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> proc_name,
-                           vector<unique_ptr<FPSectionNode>> formal_parameters,
-                           const TypeNode *type_node)
+                           const ProcedureTypeNode *type_node)
       : DeclarationNode(NodeType::procedure_declaration, pos,
-                        std::move(proc_name), type_node),
-        formal_parameters(std::move(formal_parameters)) {}
+                        std::move(proc_name), type_node) {}
   ~ProcedureDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
   // ProcedureHeading
-  const vector<unique_ptr<FPSectionNode>> formal_parameters;
 
   void set_statement_sequence(unique_ptr<StatementSequenceNode>);
 };

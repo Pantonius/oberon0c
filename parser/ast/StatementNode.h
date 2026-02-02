@@ -69,18 +69,19 @@ class ProcedureCallNode final : public StatementNode {
 public:
   explicit ProcedureCallNode(
       const FilePos &pos, unique_ptr<IdentNode> ident,
-      vector<unique_ptr<SelectorNode>> &selectors,
-      vector<unique_ptr<ExpressionNode>> &actual_parameters)
+      vector<unique_ptr<SelectorNode>> selectors,
+      vector<unique_ptr<ExpressionNode>> actual_parameters)
       : StatementNode(NodeType::procedure_call, pos), ident(std::move(ident)),
-        selectors(selectors), actual_parameters(actual_parameters) {}
+        selectors(std::move(selectors)),
+        actual_parameters(std::move(actual_parameters)) {}
   ~ProcedureCallNode() override = default;
 
   void accept(NodeVisitor &) final;
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> ident;
-  const vector<unique_ptr<SelectorNode>> &selectors;
-  const vector<unique_ptr<ExpressionNode>> &actual_parameters;
+  const vector<unique_ptr<SelectorNode>> selectors;
+  const vector<unique_ptr<ExpressionNode>> actual_parameters;
 };
 
 class WhileStatementNode final : public StatementNode {

@@ -26,10 +26,13 @@ public:
    * Lookup `ident` in `SymbolTable`.
    *
    * @param ident the identifier to search for
+   * @param this_scope wether the check should only pertain to the current scope
+   * (default: false)
    *
    * @returns `std::optional<const DeclarationNode *>`
    */
-  std::optional<const DeclarationNode *> lookup(const IdentNode &ident) const;
+  std::optional<const DeclarationNode *> lookup(const IdentNode &ident,
+                                                bool this_scope = false) const;
 
   const TypeNode *
   lookup_type(const IdentNode &ident,

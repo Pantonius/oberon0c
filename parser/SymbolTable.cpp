@@ -31,13 +31,15 @@ void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
 }
 
 std::optional<const DeclarationNode *>
-SymbolTable::lookup(const IdentNode &ident) const {
+SymbolTable::lookup(const IdentNode &ident, bool this_scope) const {
   for (auto &scope : std::ranges::views::reverse(table_)) {
     try {
       auto node = scope.at(ident.value);
       return node;
     } catch (const std::exception &e) {
     }
+    if (this_scope)
+      break;
   }
   return {};
 }
