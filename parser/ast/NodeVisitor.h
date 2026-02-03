@@ -11,14 +11,21 @@ public:
 
   virtual void visit(ArrayTypeNode &) = 0;
   virtual void visit(AssignmentNode &) = 0;
-  virtual void visit(ConstDeclarationNode &) = 0;
-  virtual void visit(ExpressionNode &) = 0;
   virtual void visit(IfStatementNode &) = 0;
   virtual void visit(ElsIfStatementNode &) = 0;
   virtual void visit(ModuleNode &) = 0;
+  virtual void visit(ConstDeclarationNode &) = 0;
+  virtual void visit(VarDeclarationNode &) = 0;
+  virtual void visit(TypeDeclarationNode &) = 0;
+  virtual void visit(ParamDeclarationNode &) = 0;
   virtual void visit(ProcedureTypeNode &) = 0;
   virtual void visit(ProcedureCallNode &) = 0;
   virtual void visit(ProcedureDeclarationNode &) = 0;
+  virtual void visit(IdentExpressionNode &) = 0;
+  virtual void visit(BinaryExpressionNode &) = 0;
+  virtual void visit(UnaryExpressionNode &) = 0;
+  virtual void visit(NumberExpressionNode &) = 0;
+  virtual void visit(BooleanExpressionNode &) = 0;
   virtual void visit(RecordTypeNode &) = 0;
   virtual void visit(RepeatStatementNode &) = 0;
   virtual void visit(SelectorNode &) = 0;
@@ -26,9 +33,6 @@ public:
   virtual void visit(IdentNode &) = 0;
   virtual void visit(IdentTypeNode &) = 0;
   virtual void visit(FieldNode &) = 0;
-  virtual void visit(TypeDeclarationNode &) = 0;
-  virtual void visit(ParamDeclarationNode &) = 0;
-  virtual void visit(VarDeclarationNode &) = 0;
   virtual void visit(WhileStatementNode &) = 0;
 };
 

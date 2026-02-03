@@ -130,9 +130,12 @@ void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
       llvm::ArrayType::get(getLLVMType(array_type.type), array_type.dimension);
   types_[&array_type] = type;
 }
-void CodeGenBuilder::visit(AssignmentNode &assignment) {}
-void CodeGenBuilder::visit(ConstDeclarationNode &const_declaration) {}
-void CodeGenBuilder::visit(ExpressionNode &expression) {}
+void CodeGenBuilder::visit(AssignmentNode &assignment) {
+  // get lvalue
+  // get rvalue
+
+  // builder_.CreateStore(
+}
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
@@ -165,12 +168,17 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   builder_.SetInsertPoint(entry);
 
   // statements
-  if (module_node.get_statements()->stmts.size() > 0) {
+  if (module_node.get_statements() &&
+      module_node.get_statements()->stmts.size() > 0) {
     module_node.get_statements()->accept(*this);
   }
 
   builder_.CreateRet(builder_.getInt32(0));
 }
+void CodeGenBuilder::visit(ConstDeclarationNode &) {}
+void CodeGenBuilder::visit(VarDeclarationNode &) {}
+void CodeGenBuilder::visit(TypeDeclarationNode &) {}
+void CodeGenBuilder::visit(ParamDeclarationNode &) {}
 void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
 void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   auto proc_type = dynamic_cast<ProcedureTypeNode *>(proc.type);
@@ -241,6 +249,54 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   builder_.CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
+void CodeGenBuilder::visit(IdentExpressionNode &) {}
+void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
+  // const auto left_type = binary_expr.left_expression->type;
+  // const auto right_type = binary_expr.right_expression->type;
+  //
+  // binary_expr.left_expression->accept(*this);
+  // const auto left_value = value_;
+  // binary_expr.right_expression->accept(*this);
+  // const auto right_value = value_;
+  //
+  // // TODO
+  // if (left_type == ASTContext::INTEGER.get() &&
+  //     right_type == ASTContext::INTEGER.get()) {
+  //   switch (binary_expr.op) {
+  //   case BinaryOpType::plus:
+  //     break;
+  //   case BinaryOpType::minus:
+  //     break;
+  //   case BinaryOpType::times:
+  //     break;
+  //   case BinaryOpType::divide:
+  //   case BinaryOpType::div:
+  //     break;
+  //   case BinaryOpType::mod:
+  //     break;
+  //   case BinaryOpType::eq:
+  //     break;
+  //   case BinaryOpType::neq:
+  //     break;
+  //   case BinaryOpType::lt:
+  //     break;
+  //   case BinaryOpType::leq:
+  //     break;
+  //   case BinaryOpType::gt:
+  //     break;
+  //   case BinaryOpType::geq:
+  //     break;
+  //   default:
+  //     logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
+  //     exit(EXIT_FAILURE);
+  //   }
+  // } else if (left_type == ASTContext::BOOLEAN.get() &&
+  //            right_type == ASTContext::BOOLEAN.get()) {
+  // }
+}
+void CodeGenBuilder::visit(UnaryExpressionNode &) {}
+void CodeGenBuilder::visit(NumberExpressionNode &) {}
+void CodeGenBuilder::visit(BooleanExpressionNode &) {}
 void CodeGenBuilder::visit(ProcedureTypeNode &procedure_type) {
 } // TODO probably not of interest for now
 void CodeGenBuilder::visit(RecordTypeNode &record_type) {
@@ -262,9 +318,6 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
 void CodeGenBuilder::visit(IdentNode &ident) {}
 void CodeGenBuilder::visit(IdentTypeNode &ident) {}
 void CodeGenBuilder::visit(FieldNode &field) {}
-void CodeGenBuilder::visit(TypeDeclarationNode &type_declaration) {}
-void CodeGenBuilder::visit(ParamDeclarationNode &param_declaration) {}
-void CodeGenBuilder::visit(VarDeclarationNode &var_declaration) {}
 void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}
 
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {

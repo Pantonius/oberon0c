@@ -39,18 +39,26 @@ private:
   llvm::Module *module_;
   map<const TypeNode *, llvm::Type *> types_;
   map<const DeclarationNode *, llvm::Value *> values_;
+  llvm::Value *value_;
   map<string, llvm::Function *> functions_;
 
   void visit(ArrayTypeNode &) override final;
   void visit(AssignmentNode &) override final;
-  void visit(ConstDeclarationNode &) override final;
-  void visit(ExpressionNode &) override final;
   void visit(IfStatementNode &) override final;
   void visit(ElsIfStatementNode &) override final;
   void visit(ModuleNode &) override final;
+  void visit(ConstDeclarationNode &) override final;
+  void visit(VarDeclarationNode &) override final;
+  void visit(TypeDeclarationNode &) override final;
+  void visit(ParamDeclarationNode &) override final;
   void visit(ProcedureCallNode &) override final;
   void visit(ProcedureDeclarationNode &) override final;
   void visit(ProcedureTypeNode &) override final;
+  void visit(IdentExpressionNode &) override final;
+  void visit(BinaryExpressionNode &) override final;
+  void visit(UnaryExpressionNode &) override final;
+  void visit(NumberExpressionNode &) override final;
+  void visit(BooleanExpressionNode &) override final;
   void visit(RecordTypeNode &) override final;
   void visit(RepeatStatementNode &) override final;
   void visit(SelectorNode &) override final;
@@ -58,9 +66,6 @@ private:
   void visit(IdentNode &) override final;
   void visit(IdentTypeNode &) override final;
   void visit(FieldNode &) override final;
-  void visit(TypeDeclarationNode &) override final;
-  void visit(ParamDeclarationNode &) override final;
-  void visit(VarDeclarationNode &) override final;
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);
