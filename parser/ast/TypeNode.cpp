@@ -2,20 +2,17 @@
 #include "NodeVisitor.h"
 #include "util/Logger.h"
 
-// bool TypeNode::is_equivalent(TypeNode *other) const {
-//   if (this == other)
-//     return true;
-//
-//   return false;
-// }
-
 void IdentTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void IdentTypeNode::print(ostream &stream) const { ident->print(stream); }
 
 void ArrayTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ArrayTypeNode::print(ostream &stream) const {
-  stream << "ARRAY " << dimension << " OF ";
+  stream << "ARRAY " << expression->value << " OF ";
   type->print(stream);
+}
+
+bool ArrayTypeNode::is_in_bounds(const NumberExpressionNode *expr) const {
+  return expr->value >= 0 && expr->value < expression->value;
 }
 
 void FieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }

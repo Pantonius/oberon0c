@@ -126,8 +126,9 @@ void CodeGen::build(ASTContext &ast_ctx, string name) {
 void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
 
 void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
-  auto type =
-      llvm::ArrayType::get(getLLVMType(array_type.type), array_type.dimension);
+  auto type = llvm::ArrayType::get(
+      getLLVMType(array_type.type),
+      array_type.expression->value); // TODO check signedness
   types_[&array_type] = type;
 }
 void CodeGenBuilder::visit(AssignmentNode &assignment) {

@@ -22,7 +22,10 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   //   field1 : ARRAY 4 OF INTEGER;
   //   field2 : INTEGER
   // END;
-  ArrayTypeNode array_type(EMPTY_POS, 4, ASTContext::INTEGER.get());
+  ArrayTypeNode array_type(EMPTY_POS,
+                           make_unique<NumberExpressionNode>(
+                               EMPTY_POS, 4, ASTContext::INTEGER.get()),
+                           ASTContext::INTEGER.get());
 
   symbol_table.beginScope();
 

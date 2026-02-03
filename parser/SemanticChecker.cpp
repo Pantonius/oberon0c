@@ -6,6 +6,8 @@
 #include "util/Logger.h"
 #include <cstdlib>
 #include <memory>
+#include <utility>
+#include <vector>
 
 void SemanticChecker::onModuleStart(const FilePos &pos,
                                     unique_ptr<IdentNode> ident) {
@@ -28,6 +30,7 @@ unique_ptr<ConstDeclarationNode>
 SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
                          unique_ptr<ExpressionNode> expr) {
 
+  // TODO CHECK expr is constant? type of that constant?
   if (!expr) {
     logger_.error(pos, "undefined constant value: " + ident->value);
     exit(EXIT_FAILURE);
@@ -39,8 +42,9 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
     exit(EXIT_FAILURE);
   }
 
-  auto const_decl = make_unique<ConstDeclarationNode>(
-      pos, std::move(ident), std::move(expr), expr->type);
+  auto type = expr->type;
+  auto const_decl = make_unique<ConstDeclarationNode>(pos, std::move(ident),
+                                                      std::move(expr), type);
   expect_unique(const_decl->ident.get(), const_decl.get());
 
   return const_decl;
@@ -83,45 +87,45 @@ TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
   if (ident->value == context_.BOOLEAN.get_name())
     return context_.BOOLEAN.get();
 
-  TypeDeclarationNode const *type_decl =
-      dynamic_cast<const TypeDeclarationNode *>(
-          symbol_table_.lookup(*ident).value());
+  auto type_decl_ = symbol_table_.lookup(*ident);
 
-  if (!type_decl) {
-    logger_.error(pos, "Specified type \"" + ident->value +
-                           "\" is not declared in the current scope.");
-    exit(EXIT_FAILURE);
+  if (!type_decl_) {
+    logger_.error(pos, "Specified type '" + ident->value +
+                           "' is not declared in the current scope.");
+    return {};
   }
 
-  return type_decl->type;
+  if (auto type_decl =
+          dynamic_cast<const TypeDeclarationNode *>(type_decl_.value())) {
+    return type_decl->type;
+  }
+
+  logger_.error(pos, "'" + to_string(*ident) + "' is not a type.");
+  return {};
 }
 
 ArrayTypeNode *SemanticChecker::onArrayType(const FilePos &pos,
-                                            unique_ptr<ExpressionNode> expr,
+                                            unique_ptr<ExpressionNode> expr_,
                                             TypeNode *type) {
-  if (!expr) {
+  if (!expr_) {
     logger_.error(pos, "Undefined array size.");
     exit(EXIT_FAILURE);
   }
 
-  if (!expr->is_const()) {
-    logger_.error(expr->pos(), "Array size is not constant.");
+  std::unique_ptr<NumberExpressionNode> num =
+      std::unique_ptr<NumberExpressionNode>(
+          dynamic_cast<NumberExpressionNode *>(expr_.release()));
+
+  if (!num) {
+    logger_.error(num->pos(), "Array size is not a constant number.");
     exit(EXIT_FAILURE);
   }
-
-  if (expr->getNodeType() != NodeType::number) {
-    logger_.error(expr->pos(), "Array size is not a number.");
-    exit(EXIT_FAILURE);
-  }
-
-  auto num = dynamic_cast<NumberExpressionNode *>(expr.get());
 
   if (num->value < 0) {
-    logger_.error(expr->pos(), "Negative array size.");
-    exit(EXIT_FAILURE);
+    logger_.error(num->pos(), "Array size cannot be negative");
   }
 
-  auto array_type = std::make_unique<ArrayTypeNode>(pos, num->value, type);
+  auto array_type = std::make_unique<ArrayTypeNode>(pos, std::move(num), type);
   auto ptr = context_.add_type(std::move(array_type));
 
   return ptr;
@@ -159,6 +163,18 @@ unique_ptr<ExpressionNode>
 SemanticChecker::onIdentExpression(const FilePos &pos,
                                    unique_ptr<IdentNode> ident,
                                    vector<unique_ptr<SelectorNode>> selectors) {
+
+  // get ident type for more detailed error messages
+  TypeNode *type;
+  try {
+    type = symbol_table_.lookup_type(*ident, selectors);
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    exit(EXIT_FAILURE);
+    // return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
+    //                                              std::move(selectors), type);
+  }
+
   // lookup ident declaration
   auto node_lookup = symbol_table_.lookup(*ident);
   if (!node_lookup) {
@@ -171,7 +187,6 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
   if (node->getNodeType() == NodeType::const_declaration) {
     auto const_decl = dynamic_cast<const ConstDeclarationNode *>(node);
 
-    // clone expression
     auto expr = const_decl->expression.get();
     switch (expr->getNodeType()) {
     case NodeType::boolean:
@@ -186,7 +201,6 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
     }
   } else if (node->getNodeType() == NodeType::var_declaration ||
              node->getNodeType() == NodeType::param_declaration) {
-    auto type = symbol_table_.lookup_type(*ident, selectors);
 
     return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
                                                  std::move(selectors), type);
@@ -531,19 +545,72 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
   return std::make_unique<BinaryExpressionNode>(pos, std::move(left_expr), op,
                                                 std::move(right_expr), type);
 }
+unique_ptr<AssignmentNode>
+SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
+                          vector<unique_ptr<SelectorNode>> selectors,
+                          unique_ptr<ExpressionNode> expr) {
+  TypeNode *lhs_type;
+  try {
+    lhs_type = symbol_table_.lookup_type(*ident, selectors);
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    auto ident_expr = std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), lhs_type);
+    return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
+                                            std::move(expr));
+  }
+
+  auto ident_expr = std::make_unique<IdentExpressionNode>(
+      pos, std::move(ident), std::move(selectors), lhs_type);
+  if (ident_expr->type == nullptr) {
+    logger_.error(pos, "'" + to_string(ident_expr.get()) +
+                           "' has no associated type");
+  } else if (expr->type == nullptr) {
+    logger_.error(pos,
+                  "'" + to_string(expr.get()) + "' has no associated type");
+  } else if ((ident_expr->type != expr->type)) {
+    logger_.error(pos, "Can not assign '" + to_string(expr.get()) + ": " +
+                           to_string(expr->type) + "' to '" +
+                           to_string(ident_expr.get()) + ": " +
+                           to_string(ident_expr->type) + "'");
+  }
+
+  return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
+                                          std::move(expr));
+}
+
+unique_ptr<ArrayIndexNode>
+SemanticChecker::onArrayIndex(const FilePos &pos,
+                              unique_ptr<ExpressionNode> expr_) {
+  auto expr = std::unique_ptr<NumberExpressionNode>(
+      dynamic_cast<NumberExpressionNode *>(expr_.release()));
+
+  if (!expr) {
+    logger_.error(pos, "Array index is not a constant number");
+    exit(EXIT_FAILURE);
+  }
+
+  if (expr->value < 0) {
+    logger_.error(pos, "Array index cannot be negative");
+  }
+
+  return std::make_unique<ArrayIndexNode>(pos, std::move(expr));
+}
 
 /* -------------------
  *  UTILITY FUNCTIONS
  * ------------------- */
 void SemanticChecker::expect_unique(const IdentNode *ident,
                                     const DeclarationNode *value,
-                                    bool thisScope) {
-  if (symbol_table_.lookup(*ident, thisScope)) {
-    logger_.error(ident->pos(),
-                  "Identifier already declared: " + ident->value + ".");
-    exit(EXIT_FAILURE);
+                                    bool this_scope) {
+  if (auto decl = symbol_table_.lookup(*ident, this_scope)) {
+    logger_.error(ident->pos(), "Identifier already declared here: " +
+                                    to_string(decl.value()->pos()) + ":" +
+                                    to_string(*decl));
+    // exit(EXIT_FAILURE);
   }
   symbol_table_.insert(*ident, value);
+  return;
 }
 
 void SemanticChecker::expect_unique_within_scope(const IdentNode *ident,
@@ -555,7 +622,7 @@ void SemanticChecker::expect_bool(ExpressionNode *expr) {
   if (expr->type != ASTContext::BOOLEAN.get()) {
     logger_.error(expr->pos(), "Expression should be of type " +
                                    ASTContext::BOOLEAN.get_name() + ".");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -563,7 +630,7 @@ void SemanticChecker::expect_number(ExpressionNode *expr) {
   if (expr->type != ASTContext::INTEGER.get()) {
     logger_.error(expr->pos(), "Expression should be of type " +
                                    ASTContext::INTEGER.get_name() + ".");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
