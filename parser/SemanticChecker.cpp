@@ -582,6 +582,7 @@ SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
 unique_ptr<ArrayIndexNode>
 SemanticChecker::onArrayIndex(const FilePos &pos,
                               unique_ptr<ExpressionNode> expr_) {
+  // TODO may be variable (IdentExpressionNode)
   auto expr = std::unique_ptr<NumberExpressionNode>(
       dynamic_cast<NumberExpressionNode *>(expr_.release()));
 
