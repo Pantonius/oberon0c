@@ -5,13 +5,13 @@ with pkgs;
   boost
   llvm
   catch2_3
+  clang
   clang-tools
   cmake
   codespell
   conan
   cppcheck
   doxygen
-  gtest
   lcov
   vcpkg
   vcpkg-tool

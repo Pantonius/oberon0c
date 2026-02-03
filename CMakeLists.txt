@@ -10,6 +10,7 @@ else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
+  set(CMAKE_CXX_FLAGS_DEBUG "-g")
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wweak-vtables)
     if (WIN32)
@@ -27,9 +28,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 # define DEBUG macro
-if (CMAKE_BUILD_TYPE MATCHES Debug)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
   add_definitions(-D_DEBUG)
-endif ()
+  add_compile_options(-fsanitize=address)
+  add_link_options(-fsanitize=address)
+endif()
 
 # add the cmake folder of the project for extension modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -109,6 +112,7 @@ set(TEST_SOURCES
   tests/declaration_validity/const_decl.cpp
   tests/parser_tests.cpp
   tests/symbol_table_tests.cpp
+  tests/semantic_checker/ident_use_tests.cpp
 )
 
 # Configure Unit Tests

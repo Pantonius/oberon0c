@@ -30,6 +30,7 @@
               [
                 gdb
                 valgrind
+                vscode-extensions.vadimcn.vscode-lldb.adapter
               ]
           );
           inputsFrom = [
