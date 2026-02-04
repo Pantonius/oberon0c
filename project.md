@@ -1,30 +1,7 @@
 # Milestone 6 - Language Extension for Oberon-0
-Some initial ideas to think about until the deadline:
-<!-- - [ ] Higher-Order Functions / Lambda Expressions -->
-<!--     - essentially the ProcedureType expanded -->
-<!--     - type declarations for ProcedureType -->
-<!--     - inherint return types, i.e. procedure calls now have type -->
-<!--         - which means procedure calls are also expressions -->
-<!--         - and addtional sema checks on type compatibility -->
-<!--         - new base type of VOID (which can be encoded as a nullptr) -->
-<!--     - #TODO declare before use is still in place, which should mean that circular types are still impossible (think about that a second longer --- I'm too lazy right now) -->
-<!-- - [ ] Probabilistic Programming
-    - add some additional constructs like:
-        - RANDOM(from: INTEGER, to: INTEGER)
-        - prob X > 0.2
-        - and probabilistic variables?
-    - #TODO think about the complexity of the task
--->
-- [ ] Pattern Matching
-    - add a MATCH expr1 ON CASE expr2 THEN ... construct
-    - sema check: the type of expr1 and expr2 has to be equal
-    - will need to add pattern matching logic
-    - pattern matching may yield variable bindings for the case bodies (each of the CASEs is a new scope)
-- [ ] [Sum Types](https://stanford-cs242.github.io/f19/lectures/03-2-algebraic-data-types.html#sum-types)
-    - something like `TYPE Option = Some : INTEGER | None;`
 
 ## General Description
-My oberon-0 language extension entales the addition of sum types, procedure return types and pattern matching. Sum type constructs like the `Maybe`/`Option` type in Rust and Haskell expand the expressivity of the language: `Maybe`/`Option` add an easy syntax for partial functions into the language. A classic example of a use case is the division function:
+My oberon-0 language extension entales the addition of sum types and pattern matching. Sum type constructs like the `Maybe`/`Option` type in Rust and Haskell expand the expressivity of the language: `Maybe`/`Option` add an easy syntax for partial functions into the language. A classic example of a use case is the division function:
 ```pseudo
 TYPE MaybeInt = Some(INTEGER) | None
 
@@ -50,6 +27,7 @@ END.
 
 ### Sum Types
 Sum types yield a new type besides the builtin INTEGER, BOOLEAN, ARRAY and RECORD types. They also imply a new expression `SumTypeExpression` for instantiating SumType values.
+Each variant is an identifier with an optional list of parameter types.
 ```
 SumType = SumTypeVariant { "|" SumTypeVariant }
 SumTypeVariant = ident ["(" type { "," type } ")"]
@@ -57,22 +35,16 @@ SumTypeExpression = ident "::" ident { "(" expression {";" expression} ")" }
 ```
 The SumTypeExpression consists of the identifier for the sum type, the identifier for the variant and, optionally, the values for each of the parameters.
 
-### Procedure Return Statements / Procedure Types
-The procedure heading will have to be augmented to add an optional return type:
+The following syntax is adapted:
 ```
-ProcedureHeading = "PROCEDURE" ident [FormalParameters] { ":" type }
-```
-If no return type is given, the `VOID` type (the procedure does not return any value) is implied.
-
-The return statement introduces a new keyword `RETURN`:
-```
-ReturnStmt = "RETURN" expression
+type = ident | ArrayType | RecordType | SumType
+expression = SimpleExpression [("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpression] | SumTypeExpression
 ```
 
 ### Pattern Matching
-A new match statement will have to be introduced, including case statements with patterns to match on.
+A new `MATCH` statement will have to be introduced, including `CASE` statements with patterns to match on.
 ```
-MatchStmt = "MATCH" expression "ON" cases "END"
+MatchStatement = "MATCH" expression "ON" cases "END"
 cases = "CASE" pattern "THEN" StatementSequence "END" {";" "CASE" pattern "THEN" StatementSequence "END" }
 ```
 Patterns are either a wildcard (just some identifier that will be bound to the actual value) or an expression:
@@ -80,46 +52,72 @@ Patterns are either a wildcard (just some identifier that will be bound to the a
 pattern = ident | expression
 ```
 
+The following syntax is adapted:
+```
+statement = [assignment | ProcedureCall | IfStatement | WhileStatement | MatchStatement]
+```
+
 ## Augmented Semantics
 ### Sum Types
-Sum types need a semantic check for the existance of the declared variant types.
+Sum types need a semantic check for the existence of the declared parameter types.
 
-The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = Some(INTEGER) | None` implies the declaration of `Some` as type `INTEGER -> MaybeInt` and `None` as type `MaybeInt`.
+The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = Some(INTEGER) | None` implies the declaration of `MaybeInt::Some` as type `INTEGER -> MaybeInt` and `MaybeInt::None` as type `MaybeInt`.
 
-The construction of a sum type variant will need a type check for the fields, meaning: `Some(TRUE) : BOOLEAN -> MaybeInt` is incompatible with the declared `Some` type `INTEGER -> MaybeInt`.
-
-### Procedures
-The added return type of procedures will yield an implicit ProcedureType
-```
-ProcedureType = type "->" type ["->" type]
-```
-which consists of the input and output types (written in EBNF though they are not intended as syntactic constructs; just as internal constructs of the compiler). The last type is the return type, every other type is a formal parameter type.
-
-The return statement will need a semantic type compatibility check with the declared return type.
+The instantiation of a sum type variant will need a type check for the parameters, meaning: `MaybeInt::Some(TRUE) : BOOLEAN -> MaybeInt` is incompatible with the declared type of `MaybeInt::Some : INTEGER -> MaybeInt`.
 
 ### Pattern Matching
-The cases of the match statement will need a semantic type compatibility check with the match expression. The following type annotated example would be invalid:
+The cases of the match statement will need a semantic type compatibility check with the match expression. The following annotated example would be invalid:
 ```pseudo
 MATCH expression : MaybeInt ON
     CASE 4 : INTEGER THEN ...
-END.
+END
 ```
 
-Possibly I can try to check for exhaustiveness of the match cases. If too complex, I can resort to a mandatory default case / disregard non-exhaustive match statements.
+Each case statement should be unique within the match statement.
+
+Possibly I can try to check for exhaustiveness of the match statement. If too complex (which it probably is in general), I can disallow recursive patterns such as:
+```
+MATCH expression ON
+    CASE Some(a) THEN ...
+    ...
+END
+```
+(taking all the fun out of it)
+
+In that example `a` would not be interpreted as a (named) wildcard, but instead as a declared and instantiated variable value.
+
+Some initial thoughts on the matter of exhaustiveness for the non-recursive case:
+- The base cases for pattern matching are expressions of type: INTEGER, BOOLEAN
+    - a match statement on an INTEGER expression cannot be exhaustive
+    - a match statement on a BOOLEAN expression is only exhaustive if both the TRUE and FALSE cases are checked (in this sense BOOLEAN can be recontextualized to be a builtin SumType and use the matching rules for SumType)
+- The rest (ARRAY, RECORD, SumType) is derived from those basic types and each needs special consideration of exhaustiveness
+    - a match statement on an ARRAY expression is only exhaustive if each combination of its type variants is represented by a case
+        - an ARRAY of INTEGER cannot be exhaustive
+    - a match statement on an RECORD expression is only exhaustive if each combination of its field type variants is represented by a case
+        - a RECORD with an INTEGER field cannot be exhaustive
+    - a match statement on a SumType expression is only exhaustive if it is exhaustive for each variant
+        - a match statement is exhaustive for a variant, if each combination of its parameter type variants is represented by a case
+            - a variant with an INTEGER argument cannot be exhaustive
+        - therefore a SumType cannot be exhaustive if it has a variant with an INTEGER argument
+
+The recursive case would be different in the constructed types (ARRAY, RECORD, SumType), because wildcards would be allowed. Arguably, recursive patterns can be recontextualized as match statements within match statements. In that case the compiler would need to translate flattened (recursive) patterns into a hierarchical structures (first matching on the first argument, then matching on each subsequent argument of the ARRAY/RECORD/Variant.
 
 ## Envisioned Code Shape
 ### Sum Types
-One possibility for realizing sum types is utilizing the [PointerSumType](https://llvm.org/doxygen/classllvm_1_1PointerSumType.html) construct of LLVM.
+In general a SumType is represented in the AST as a `SumTypeNode : TypeNode` with a `vector<TypeNode *>` holding all parameter types.
 
-### Procedures
+One possibility for realizing sum types in LLVM is utilizing the [PointerSumType](https://llvm.org/doxygen/classllvm_1_1PointerSumType.html) construct (which I am not familiar with as of now).
 
 ### Pattern Matching
+*considering recursive patterns*
+
 Some brief thoughts, because I am not that familiar with the LLVM IR for pattern matching. From what I gather:
 - switch statements would be realized with the [`llvm::SwitchInst`](https://llvm.org/doxygen/classllvm_1_1SwitchInst.html), but only allow for matching an expression against concrete values; substitutions are not possible
 - I will probably need to translate the pattern matching into a series of conditional branches. The following oberon pseudo code:
 ```pseudo
 MATCH a ON
     CASE Some(2) THEN ... END;
+    CASE Some(3) THEN ... END;
     CASE Some(b) THEN ... END;
     CASE None THEN ... END
 END
@@ -128,6 +126,9 @@ would need to be translated into more atomic checks (not written in LLVM IR yet)
 ```pseudo
 if a.type == Some then:
     if a.firstField == 2 then:
+        ...
+        @goto after
+    else if a.firstField == 3 then:
         ...
         @goto after
     else
@@ -139,12 +140,7 @@ if a.type == None then:
     @goto after
 @lbl after
 ```
-More basic:
-- Each match is a sequence of case translations with a unique `@lbl after` to jump to after executing the match statement and the chosen case body.
-- Each case is a sequence of nested `if` statements where
-    - variants are matched by looking at the type of the expression (if variants are realized as their own \<TypeNode\*, llvm::type\> pair)
-    - literals are matched by checking equality
-    - (named) wildcards are matched by adding a substitution / variable binding
+This structure of if-elsif-else would already arise in the AST, when calling the semantic checker on a match statement. The semantic checker checks for exhaustiveness and de-flattens recursive patterns to be expressed as recursive match statements. Each case of the transformed match statement is then an if/elseif/else branch.
 
 ## Examples and Tests
 ### Valid
