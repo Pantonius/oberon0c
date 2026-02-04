@@ -34,7 +34,7 @@ END Divide.
 
 BEGIN
     i = Divide(100, 0);
-    MATCH i OF
+    MATCH i ON
         CASE Some(n) THEN WriteOut("GREAT!");
         CASE None THEN WriteOut(":(");
     END
@@ -100,7 +100,7 @@ The return statement will need a semantic type compatibility check with the decl
 ### Pattern Matching
 The cases of the match statement will need a semantic type compatibility check with the match expression. The following type annotated example would be invalid:
 ```pseudo
-MATCH expression : MaybeInt OF
+MATCH expression : MaybeInt ON
     CASE 4 : INTEGER THEN ...
 END.
 ```
@@ -118,7 +118,7 @@ Some brief thoughts, because I am not that familiar with the LLVM IR for pattern
 - switch statements would be realized with the [`llvm::SwitchInst`](https://llvm.org/doxygen/classllvm_1_1SwitchInst.html), but only allow for matching an expression against concrete values; substitutions are not possible
 - I will probably need to translate the pattern matching into a series of conditional branches. The following oberon pseudo code:
 ```pseudo
-MATCH a OF
+MATCH a ON
     CASE Some(2) THEN ... END;
     CASE Some(b) THEN ... END;
     CASE None THEN ... END
