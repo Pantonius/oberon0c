@@ -147,15 +147,14 @@ This structure of if-elsif-else would already arise in the AST, when calling the
 ```
 MODULE Example1;
 
-VAR i : INTEGER;
-
-PROCEDURE Zero() : INTEGER;
-BEGIN
-    RETURN 0
-END Zero;
+VAR b : BOOLEAN;
+    i : INTEGER;
 
 BEGIN
-    i = Zero();
+    i := 4;
+    MATCH i ON
+        CASE 10 THEN b := True END;
+        CASE x THEN b := False END
 END Example1.
 ```
 
@@ -165,15 +164,17 @@ MODULE Example2;
 TYPE MaybeInt = Some : INTEGER | None;
 
 VAR b : BOOLEAN;
+    frac : MaybeInt;
 
-PROCEDURE Frac(n, m : INTEGER) : MaybeInt;
+PROCEDURE Frac(n, m : INTEGER; VAR ret : MaybeInt);
 BEGIN
-    IF n % m = 0 THEN RETURN Some(n / m)
-    ELSE None END
+    IF n % m = 0 THEN ret := Some(n / m)
+    ELSE ret := None END
 END Frac;
 
 BEGIN
-    MATCH Frac(10, 3) ON
+    Frac(10, 3, frac);
+    MATCH frac ON
         CASE Some(a) THEN b := True END;
         CASE None THEN b := False END
     END
@@ -187,15 +188,17 @@ MODULE Example3;
 TYPE MaybeInt = Some : INTEGER | None;
 
 VAR b : BOOLEAN;
+    frac : MaybeInt;
 
-PROCEDURE Frac(n, m : INTEGER) : MaybeInt;
+PROCEDURE Frac(n, m : INTEGER; VAR ret : MaybeInt);
 BEGIN
-    IF n % m = 0 THEN RETURN Some(n / m)
-    ELSE None END
+    IF n % m = 0 THEN ret := Some(n / m)
+    ELSE ret := None END
 END Frac;
 
 BEGIN
-    MATCH Frac(10, 3) ON
+    Frac(10, 3, frac)
+    MATCH frac ON
         CASE 4 THEN b := True END;
     END
 END Example3.
