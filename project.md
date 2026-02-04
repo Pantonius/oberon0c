@@ -97,7 +97,44 @@ END.
 ```
 
 ## Envisioned Code Shape
+### Sum Types
 
+### Procedures
+
+### Pattern Matching
+Some brief thoughts, because I am not that familiar with the LLVM IR for pattern matching. From what I gather:
+- switch statements would be realized with the [`llvm::SwitchInst`](https://llvm.org/doxygen/classllvm_1_1SwitchInst.html), but only allow for matching an expression against concrete values; substitutions are not possible
+- I will probably need to translate the pattern matching into a series of conditional branches. The following oberon pseudo code:
+```pseudo
+MATCH a OF
+    CASE Some(2) THEN ... END;
+    CASE Some(b) THEN ... END;
+    CASE None THEN ... END
+END
+```
+would need to be translated into more atomic checks (not written in LLVM IR yet):
+```pseudo
+if a.type == Some then:
+    if a.firstField == 2 then:
+        ...
+        @goto after
+    else
+        b = a.firstField
+        ...
+        @goto after
+if a.type == None then:
+    ...
+    @goto after
+@lbl after
+```
+More basic:
+- Each match is a sequence of case translations with a unique `@lbl after` to jump to after executing the match statement and the chosen case body.
+- Each case is a sequence of nested `if` statements where
+    - variants are matched by looking at the type of the expression
+    - literals are matched by checking equality
+    - (named) wildcards are matched by adding a substitution / variable binding
+
+Something to think about: Does this suffice for deeper patterns then shown in the example above?
 
 ## Examples and Tests
 ### Valid
