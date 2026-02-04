@@ -77,14 +77,14 @@ Sum types need a semantic check for the existance of the declared variant types.
 
 The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = Some(INTEGER) | None` implies the declaration of `Some` as type `INTEGER -> MaybeInt` and `None` as type `MaybeInt`.
 
-The construction of a sum type variant will need a type check for the fields, meaning: `Some(TRUE)` is incompatible with the declared field type `INTEGER`.
+The construction of a sum type variant will need a type check for the fields, meaning: `Some(TRUE) : BOOLEAN -> MaybeInt` is incompatible with the declared `Some` type `INTEGER -> MaybeInt`.
 
 ### Procedures
 The added return type of procedures will yield an implicit ProcedureType
 ```
-ProcedureType = type ["->" type]
+ProcedureType = type "->" type ["->" type]
 ```
-which consists of the input and output types (written in EBNF though they are not intended as syntactic constructs; just as internal constructs of the compiler).
+which consists of the input and output types (written in EBNF though they are not intended as syntactic constructs; just as internal constructs of the compiler). The last type is the return type, every other type is a formal parameter type.
 
 The return statement will need a semantic type compatibility check with the declared return type.
 
@@ -97,6 +97,7 @@ END.
 ```
 
 ## Envisioned Code Shape
+
 
 ## Examples and Tests
 ### Valid
