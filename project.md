@@ -1,13 +1,13 @@
 # Milestone 6 - Language Extension for Oberon-0
 Some initial ideas to think about until the deadline:
-- [ ] Higher-Order Functions / Lambda Expressions
-    - essentially the ProcedureType expanded
-    - type declarations for ProcedureType
-    - inherint return types, i.e. procedure calls now have type
-        - which means procedure calls are also expressions
-        - and addtional sema checks on type compatibility
-        - new base type of VOID (which can be encoded as a nullptr)
-    - #TODO declare before use is still in place, which should mean that circular types are still impossible (think about that a second longer --- I'm too lazy right now)
+<!-- - [ ] Higher-Order Functions / Lambda Expressions -->
+<!--     - essentially the ProcedureType expanded -->
+<!--     - type declarations for ProcedureType -->
+<!--     - inherint return types, i.e. procedure calls now have type -->
+<!--         - which means procedure calls are also expressions -->
+<!--         - and addtional sema checks on type compatibility -->
+<!--         - new base type of VOID (which can be encoded as a nullptr) -->
+<!--     - #TODO declare before use is still in place, which should mean that circular types are still impossible (think about that a second longer --- I'm too lazy right now) -->
 <!-- - [ ] Probabilistic Programming
     - add some additional constructs like:
         - RANDOM(from: INTEGER, to: INTEGER)
@@ -40,13 +40,22 @@ BEGIN
     END
 END.
 ```
+
+### Open Questions
+- can we check exhaustiveness of the match cases?
+    - alternatively add a mandatory default
+- actual intermediate representation of sum types
+
 ## Syntax Extension
 
 ### Sum Types
+Sum types yield a new type besides the builtin INTEGER, BOOLEAN, ARRAY and RECORD types. They also imply a new expression `SumTypeExpression` for instantiating SumType values.
 ```
-SumType = ident [":" type] { "|" ident [":" type] }
-SumTypeExpression = ident { "(" expression {";" expression} ")" }
+SumType = SumTypeVariant { "|" SumTypeVariant }
+SumTypeVariant = ident ["(" type { "," type } ")"]
+SumTypeExpression = ident "::" ident { "(" expression {";" expression} ")" }
 ```
+The SumTypeExpression consists of the identifier for the sum type, the identifier for the variant and, optionally, the values for each of the parameters.
 
 ### Procedure Return Statements / Procedure Types
 The procedure heading will have to be augmented to add an optional return type:
@@ -66,7 +75,7 @@ A new match statement will have to be introduced, including case statements with
 MatchStmt = "MATCH" expression "ON" cases "END"
 cases = "CASE" pattern "THEN" StatementSequence "END" {";" "CASE" pattern "THEN" StatementSequence "END" }
 ```
-Patterns are either a wildcard (just some identifier) or an expression:
+Patterns are either a wildcard (just some identifier that will be bound to the actual value) or an expression:
 ```
 pattern = ident | expression
 ```
@@ -96,8 +105,11 @@ MATCH expression : MaybeInt OF
 END.
 ```
 
+Possibly I can try to check for exhaustiveness of the match cases. If too complex, I can resort to a mandatory default case / disregard non-exhaustive match statements.
+
 ## Envisioned Code Shape
 ### Sum Types
+One possibility for realizing sum types is utilizing the [PointerSumType](https://llvm.org/doxygen/classllvm_1_1PointerSumType.html) construct of LLVM.
 
 ### Procedures
 
@@ -130,11 +142,9 @@ if a.type == None then:
 More basic:
 - Each match is a sequence of case translations with a unique `@lbl after` to jump to after executing the match statement and the chosen case body.
 - Each case is a sequence of nested `if` statements where
-    - variants are matched by looking at the type of the expression
+    - variants are matched by looking at the type of the expression (if variants are realized as their own \<TypeNode\*, llvm::type\> pair)
     - literals are matched by checking equality
     - (named) wildcards are matched by adding a substitution / variable binding
-
-Something to think about: Does this suffice for deeper patterns then shown in the example above?
 
 ## Examples and Tests
 ### Valid
