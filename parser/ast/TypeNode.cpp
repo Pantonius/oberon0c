@@ -1,6 +1,8 @@
 #include "TypeNode.h"
 #include "NodeVisitor.h"
+#include "parser/ast/ExpressionNode.h"
 #include "util/Logger.h"
+#include <optional>
 
 void IdentTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void IdentTypeNode::print(ostream &stream) const { ident->print(stream); }
@@ -11,8 +13,13 @@ void ArrayTypeNode::print(ostream &stream) const {
   type->print(stream);
 }
 
-bool ArrayTypeNode::is_in_bounds(const NumberExpressionNode *expr) const {
-  return expr->value >= 0 && expr->value < expression->value;
+std::optional<bool>
+ArrayTypeNode::is_in_bounds(const ExpressionNode *expr) const {
+  if (auto number_expr = dynamic_cast<const NumberExpressionNode *>(expr)) {
+    return number_expr->value >= 0 && number_expr->value < expression->value;
+  }
+
+  return {};
 }
 
 void FieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }

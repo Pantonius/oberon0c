@@ -38,8 +38,7 @@ public:
 
 class ArrayIndexNode final : public SelectorNode {
 public:
-  ArrayIndexNode(const FilePos &pos,
-                 unique_ptr<NumberExpressionNode> expression)
+  ArrayIndexNode(const FilePos &pos, unique_ptr<ExpressionNode> expression)
       : SelectorNode(NodeType::array_selector, pos),
         expression(std::move(expression)) {}
   ~ArrayIndexNode() override = default;
@@ -47,7 +46,7 @@ public:
   void accept(NodeVisitor &) final;
   void print(std::ostream &) const final;
 
-  const unique_ptr<NumberExpressionNode> expression;
+  const unique_ptr<ExpressionNode> expression;
 };
 
 class RecordFieldNode final : public SelectorNode {

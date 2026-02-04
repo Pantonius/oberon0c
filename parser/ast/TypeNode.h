@@ -5,6 +5,7 @@
 #include "Node.h"
 #include "global.h"
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <vector>
 
@@ -50,7 +51,7 @@ public:
   const unique_ptr<NumberExpressionNode> expression;
   TypeNode *type;
 
-  bool is_in_bounds(const NumberExpressionNode *expr) const;
+  std::optional<bool> is_in_bounds(const ExpressionNode *expr) const;
 };
 
 class FieldNode final : public Node {

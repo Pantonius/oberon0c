@@ -3,6 +3,7 @@
 #include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
 #include "ast/TypeNode.h"
+#include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
 #include <cstdlib>
 #include <memory>
@@ -170,9 +171,8 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
-    exit(EXIT_FAILURE);
-    // return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
-    //                                              std::move(selectors), type);
+    return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
+                                                 std::move(selectors), type);
   }
 
   // lookup ident declaration
@@ -582,20 +582,20 @@ SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
 unique_ptr<ArrayIndexNode>
 SemanticChecker::onArrayIndex(const FilePos &pos,
                               unique_ptr<ExpressionNode> expr_) {
-  // TODO may be variable (IdentExpressionNode)
-  auto expr = std::unique_ptr<NumberExpressionNode>(
-      dynamic_cast<NumberExpressionNode *>(expr_.release()));
 
-  if (!expr) {
-    logger_.error(pos, "Array index is not a constant number");
-    exit(EXIT_FAILURE);
+  if (expr_->type != ASTContext::INTEGER.get()) {
+    logger_.error(pos, "Array index is not an INTEGER");
+  }
+  if (auto number_expr = std::unique_ptr<NumberExpressionNode>(
+          dynamic_cast<NumberExpressionNode *>(expr_.release()))) {
+
+    if (number_expr->value < 0) {
+      logger_.error(pos, "Array index cannot be negative");
+    }
+    return std::make_unique<ArrayIndexNode>(pos, std::move(number_expr));
   }
 
-  if (expr->value < 0) {
-    logger_.error(pos, "Array index cannot be negative");
-  }
-
-  return std::make_unique<ArrayIndexNode>(pos, std::move(expr));
+  return std::make_unique<ArrayIndexNode>(pos, std::move(expr_));
 }
 
 /* -------------------

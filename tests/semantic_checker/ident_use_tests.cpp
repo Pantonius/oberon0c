@@ -1,5 +1,6 @@
 #include "global.h"
 #include "parser/Parser.h"
+#include "parser/ast/ASTContext.h"
 #include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/IdentNode.h"
@@ -23,6 +24,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
   //   field1 : ARRAY 4 OF INTEGER;
   //   field2 : INTEGER
   // END;
+  // i : INTEGER
 
   auto array_type =
       sema.onArrayType(EMPTY_POS,
@@ -42,11 +44,24 @@ TEST_CASE("Semantic Checker", "[sema]") {
 
   auto rec_type = sema.onRecordType(EMPTY_POS, std::move(field_list));
 
-  vector<unique_ptr<IdentNode>> idents;
+  vector<unique_ptr<VarDeclarationNode>> rec_vars;
+  {
+    vector<unique_ptr<IdentNode>> idents;
 
-  idents.emplace_back(make_unique<IdentNode>(EMPTY_POS, "rec"));
+    idents.emplace_back(make_unique<IdentNode>(EMPTY_POS, "rec"));
 
-  auto rec_vars = sema.onVars(EMPTY_POS, std::move(idents), rec_type);
+    rec_vars = sema.onVars(EMPTY_POS, std::move(idents), rec_type);
+  }
+
+  vector<unique_ptr<VarDeclarationNode>> int_vars;
+  {
+    vector<unique_ptr<IdentNode>> idents;
+
+    idents.emplace_back(make_unique<IdentNode>(EMPTY_POS, "i"));
+
+    int_vars =
+        sema.onVars(EMPTY_POS, std::move(idents), ASTContext::INTEGER.get());
+  }
 
   SECTION("Is in enclosing scope") {
     // PROCEDURE a;
@@ -74,6 +89,57 @@ TEST_CASE("Semantic Checker", "[sema]") {
 
   SECTION("Is in array bounds") {
     // rec.field1[3]
-    // rec.field1[4]
+    auto rec_ident = make_unique<IdentNode>(EMPTY_POS, "rec");
+
+    std::vector<std::unique_ptr<SelectorNode>> selectors;
+    selectors.emplace_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
+    selectors.emplace_back(make_unique<ArrayIndexNode>(
+        EMPTY_POS, make_unique<NumberExpressionNode>(
+                       EMPTY_POS, 3, ASTContext::INTEGER.get())));
+
+    auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
+                                         std::move(selectors));
+
+    REQUIRE(logger.getErrorCount() == 0);
+  }
+
+  SECTION("Is out of array bounds") {
+    // rec.field1[3]
+    auto rec_ident = make_unique<IdentNode>(EMPTY_POS, "rec");
+
+    std::vector<std::unique_ptr<SelectorNode>> selectors;
+    selectors.emplace_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
+    selectors.emplace_back(make_unique<ArrayIndexNode>(
+        EMPTY_POS, make_unique<NumberExpressionNode>(
+                       EMPTY_POS, 6, ASTContext::INTEGER.get())));
+
+    auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
+                                         std::move(selectors));
+
+    REQUIRE(logger.getErrorCount() == 1);
+  }
+
+  SECTION("Array variable access") {
+    // rec.field1[i]
+    auto rec_ident = make_unique<IdentNode>(EMPTY_POS, "rec");
+
+    std::vector<std::unique_ptr<SelectorNode>> selectors;
+    selectors.emplace_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
+    selectors.emplace_back(sema.onArrayIndex(
+        EMPTY_POS, sema.onIdentExpression(
+                       EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "i"), {})));
+
+    auto array_ident_expr =
+        unique_ptr<IdentExpressionNode>(dynamic_cast<IdentExpressionNode *>(
+            sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
+                                   std::move(selectors))
+                .release()));
+
+    REQUIRE(logger.getErrorCount() == 0);
+    REQUIRE(array_ident_expr->type == ASTContext::INTEGER.get());
+    REQUIRE(!array_ident_expr->is_const());
   }
 }

@@ -1,6 +1,7 @@
 #include "global.h"
 #include "parser/Parser.h"
 #include "parser/SymbolTable.h"
+#include "parser/ast/ASTContext.h"
 #include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/IdentNode.h"
@@ -49,6 +50,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   symbol_table.insert(*rec_var.ident.get(), &rec_var);
 
   SECTION("Test 'rec' lookup") {
+    // rec
     IdentNode rec_ident(EMPTY_POS, "rec");
     auto rec_lookup = symbol_table.lookup(rec_ident);
 
@@ -56,6 +58,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   }
 
   SECTION("Test 'rec.field1' lookup") {
+    // rec.field1
     auto rec_ident = std::make_unique<IdentNode>(EMPTY_POS, "rec");
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
@@ -71,14 +74,15 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   }
 
   SECTION("Test test array selector lookup: 'rec.field1[2]'") {
+    // rec.field1[2]
     IdentNode rec_ident(EMPTY_POS, "rec");
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(std::make_unique<ArrayIndexNode>(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, 2, nullptr)));
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(
+                       EMPTY_POS, 2, ASTContext::INTEGER.get())));
 
     auto type = symbol_table.lookup_type(rec_ident, selectors);
     IdentExpressionNode ident_expr(EMPTY_POS,
@@ -90,6 +94,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   }
 
   SECTION("Test record field lookup: 'rec.field2'") {
+    // rec.field2
     IdentNode rec_ident(EMPTY_POS, "rec");
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
@@ -106,6 +111,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   }
 
   SECTION("Test non existing field lookup: 'rec.field3'") {
+    // rec.field3
     IdentNode rec_ident(EMPTY_POS, "rec");
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
@@ -117,14 +123,30 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   }
 
   SECTION("Test wrong selector type: 'rec[2]'") {
+    // rec[2]
     IdentNode rec_ident(EMPTY_POS, "rec");
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
     selectors.emplace_back(std::make_unique<ArrayIndexNode>(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, 2, nullptr)));
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(
+                       EMPTY_POS, 2, ASTContext::INTEGER.get())));
 
     REQUIRE_THROWS_AS(symbol_table.lookup_type(rec_ident, selectors),
                       WrongTypeException);
+  }
+
+  SECTION("Test array out of bounds") {
+    // rec.field1[5]
+    IdentNode rec_ident(EMPTY_POS, "rec");
+
+    std::vector<std::unique_ptr<SelectorNode>> selectors;
+    selectors.emplace_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
+    selectors.emplace_back(std::make_unique<ArrayIndexNode>(
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(
+                       EMPTY_POS, 5, ASTContext::INTEGER.get())));
+
+    REQUIRE_THROWS_AS(symbol_table.lookup_type(rec_ident, selectors),
+                      OutOfRangeException);
   }
 }

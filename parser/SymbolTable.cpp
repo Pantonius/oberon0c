@@ -71,9 +71,12 @@ SymbolTable::lookup_type(const IdentNode &ident,
     if (auto array_selector =
             dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
       if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
-        if (!array_type_node->is_in_bounds(array_selector->expression.get())) {
+        auto is_in_bounds =
+            array_type_node->is_in_bounds(array_selector->expression.get());
+        if (is_in_bounds && !is_in_bounds.value()) {
           throw OutOfRangeException(*array_selector);
         }
+
         type = array_type_node->type;
       } else {
         throw WrongTypeException(*prev_selector, "ARRAY");
