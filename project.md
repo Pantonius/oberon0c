@@ -24,23 +24,82 @@ Some initial ideas to think about until the deadline:
     - something like `TYPE Option = Some : INTEGER | None;`
 
 ## General Description
+My oberon-0 language extension entales the addition of sum types, procedure return types and pattern matching. Sum type constructs like the `Maybe`/`Option` type in Rust and Haskell expand the expressivity of the language: `Maybe`/`Option` add an easy syntax for partial functions into the language. A classic example of a use case is the division function:
+```pseudo
+TYPE MaybeInt = Some(INTEGER) | None
 
-## Syntax Extension
+PROCEDURE Divide(n, m: INTEGER): MaybeInt
+...
+END Divide.
+
+BEGIN
+    i = Divide(100, 0);
+    MATCH i OF
+        CASE Some(n) THEN WriteOut("GREAT!");
+        CASE None THEN WriteOut(":(");
+    END
+END.
 ```
-ProcedureType = type -> type { -> type }
-ReturnStmt = "RETURN" expression
+## Syntax Extension
+
+### Sum Types
+```
 SumType = ident [":" type] { "|" ident [":" type] }
 SumTypeExpression = ident { "(" expression {";" expression} ")" }
+```
+
+### Procedure Return Statements / Procedure Types
+The procedure heading will have to be augmented to add an optional return type:
+```
+ProcedureHeading = "PROCEDURE" ident [FormalParameters] { ":" type }
+```
+If no return type is given, the `VOID` type (the procedure does not return any value) is implied.
+
+The return statement introduces a new keyword `RETURN`:
+```
+ReturnStmt = "RETURN" expression
+```
+
+### Pattern Matching
+A new match statement will have to be introduced, including case statements with patterns to match on.
+```
 MatchStmt = "MATCH" expression "ON" cases "END"
 cases = "CASE" pattern "THEN" StatementSequence "END" {";" "CASE" pattern "THEN" StatementSequence "END" }
+```
+Patterns are either a wildcard (just some identifier) or an expression:
+```
 pattern = ident | expression
 ```
 
 ## Augmented Semantics
+### Sum Types
+Sum types need a semantic check for the existance of the declared variant types.
+
+The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = Some(INTEGER) | None` implies the declaration of `Some` as type `INTEGER -> MaybeInt` and `None` as type `MaybeInt`.
+
+The construction of a sum type variant will need a type check for the fields, meaning: `Some(TRUE)` is incompatible with the declared field type `INTEGER`.
+
+### Procedures
+The added return type of procedures will yield an implicit ProcedureType
+```
+ProcedureType = type ["->" type]
+```
+which consists of the input and output types (written in EBNF though they are not intended as syntactic constructs; just as internal constructs of the compiler).
+
+The return statement will need a semantic type compatibility check with the declared return type.
+
+### Pattern Matching
+The cases of the match statement will need a semantic type compatibility check with the match expression. The following type annotated example would be invalid:
+```pseudo
+MATCH expression : MaybeInt OF
+    CASE 4 : INTEGER THEN ...
+END.
+```
 
 ## Envisioned Code Shape
 
 ## Examples and Tests
+### Valid
 ```
 MODULE Example1;
 
@@ -76,3 +135,26 @@ BEGIN
     END
 END Example2.
 ```
+
+### Invalid
+```
+MODULE Example3;
+
+TYPE MaybeInt = Some : INTEGER | None;
+
+VAR b : BOOLEAN;
+
+PROCEDURE Frac(n, m : INTEGER) : MaybeInt;
+BEGIN
+    IF n % m = 0 THEN RETURN Some(n / m)
+    ELSE None END
+END Frac;
+
+BEGIN
+    MATCH Frac(10, 3) ON
+        CASE 4 THEN b := True END;
+    END
+END Example3.
+```
+- The case patterns need to have a compatible type to the match expression.
+- The match statement on a sum type expression needs to include all variants of that sum type.
