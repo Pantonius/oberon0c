@@ -194,18 +194,15 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   }
 
   vector<llvm::Type *> param_types;
-  bool has_by_ref = false;
   for (auto &param : proc_type->formal_parameters) {
     auto param_type = getLLVMType(param->type);
     param_types.push_back(param->by_reference
                               ? llvm::PointerType::get(builder_.getContext(), 0)
                               : param_type);
-    if (param->by_reference)
-      has_by_ref = true;
   }
   // NOTE as of now, there are no return types; all procedures return void
   auto fun_type =
-      llvm::FunctionType::get(builder_.getVoidTy(), param_types, has_by_ref);
+      llvm::FunctionType::get(builder_.getVoidTy(), param_types, false);
 
   auto callee = module_->getOrInsertFunction(proc.ident->value, fun_type);
   const auto func = cast<llvm::Function>(callee.getCallee());
