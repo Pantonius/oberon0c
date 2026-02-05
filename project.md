@@ -1,11 +1,11 @@
 # Milestone 6 - Language Extension for Oberon-0
 
 ## General Description
-My oberon-0 language extension entales the addition of sum types and pattern matching. Sum type constructs like the `Maybe`/`Option` type in Rust and Haskell expand the expressivity of the language: `Maybe`/`Option` add an easy syntax for partial functions into the language. A classic example of a use case is the division function:
+My oberon-0 language extension entales the addition of sum types and pattern matching. Sum type constructs like the `Maybe`/`Option` type in Haskell and Rust expand the expressivity of the language: `Maybe`/`Option` add an easy syntax for partial functions into the language. A classic example of a use case is the division function:
 ```pseudo
-TYPE MaybeInt = Some(INTEGER) | None
+TYPE MaybeInt = SUM Some(INTEGER); None END;
 
-PROCEDURE Divide(n, m: INTEGER): MaybeInt
+PROCEDURE Divide(n, m: INTEGER; VAR ret : MaybeInt)
 ...
 END Divide.
 
@@ -18,20 +18,15 @@ BEGIN
 END.
 ```
 
-### Open Questions
-- can we check exhaustiveness of the match cases?
-    - alternatively add a mandatory default
-- actual intermediate representation of sum types
-
 ## Syntax Extension
 
 ### Sum Types
 Sum types yield a new type besides the builtin INTEGER, BOOLEAN, ARRAY and RECORD types. They also imply a new expression `SumTypeExpression` for instantiating SumType values.
 Each variant is an identifier with an optional list of parameter types.
 ```
-SumType = SumTypeVariant { "|" SumTypeVariant }
+SumType = SUM SumTypeVariant { ";" SumTypeVariant } END
 SumTypeVariant = ident ["(" type { "," type } ")"]
-SumTypeExpression = ident "::" ident { "(" expression {";" expression} ")" }
+SumTypeExpression = ident "." ident { "(" expression {";" expression} ")" }
 ```
 The SumTypeExpression consists of the identifier for the sum type, the identifier for the variant and, optionally, the values for each of the parameters.
 
@@ -42,10 +37,10 @@ expression = SimpleExpression [("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpre
 ```
 
 ### Pattern Matching
-A new `MATCH` statement will have to be introduced, including `CASE` statements with patterns to match on.
+In accordance with the Oberon-7 specification, we introduce the `CASE` statement.
 ```
-MatchStatement = "MATCH" expression "ON" cases "END"
-cases = "CASE" pattern "THEN" StatementSequence "END" {";" "CASE" pattern "THEN" StatementSequence "END" }
+CasteStatement = "CASE" expression "OF" case { "|" case } "END"
+case = pattern ":" StatementSequence
 ```
 Patterns are either a wildcard (just some identifier that will be bound to the actual value) or an expression:
 ```
@@ -54,32 +49,35 @@ pattern = ident | expression
 
 The following syntax is adapted:
 ```
-statement = [assignment | ProcedureCall | IfStatement | WhileStatement | MatchStatement]
+statement = [assignment | ProcedureCall | IfStatement | WhileStatement | CaseStatement]
 ```
 
 ## Augmented Semantics
 ### Sum Types
 Sum types need a semantic check for the existence of the declared parameter types.
 
-The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = Some(INTEGER) | None` implies the declaration of `MaybeInt::Some` as type `INTEGER -> MaybeInt` and `MaybeInt::None` as type `MaybeInt`.
+The variants of the sum type imply a type declaration, meaning: `TYPE MaybeInt = SUM Some(INTEGER); None END` implies the declaration of `MaybeInt.Some` as type `INTEGER -> MaybeInt` and `MaybeInt.None` as type `MaybeInt`.
 
-The instantiation of a sum type variant will need a type check for the parameters, meaning: `MaybeInt::Some(TRUE) : BOOLEAN -> MaybeInt` is incompatible with the declared type of `MaybeInt::Some : INTEGER -> MaybeInt`.
+The instantiation of a sum type variant will need a type check for the parameters, meaning: `MaybeInt.Some(TRUE) : BOOLEAN -> MaybeInt` is incompatible with the declared type of `MaybeInt.Some : INTEGER -> MaybeInt`.
 
 ### Pattern Matching
-The cases of the match statement will need a semantic type compatibility check with the match expression. The following annotated example would be invalid:
+The cases of the CaseStatement will need a semantic type compatibility check with the match expression. The following annotated example would be invalid:
 ```pseudo
-MATCH expression : MaybeInt ON
-    CASE 4 : INTEGER THEN ...
+VAR expression : MaybeInt;
+...
+
+CASE expression OF
+    4: ...
 END
 ```
 
-Each case statement should be unique within the match statement.
+Each case should be unique within the CaseStatement.
 
-Possibly I can try to check for exhaustiveness of the match statement. If too complex (which it probably is in general), I can disallow recursive patterns such as:
+Possibly I can try to check for exhaustiveness of the CaseStatement. If too complex (which it probably is in general), I can disallow recursive patterns such as:
 ```
-MATCH expression ON
-    CASE Some(a) THEN ...
-    ...
+CASE expression OF
+    Some(a): ...
+    | ...
 END
 ```
 (taking all the fun out of it)
@@ -88,19 +86,19 @@ In that example `a` would not be interpreted as a (named) wildcard, but instead 
 
 Some initial thoughts on the matter of exhaustiveness for the non-recursive case:
 - The base cases for pattern matching are expressions of type: INTEGER, BOOLEAN
-    - a match statement on an INTEGER expression cannot be exhaustive
-    - a match statement on a BOOLEAN expression is only exhaustive if both the TRUE and FALSE cases are checked (in this sense BOOLEAN can be recontextualized to be a builtin SumType and use the matching rules for SumType)
+    - a CaseStatement on an INTEGER expression cannot be exhaustive
+    - a CaseStatement on a BOOLEAN expression is only exhaustive if both the TRUE and FALSE cases are checked (in this sense BOOLEAN can be recontextualized to be a builtin SumType and use the matching rules for SumType)
 - The rest (ARRAY, RECORD, SumType) is derived from those basic types and each needs special consideration of exhaustiveness
-    - a match statement on an ARRAY expression is only exhaustive if each combination of its type variants is represented by a case
+    - a CaseStatement on an ARRAY expression is only exhaustive if each combination of its type variants is represented by a case
         - an ARRAY of INTEGER cannot be exhaustive
-    - a match statement on an RECORD expression is only exhaustive if each combination of its field type variants is represented by a case
+    - a CaseStatement on an RECORD expression is only exhaustive if each combination of its field type variants is represented by a case
         - a RECORD with an INTEGER field cannot be exhaustive
-    - a match statement on a SumType expression is only exhaustive if it is exhaustive for each variant
-        - a match statement is exhaustive for a variant, if each combination of its parameter type variants is represented by a case
+    - a CaseStatement on a SumType expression is only exhaustive if it is exhaustive for each variant
+        - a CaseStatement is exhaustive for a variant, if each combination of its parameter type variants is represented by a case
             - a variant with an INTEGER argument cannot be exhaustive
         - therefore a SumType cannot be exhaustive if it has a variant with an INTEGER argument
 
-The recursive case would be different in the constructed types (ARRAY, RECORD, SumType), because wildcards would be allowed. Arguably, recursive patterns can be recontextualized as match statements within match statements. In that case the compiler would need to translate flattened (recursive) patterns into a hierarchical structures (first matching on the first argument, then matching on each subsequent argument of the ARRAY/RECORD/Variant.
+In the case of recursive patterns, the logic would be different in the constructed types (ARRAY, RECORD, SumType), because wildcards would be allowed. Arguably, recursive patterns can be recontextualized as CaseStatements within CaseStatements. In that case the compiler would need to translate flattened (recursive) patterns into a hierarchical structure (first matching on the first argument, then matching on each subsequent argument of the ARRAY/RECORD/Variant.
 
 ## Envisioned Code Shape
 ### Sum Types
@@ -115,11 +113,11 @@ Some brief thoughts, because I am not that familiar with the LLVM IR for pattern
 - switch statements would be realized with the [`llvm::SwitchInst`](https://llvm.org/doxygen/classllvm_1_1SwitchInst.html), but only allow for matching an expression against concrete values; substitutions are not possible
 - I will probably need to translate the pattern matching into a series of conditional branches. The following oberon pseudo code:
 ```pseudo
-MATCH a ON
-    CASE Some(2) THEN ... END;
-    CASE Some(3) THEN ... END;
-    CASE Some(b) THEN ... END;
-    CASE None THEN ... END
+CASE a OF
+    Some(2): ...
+    | Some(3): ...
+    | Some(b): ...
+    | None: ...
 END
 ```
 would need to be translated into more atomic checks (not written in LLVM IR yet):
@@ -140,7 +138,7 @@ if a.type == None then:
     @goto after
 @lbl after
 ```
-This structure of if-elsif-else would already arise in the AST, when calling the semantic checker on a match statement. The semantic checker checks for exhaustiveness and de-flattens recursive patterns to be expressed as recursive match statements. Each case of the transformed match statement is then an if/elseif/else branch.
+This structure of if-elsif-else would already arise in the AST, when calling the semantic checker on a CaseStatement. The semantic checker checks for exhaustiveness and de-flattens recursive patterns to be expressed as recursive CaseStatments. Each case of the transformed CaseStatements is then an if/elseif/else branch.
 
 ## Examples and Tests
 ### Valid
@@ -152,16 +150,16 @@ VAR b : BOOLEAN;
 
 BEGIN
     i := 4;
-    MATCH i ON
-        CASE 10 THEN b := True END;
-        CASE x THEN b := False END
+    CASE i OF
+        10: b := True
+        | x: b := False
 END Example1.
 ```
 
 ```
 MODULE Example2;
 
-TYPE MaybeInt = Some : INTEGER | None;
+TYPE MaybeInt = SUM Some(INTEGER); None END;
 
 VAR b : BOOLEAN;
     frac : MaybeInt;
@@ -174,9 +172,9 @@ END Frac;
 
 BEGIN
     Frac(10, 3, frac);
-    MATCH frac ON
-        CASE Some(a) THEN b := True END;
-        CASE None THEN b := False END
+    CASE frac OF
+        Some(a): b := True
+        | None: b := False
     END
 END Example2.
 ```
@@ -185,7 +183,7 @@ END Example2.
 ```
 MODULE Example3;
 
-TYPE MaybeInt = Some : INTEGER | None;
+TYPE MaybeInt = SUM Some(INTEGER); None END;
 
 VAR b : BOOLEAN;
     frac : MaybeInt;
@@ -198,10 +196,10 @@ END Frac;
 
 BEGIN
     Frac(10, 3, frac)
-    MATCH frac ON
-        CASE 4 THEN b := True END;
+    CASE frac OF
+        4: b := True
     END
 END Example3.
 ```
 - The case patterns need to have a compatible type to the match expression.
-- The match statement on a sum type expression needs to include all variants of that sum type.
+- The CaseStatement on a sum type expression needs to include all variants of that sum type.
