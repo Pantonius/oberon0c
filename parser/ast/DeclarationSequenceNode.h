@@ -13,7 +13,7 @@ using std::vector;
 class DeclarationNode : public Node {
 private:
 public:
-  DeclarationNode(const NodeType &type, const FilePos &pos,
+  DeclarationNode(const NodeType &type, const FilePos pos,
                   unique_ptr<IdentNode> ident, TypeNode *type_node)
       : Node(type, pos), ident(std::move(ident)), type(type_node) {}
   ~DeclarationNode() override = default;
@@ -24,7 +24,7 @@ public:
 
 class ConstDeclarationNode final : public DeclarationNode {
 public:
-  ConstDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  ConstDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                        unique_ptr<ExpressionNode> expression,
                        TypeNode *type_node)
       : DeclarationNode(NodeType::const_declaration, pos, std::move(ident),
@@ -40,7 +40,7 @@ public:
 
 class TypeDeclarationNode final : public DeclarationNode {
 public:
-  TypeDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  TypeDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       TypeNode *type_node)
       : DeclarationNode(NodeType::type_declaration, pos, std::move(ident),
                         type_node) {}
@@ -52,7 +52,7 @@ public:
 
 class VarDeclarationNode final : public DeclarationNode {
 public:
-  VarDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  VarDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                      TypeNode *type_node)
       : DeclarationNode(NodeType::var_declaration, pos, std::move(ident),
                         type_node) {}
@@ -69,7 +69,7 @@ public:
 
 class ParamDeclarationNode final : public DeclarationNode {
 public:
-  ParamDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  ParamDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                        bool by_reference, TypeNode *type_node)
       : DeclarationNode(NodeType::param_declaration, pos, std::move(ident),
                         type_node),
@@ -114,7 +114,7 @@ private:
   unique_ptr<StatementSequenceNode> statement_sequence_;
 
 public:
-  ProcedureDeclarationNode(const FilePos &pos, unique_ptr<IdentNode> proc_name,
+  ProcedureDeclarationNode(const FilePos pos, unique_ptr<IdentNode> proc_name,
                            ProcedureTypeNode *type_node)
       : DeclarationNode(NodeType::procedure_declaration, pos,
                         std::move(proc_name), type_node) {}

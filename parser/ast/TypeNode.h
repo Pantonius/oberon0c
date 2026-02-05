@@ -19,7 +19,7 @@ class VarDeclarationNode;
 class ParamDeclarationNode;
 class TypeNode : public Node {
 public:
-  TypeNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  TypeNode(const NodeType &type, const FilePos pos) : Node(type, pos) {}
   ~TypeNode() override = default;
 
   bool is_equivalent(TypeNode *) const;
@@ -27,7 +27,7 @@ public:
 
 class IdentTypeNode final : public TypeNode {
 public:
-  IdentTypeNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+  IdentTypeNode(const FilePos pos, unique_ptr<IdentNode> ident)
       : TypeNode(NodeType::ident_type, pos), ident(std::move(ident)) {}
   ~IdentTypeNode() override = default;
 
@@ -39,7 +39,7 @@ public:
 
 class ArrayTypeNode final : public TypeNode {
 public:
-  ArrayTypeNode(const FilePos &pos, unique_ptr<NumberExpressionNode> expression,
+  ArrayTypeNode(const FilePos pos, unique_ptr<NumberExpressionNode> expression,
                 TypeNode *type)
       : TypeNode(NodeType::array_type, pos), expression(std::move(expression)),
         type(type) {}
@@ -56,7 +56,7 @@ public:
 
 class FieldNode final : public Node {
 public:
-  FieldNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  FieldNode(const FilePos pos, unique_ptr<IdentNode> ident,
             const TypeNode *type)
       : Node(NodeType::field, pos), ident(std::move(ident)), type(type) {}
   ~FieldNode() override = default;
@@ -70,7 +70,7 @@ public:
 
 class RecordTypeNode final : public TypeNode {
 public:
-  RecordTypeNode(const FilePos &pos,
+  RecordTypeNode(const FilePos pos,
                  std::vector<unique_ptr<VarDeclarationNode>> field_lists)
       : TypeNode(NodeType::record_type, pos),
         field_lists(std::move(field_lists)) {}
@@ -101,7 +101,7 @@ public:
 class ProcedureTypeNode final : public TypeNode {
 public:
   ProcedureTypeNode(
-      const FilePos &pos,
+      const FilePos pos,
       vector<unique_ptr<ParamDeclarationNode>> formal_parameters = {})
       : TypeNode(NodeType::procedure_type, pos),
         formal_parameters(std::move(formal_parameters)) {}

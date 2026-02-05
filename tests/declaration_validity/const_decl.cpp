@@ -1,10 +1,12 @@
 #include "parser/Parser.h"
 #include <catch2/catch_test_macros.hpp>
+#include <filesystem>
 
 TEST_CASE("Test Const Declarations", "[sema][const_decl]") {
   SECTION("file Simple.Mod") {
     Logger logger;
-    Scanner scanner("./declaration_validity/const_decl/Simple.Mod", logger);
+    const path path = "./declaration_validity/const_decl/Simple.Mod";
+    Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
 
@@ -16,7 +18,8 @@ TEST_CASE("Test Const Declarations", "[sema][const_decl]") {
 
   SECTION("file ConstFold.Mod") {
     Logger logger;
-    Scanner scanner("./declaration_validity/const_decl/ConstFold.Mod", logger);
+    const path path = "./declaration_validity/const_decl/ConstFold.Mod";
+    Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
 
@@ -28,8 +31,8 @@ TEST_CASE("Test Const Declarations", "[sema][const_decl]") {
 
   SECTION("file ConstFoldSubst.Mod") {
     Logger logger;
-    Scanner scanner("./declaration_validity/const_decl/ConstFoldSubst.Mod",
-                    logger);
+    const path path = "./declaration_validity/const_decl/ConstFoldSubst.Mod";
+    Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
 

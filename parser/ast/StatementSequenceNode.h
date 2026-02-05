@@ -11,7 +11,7 @@ using std::vector;
 
 class StatementSequenceNode final : public Node {
 public:
-  StatementSequenceNode(const FilePos &pos,
+  StatementSequenceNode(const FilePos pos,
                         vector<unique_ptr<StatementNode>> stmts)
       : Node(NodeType::statement_sequence, pos), stmts(std::move(stmts)) {}
   ~StatementSequenceNode() override = default;

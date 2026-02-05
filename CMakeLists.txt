@@ -32,7 +32,7 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 # define DEBUG macro
 if(CMAKE_BUILD_TYPE MATCHES Debug)
   add_definitions(-D_DEBUG)
-  add_compile_options(-fsanitize=address)
+  add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1)
   add_link_options(-fsanitize=address)
 endif()
 

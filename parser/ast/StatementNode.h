@@ -10,13 +10,13 @@ using std::unique_ptr;
 class StatementSequenceNode;
 class StatementNode : public Node {
 public:
-  StatementNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  StatementNode(const NodeType &type, const FilePos pos) : Node(type, pos) {}
   ~StatementNode() override = default;
 };
 
 class AssignmentNode final : public StatementNode {
 public:
-  explicit AssignmentNode(const FilePos &pos,
+  explicit AssignmentNode(const FilePos pos,
                           unique_ptr<IdentExpressionNode> ident_expr,
                           unique_ptr<ExpressionNode> expression)
       : StatementNode(NodeType::assignment, pos),
@@ -32,7 +32,7 @@ public:
 
 class ElsIfStatementNode final : public StatementNode {
 public:
-  ElsIfStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> condition,
+  ElsIfStatementNode(const FilePos pos, unique_ptr<ExpressionNode> condition,
                      unique_ptr<StatementSequenceNode> body)
       : StatementNode(NodeType::elsif_statement, pos),
         condition(std::move(condition)), body(std::move(body)) {}
@@ -47,7 +47,7 @@ public:
 
 class IfStatementNode final : public StatementNode {
 public:
-  IfStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> condition,
+  IfStatementNode(const FilePos pos, unique_ptr<ExpressionNode> condition,
                   unique_ptr<StatementSequenceNode> body,
                   vector<unique_ptr<ElsIfStatementNode>> elsifs,
                   unique_ptr<StatementSequenceNode> else_statement_sequence)
@@ -69,7 +69,7 @@ public:
 class ProcedureCallNode final : public StatementNode {
 public:
   explicit ProcedureCallNode(
-      const FilePos &pos, unique_ptr<IdentNode> ident,
+      const FilePos pos, unique_ptr<IdentNode> ident,
       vector<unique_ptr<SelectorNode>> selectors,
       vector<unique_ptr<ExpressionNode>> actual_parameters)
       : StatementNode(NodeType::procedure_call, pos), ident(std::move(ident)),
@@ -87,7 +87,7 @@ public:
 
 class WhileStatementNode final : public StatementNode {
 public:
-  WhileStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> condition,
+  WhileStatementNode(const FilePos pos, unique_ptr<ExpressionNode> condition,
                      unique_ptr<StatementSequenceNode> body)
       : StatementNode(NodeType::while_statement, pos),
         condition(std::move(condition)), body(std::move(body)) {}
@@ -102,7 +102,7 @@ public:
 
 class RepeatStatementNode final : public StatementNode {
 public:
-  RepeatStatementNode(const FilePos &pos, unique_ptr<ExpressionNode> condition,
+  RepeatStatementNode(const FilePos pos, unique_ptr<ExpressionNode> condition,
                       unique_ptr<StatementSequenceNode> body)
       : StatementNode(NodeType::repeat_statement, pos),
         condition(std::move(condition)), body(std::move(body)) {}

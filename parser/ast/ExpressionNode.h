@@ -21,7 +21,7 @@ using std::vector;
 class ExpressionNode : public Node {
 private:
 public:
-  ExpressionNode(const NodeType &type, const FilePos &pos, TypeNode *type_node)
+  ExpressionNode(const NodeType &type, const FilePos pos, TypeNode *type_node)
       : Node(type, pos), type(type_node) {};
   ~ExpressionNode() = default;
 
@@ -32,13 +32,13 @@ public:
 
 class SelectorNode : public Node {
 public:
-  SelectorNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  SelectorNode(const NodeType &type, const FilePos pos) : Node(type, pos) {}
   ~SelectorNode() override = default;
 };
 
 class ArrayIndexNode final : public SelectorNode {
 public:
-  ArrayIndexNode(const FilePos &pos, unique_ptr<ExpressionNode> expression)
+  ArrayIndexNode(const FilePos pos, unique_ptr<ExpressionNode> expression)
       : SelectorNode(NodeType::array_selector, pos),
         expression(std::move(expression)) {}
   ~ArrayIndexNode() override = default;
@@ -51,7 +51,7 @@ public:
 
 class RecordFieldNode final : public SelectorNode {
 public:
-  RecordFieldNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+  RecordFieldNode(const FilePos pos, unique_ptr<IdentNode> ident)
       : SelectorNode(NodeType::record_selector, pos), ident(std::move(ident)) {}
   ~RecordFieldNode() override = default;
 
@@ -73,7 +73,7 @@ UnaryOpType sign_from_token_type(TokenType tokenType);
 
 class UnaryExpressionNode final : public ExpressionNode {
 public:
-  UnaryExpressionNode(const FilePos &pos, const UnaryOpType op,
+  UnaryExpressionNode(const FilePos pos, const UnaryOpType op,
                       unique_ptr<ExpressionNode> expression,
                       TypeNode *type_node)
       : ExpressionNode(NodeType::unary_expression, pos, type_node), op(op),
@@ -91,7 +91,7 @@ public:
 // TODO: think about merge with IdentNode
 class IdentExpressionNode final : public ExpressionNode {
 public:
-  IdentExpressionNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
                       TypeNode *type_node)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
@@ -108,7 +108,7 @@ public:
 
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
 public:
-  LiteralExpressionNode(const NodeType &type, const FilePos &pos, T value,
+  LiteralExpressionNode(const NodeType &type, const FilePos pos, T value,
                         TypeNode *type_node)
       : ExpressionNode(type, pos, type_node), value(value) {};
   ~LiteralExpressionNode() = default;
@@ -118,7 +118,7 @@ public:
 
 class NumberExpressionNode final : public LiteralExpressionNode<int64_t> {
 public:
-  NumberExpressionNode(const FilePos &pos, int number, TypeNode *type_node)
+  NumberExpressionNode(const FilePos pos, int number, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}
   ~NumberExpressionNode() override = default;
 
@@ -129,7 +129,7 @@ public:
 
 class BooleanExpressionNode final : public LiteralExpressionNode<bool> {
 public:
-  BooleanExpressionNode(const FilePos &pos, bool boolean, TypeNode *type_node)
+  BooleanExpressionNode(const FilePos pos, bool boolean, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::boolean, pos, boolean, type_node) {};
   ~BooleanExpressionNode() override = default;
 
@@ -174,7 +174,7 @@ BinaryOpType mul_operator_from_token_type(TokenType tokenType);
 
 class BinaryExpressionNode final : public ExpressionNode {
 public:
-  BinaryExpressionNode(const FilePos &pos,
+  BinaryExpressionNode(const FilePos pos,
                        unique_ptr<ExpressionNode> left_expression,
                        const BinaryOpType op,
                        unique_ptr<ExpressionNode> right_expression,

@@ -14,7 +14,7 @@ private:
   unique_ptr<StatementSequenceNode> statement_sequence_;
 
 public:
-  ModuleNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+  ModuleNode(const FilePos pos, unique_ptr<IdentNode> ident)
       : Node(NodeType::module, pos), ident(std::move(ident)) {}
   ~ModuleNode() override = default;
 

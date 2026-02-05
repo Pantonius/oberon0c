@@ -8,7 +8,8 @@ TEST_CASE("Test parsing correct syntax"
 
   SECTION("file Sort0.Mod") {
     Logger logger;
-    Scanner scanner("./resources/Sort0.Mod", logger);
+    const path path = "./resources/Sort0.Mod";
+    Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
 

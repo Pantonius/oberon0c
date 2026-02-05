@@ -3,6 +3,7 @@
 #include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
 #include "ast/TypeNode.h"
+#include "global.h"
 #include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
 #include <cstdlib>
@@ -10,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-void SemanticChecker::onModuleStart(const FilePos &pos,
+void SemanticChecker::onModuleStart(const FilePos pos,
                                     unique_ptr<IdentNode> ident) {
   auto module = make_unique<ModuleNode>(pos, std::move(ident));
   // TODO uniqueness check
@@ -18,7 +19,7 @@ void SemanticChecker::onModuleStart(const FilePos &pos,
   context_.set_module(std::move(module));
 }
 
-void SemanticChecker::onModuleEnd(const FilePos &pos, const IdentNode &ident) {
+void SemanticChecker::onModuleEnd(const FilePos pos, const IdentNode &ident) {
   if (context_.get_module()->ident->value != ident.value) {
     logger_.error(pos, "End identifier does not match module identifier.");
     exit(EXIT_FAILURE);
@@ -28,7 +29,7 @@ void SemanticChecker::onModuleEnd(const FilePos &pos, const IdentNode &ident) {
 }
 
 unique_ptr<ConstDeclarationNode>
-SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
+SemanticChecker::onConst(const FilePos pos, unique_ptr<IdentNode> ident,
                          unique_ptr<ExpressionNode> expr) {
 
   // TODO CHECK expr is constant? type of that constant?
@@ -52,8 +53,8 @@ SemanticChecker::onConst(const FilePos &pos, unique_ptr<IdentNode> ident,
 }
 
 vector<unique_ptr<VarDeclarationNode>>
-SemanticChecker::onVars(const FilePos &pos,
-                        vector<unique_ptr<IdentNode>> idents, TypeNode *type) {
+SemanticChecker::onVars(const FilePos pos, vector<unique_ptr<IdentNode>> idents,
+                        TypeNode *type) {
   if (!type) {
     logger_.error(pos, "Unspecified variable type.");
     exit(EXIT_FAILURE);
@@ -72,7 +73,7 @@ SemanticChecker::onVars(const FilePos &pos,
 }
 
 unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
-    const FilePos &pos, unique_ptr<IdentNode> ident, TypeNode *type) {
+    const FilePos pos, unique_ptr<IdentNode> ident, TypeNode *type) {
   auto type_declaration =
       make_unique<TypeDeclarationNode>(pos, std::move(ident), type);
 
@@ -81,7 +82,7 @@ unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
   return type_declaration;
 }
 
-TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
+TypeNode *SemanticChecker::onIdentType(const FilePos pos,
                                        unique_ptr<IdentNode> ident) {
   if (ident->value == ASTContext::INTEGER.get_name())
     return ASTContext::INTEGER.get();
@@ -105,7 +106,7 @@ TypeNode *SemanticChecker::onIdentType(const FilePos &pos,
   return {};
 }
 
-ArrayTypeNode *SemanticChecker::onArrayType(const FilePos &pos,
+ArrayTypeNode *SemanticChecker::onArrayType(const FilePos pos,
                                             unique_ptr<ExpressionNode> expr_,
                                             TypeNode *type) {
   if (!expr_) {
@@ -113,9 +114,7 @@ ArrayTypeNode *SemanticChecker::onArrayType(const FilePos &pos,
     exit(EXIT_FAILURE);
   }
 
-  std::unique_ptr<NumberExpressionNode> num =
-      std::unique_ptr<NumberExpressionNode>(
-          dynamic_cast<NumberExpressionNode *>(expr_.release()));
+  auto num = dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr_.get());
 
   if (!num) {
     logger_.error(num->pos(), "Array size is not a constant number.");
@@ -133,7 +132,7 @@ ArrayTypeNode *SemanticChecker::onArrayType(const FilePos &pos,
 }
 
 RecordTypeNode *SemanticChecker::onRecordType(
-    const FilePos &pos,
+    const FilePos pos,
     vector<std::pair<vector<unique_ptr<IdentNode>>, TypeNode *>> fields) {
 
   symbol_table_.beginScope();
@@ -161,7 +160,7 @@ RecordTypeNode *SemanticChecker::onRecordType(
 }
 
 unique_ptr<ExpressionNode>
-SemanticChecker::onIdentExpression(const FilePos &pos,
+SemanticChecker::onIdentExpression(const FilePos pos,
                                    unique_ptr<IdentNode> ident,
                                    vector<unique_ptr<SelectorNode>> selectors) {
 
@@ -211,7 +210,7 @@ SemanticChecker::onIdentExpression(const FilePos &pos,
 }
 
 ProcedureTypeNode *SemanticChecker::onProcedureType(
-    const FilePos &pos,
+    const FilePos pos,
     vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
         formal_parameters) {
   symbol_table_.beginScope();
@@ -241,7 +240,7 @@ ProcedureTypeNode *SemanticChecker::onProcedureType(
 }
 
 unique_ptr<ProcedureDeclarationNode> SemanticChecker::onProcedureDeclaration(
-    const FilePos &pos, unique_ptr<IdentNode> ident, ProcedureTypeNode *type) {
+    const FilePos pos, unique_ptr<IdentNode> ident, ProcedureTypeNode *type) {
   auto proc_decl =
       std::make_unique<ProcedureDeclarationNode>(pos, std::move(ident), type);
   expect_unique(proc_decl->ident.get(), proc_decl.get());
@@ -257,7 +256,7 @@ unique_ptr<ProcedureDeclarationNode> SemanticChecker::onProcedureDeclaration(
   return proc_decl;
 }
 
-void SemanticChecker::onProcedureEnd(const FilePos &pos,
+void SemanticChecker::onProcedureEnd(const FilePos pos,
                                      const ProcedureDeclarationNode *procedure,
                                      const IdentNode &ident) {
   if (procedure->ident->value != ident.value) {
@@ -270,7 +269,7 @@ void SemanticChecker::onProcedureEnd(const FilePos &pos,
 }
 
 unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
-    const FilePos &pos, unique_ptr<IdentNode> ident,
+    const FilePos pos, unique_ptr<IdentNode> ident,
     vector<unique_ptr<SelectorNode>> selectors,
     vector<unique_ptr<ExpressionNode>> actual_params) {
 
@@ -332,7 +331,7 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
-    const FilePos &pos, unique_ptr<ExpressionNode> expr, const UnaryOpType op) {
+    const FilePos pos, unique_ptr<ExpressionNode> expr, const UnaryOpType op) {
 
   if (!expr) {
     logger_.error(pos, "Undefined expression.");
@@ -385,7 +384,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
-    const FilePos &pos, unique_ptr<ExpressionNode> left_expr,
+    const FilePos pos, unique_ptr<ExpressionNode> left_expr,
     const BinaryOpType op, unique_ptr<ExpressionNode> right_expr) {
 
   if (!left_expr || !right_expr) {
@@ -546,7 +545,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
                                                 std::move(right_expr), type);
 }
 unique_ptr<AssignmentNode>
-SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
+SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
                           vector<unique_ptr<SelectorNode>> selectors,
                           unique_ptr<ExpressionNode> expr) {
   TypeNode *lhs_type;
@@ -580,14 +579,14 @@ SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
 }
 
 unique_ptr<ArrayIndexNode>
-SemanticChecker::onArrayIndex(const FilePos &pos,
+SemanticChecker::onArrayIndex(const FilePos pos,
                               unique_ptr<ExpressionNode> expr_) {
 
   if (expr_->type != ASTContext::INTEGER.get()) {
     logger_.error(pos, "Array index is not an INTEGER");
   }
-  if (auto number_expr = std::unique_ptr<NumberExpressionNode>(
-          dynamic_cast<NumberExpressionNode *>(expr_.release()))) {
+  if (auto number_expr =
+          dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr_.get())) {
 
     if (number_expr->value < 0) {
       logger_.error(pos, "Array index cannot be negative");
