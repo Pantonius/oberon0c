@@ -10,22 +10,20 @@
 # use the official gcc image, based on debian
 # can use versions as well, like gcc:5.2
 # see https://hub.docker.com/_/gcc/
-
-image: alpine
+defualt:
+  image: alpine
+  before_script:
+    - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
 
 build:
   stage: build
-  # instead of calling g++ directly you can also use some build toolkit like make
-  # install the necessary build tools when needed
-  before_script:
-   - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
   script:
     - cmake -B build
     - cmake --build build
   artifacts:
     paths:
       - build/oberon0c
-      # depending on your build setup it's most likely a good idea to cache outputs to reduce the build time
+      
   cache:
     paths:
       - build/
