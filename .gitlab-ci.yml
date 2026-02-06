@@ -18,7 +18,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-   - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
+   - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
   script:
     - cmake -B build
     - cmake --build build
