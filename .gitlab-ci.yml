@@ -11,14 +11,14 @@
 # can use versions as well, like gcc:5.2
 # see https://hub.docker.com/_/gcc/
 
-image: gcc
+image: alpine
 
 build:
   stage: build
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-   - apt update && apt -y install make libboost-dev libboost-program-options-dev llvm-dev cmake catch2
+   - apk add make boost-dev llvm-dev cmake catch2 clang21
   script:
     - cmake -B build
     - cmake --build build
