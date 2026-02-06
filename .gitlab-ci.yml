@@ -14,15 +14,16 @@ default:
   image: alpine
   before_script:
     - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
+    - cmake -B build
 
 build:
   stage: build
   script:
-    - cmake -B build
     - cmake --build build
   artifacts:
     paths:
-      - build/
+      - build/oberon0c
+      - build/oberon0c_tests
       
   cache:
     paths:
