@@ -18,7 +18,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-   - apk add make boost-dev llvm-dev cmake catch2 clang21
+   - apk add make boost-dev llvm-dev cmake catch2 clang21 curl
   script:
     - cmake -B build
     - cmake --build build
