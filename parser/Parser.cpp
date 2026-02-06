@@ -345,16 +345,24 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto op = UnaryOpType::u_not;
     auto expression = Parser::expression();
     return sema_.onUnaryExpression(pos, std::move(expression), op);
+  } else if (peek_boolean()) {
+    auto boolean = Parser::boolean();
+    return make_unique<BooleanExpressionNode>(EMPTY_POS, boolean,
+                                              ASTContext::BOOLEAN.get());
   } else {
     logger_.error(pos, "Expected factor found " + to_string(token_type));
     exit(EXIT_FAILURE);
   }
 }
 
-bool Parser::peek_factor() {
-  return peek_ident() || peek_number() ||
+bool inline Parser::peek_factor() {
+  return peek_ident() || peek_number() || peek_boolean() ||
          peek_check_token_type(TokenType::lparen) ||
          peek_check_token_type(TokenType::op_not);
+}
+
+bool inline Parser::peek_boolean(bool advanceOnTrue) {
+  return peek_check_token_type(TokenType::boolean_literal, advanceOnTrue);
 }
 
 bool Parser::peek_number(bool advanceOnTrue) {
@@ -368,16 +376,16 @@ bool Parser::peek_number(bool advanceOnTrue) {
       .has_value();
 }
 
-bool Parser::peek_char_constant() {
+bool inline Parser::peek_char_constant() {
   return peek_check_token_type(TokenType::char_literal);
 }
 
-bool Parser::peek_string() {
+bool inline Parser::peek_string() {
   return peek_check_token_type(TokenType::string_literal);
 }
 
 // ProcedureCall = ident selector ["(" ActualParameters ")"]
-std::unique_ptr<ProcedureCallNode> Parser::procedure_call() {
+std::unique_ptr<ProcedureCallNode> inline Parser::procedure_call() {
   return Parser::procedure_call(ident());
 }
 
@@ -623,6 +631,19 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   }
 
   return selectors;
+}
+
+/* boolean = "TRUE" | "FALSE" */
+bool Parser::boolean() {
+  if (peek_boolean(true)) {
+    return dynamic_cast<const BooleanLiteralToken *>(last_token_.get())
+        ->value();
+  }
+
+  const Token *curr = scanner_.peek();
+  logger_.error(curr->start(),
+                "Expected boolean, found " + to_string(curr->type()));
+  exit(EXIT_FAILURE);
 }
 
 /* number = integer */
