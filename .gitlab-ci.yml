@@ -18,7 +18,7 @@ build:
   # instead of calling g++ directly you can also use some build toolkit like make
   # install the necessary build tools when needed
   before_script:
-   - apt update && apt -y install make boost llvm cmake catch2-3
+   - apt update && apt -y install make libboost-dev llvm cmake catch2
   script:
     - cmake -B build
     - cmake --build build
