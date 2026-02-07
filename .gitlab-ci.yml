@@ -34,5 +34,7 @@ build:
 # run tests using the binary built before
 test:
   stage: test
+  dependencies:
+    - "build"
   script:
     - ctest --test-dir build
