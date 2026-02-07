@@ -18,6 +18,9 @@ default:
 
 build:
   stage: build
+  variables:
+    FF_USE_FASTZIP: "1"
+    ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
     - cmake --build build
   artifacts:
