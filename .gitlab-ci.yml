@@ -7,9 +7,10 @@
 # This specific template is located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/C++.gitlab-ci.yml
 
-# use the official gcc image, based on debian
-# can use versions as well, like gcc:5.2
-# see https://hub.docker.com/_/gcc/
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
 default:
   image: alpine
   before_script:
