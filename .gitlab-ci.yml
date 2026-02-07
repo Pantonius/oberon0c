@@ -25,7 +25,6 @@ build:
     - cmake --build build
   artifacts:
     paths:
-      - build/oberon0c
       - build/oberon0c_tests
       
   cache:
