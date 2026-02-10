@@ -127,7 +127,7 @@ add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
 target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
 
 set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
-if ($ENV{CI} == 1)
+if ($ENV{CI})
   set(CATCH_REPORTER "JUnit::out=result-junit.xml")
 endif()
 
