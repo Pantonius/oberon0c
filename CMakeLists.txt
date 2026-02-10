@@ -126,6 +126,11 @@ find_package(Catch2 3 REQUIRED)
 add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
 target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
 
+set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
+if ($ENV{CI} == 1)
+  set(CATCH_REPORTER "JUnit::out=result-junit.xml")
+endif()
+
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER "console::out=-::colour-mode=ansi")
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER})
