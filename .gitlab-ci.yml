@@ -41,7 +41,7 @@ build:release:
   stage: build
   script:
     - cmake -B build
-    - cmake -- build build -t oberon0c
+    - cmake --build build -t oberon0c
   cache:
     paths:
       - build/
@@ -57,4 +57,4 @@ test:
     - ctest --test-dir build
   artifacts:
     reports:
-      junit: result-junit.xml
+      junit: build/result-junit.xml
