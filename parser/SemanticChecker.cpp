@@ -550,14 +550,18 @@ SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
                           vector<unique_ptr<SelectorNode>> selectors,
                           unique_ptr<ExpressionNode> expr) {
   TypeNode *lhs_type;
+  const DeclarationNode *decl;
   try {
     lhs_type = symbol_table_.lookup_type(*ident, selectors);
+    if (auto opt_decl = symbol_table_.lookup(*ident)) {
+      decl = *opt_decl;
+    }
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     auto ident_expr = std::make_unique<IdentExpressionNode>(
         pos, std::move(ident), std::move(selectors), lhs_type);
     return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
-                                            std::move(expr));
+                                            std::move(expr), decl);
   }
 
   auto ident_expr = std::make_unique<IdentExpressionNode>(
@@ -576,7 +580,7 @@ SemanticChecker::onAssign(const FilePos &pos, unique_ptr<IdentNode> ident,
   }
 
   return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
-                                          std::move(expr));
+                                          std::move(expr), decl);
 }
 
 unique_ptr<ArrayIndexNode>
