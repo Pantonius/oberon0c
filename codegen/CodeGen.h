@@ -69,6 +69,10 @@ private:
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);
+  TypeNode *
+  traverse_selectors(const DeclarationNode *ref,
+                     const vector<unique_ptr<SelectorNode>>::iterator start,
+                     const vector<unique_ptr<SelectorNode>>::iterator end);
 };
 
 class CodeGen final {
