@@ -19,6 +19,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <memory>
 
 using std::map;
 
@@ -27,16 +28,18 @@ enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 class CodeGenBuilder final : private NodeVisitor {
 
 public:
-  CodeGenBuilder(Logger &logger, llvm::Module *mod, llvm::LLVMContext &ctx)
-      : logger_(logger), builder_(ctx), module_(mod) {};
+  CodeGenBuilder(Logger &logger, llvm::Module &mod)
+      : logger_(logger),
+        builder_(std::make_unique<llvm::IRBuilder<>>(mod.getContext())),
+        module_(mod) {};
   ~CodeGenBuilder() override = default;
 
   void build(ASTContext &);
 
 private:
   Logger &logger_;
-  llvm::IRBuilder<> builder_;
-  llvm::Module *module_;
+  std::unique_ptr<llvm::IRBuilder<>> builder_;
+  llvm::Module &module_;
   map<const TypeNode *, llvm::Type *> types_;
   map<const DeclarationNode *, llvm::Value *> values_;
   llvm::Value *value_;
@@ -75,9 +78,10 @@ class CodeGen final {
 private:
   Logger &logger_;
 
-  llvm::TargetMachine *init();
-  void emit(llvm::TargetMachine *, llvm::Module *, const string &,
-            const OutputFileType);
+  std::unique_ptr<llvm::TargetMachine> init();
+  void emit(std::unique_ptr<llvm::TargetMachine>, std::unique_ptr<llvm::Module>,
+            const string &, const OutputFileType);
+  void test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm);
 
 public:
   CodeGen(Logger &logger) : logger_(logger) {};
