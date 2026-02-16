@@ -9,10 +9,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
-  add_compile_options(-fsanitize=address -g)
-  add_link_options(-fsanitize=address)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
-  set(CMAKE_CXX_FLAGS_DEBUG "-g")
+  # define DEBUG macro
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-D_DEBUG)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1 -g)
+    add_link_options(-fsanitize=address)
+  endif()
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wweak-vtables)
     if (WIN32)
@@ -26,15 +29,14 @@ endif ()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# define DEBUG macro
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-  add_definitions(-D_DEBUG)
-  add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1)
-  add_link_options(-fsanitize=address)
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
+
 
 # add the cmake folder of the project for extension modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})

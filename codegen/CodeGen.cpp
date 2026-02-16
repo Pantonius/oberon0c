@@ -21,16 +21,21 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
+#include <memory>
 
-llvm::TargetMachine *CodeGen::init() {
+std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllAsmParsers();
   llvm::InitializeAllAsmPrinters();
+
   // use default target triple of host
-  const string triple = llvm::sys::getDefaultTargetTriple();
+  const string triple_ = llvm::sys::getDefaultTargetTriple();
+  const auto triple = llvm::Triple(triple_);
+
   // set up target
   string error;
   if (const auto target = llvm::TargetRegistry::lookupTarget(triple, error);
@@ -42,14 +47,16 @@ llvm::TargetMachine *CodeGen::init() {
     const string features;
     const llvm::TargetOptions opt;
     constexpr auto model = std::optional<llvm::Reloc::Model>();
-    return target->createTargetMachine(llvm::Triple(triple), cpu, features, opt,
-                                       model);
+
+    return std::unique_ptr<llvm::TargetMachine>(
+        target->createTargetMachine(triple, cpu, features, opt, model));
   }
   return nullptr;
 }
 
-void CodeGen::emit(llvm::TargetMachine *tm, llvm::Module *module,
-                   const string &name, const OutputFileType type) {
+void CodeGen::emit(std::unique_ptr<llvm::TargetMachine> tm,
+                   std::unique_ptr<llvm::Module> module, const string &name,
+                   const OutputFileType type) {
   string ext;
   switch (type) {
   case OutputFileType::AssemblyFile:
@@ -101,27 +108,32 @@ void CodeGen::emit(llvm::TargetMachine *tm, llvm::Module *module,
 }
 
 void CodeGen::build(ASTContext &ast_ctx, string name) {
-  if (const auto tm = init()) {
-    logger_.debug("HERE WE ARE NOW");
+  if (auto tm = init()) {
     // set up LLVM module
-    llvm::LLVMContext ctx;
-    const auto module = new llvm::Module(name, ctx);
+    auto ctx = std::make_unique<llvm::LLVMContext>();
+    auto module = std::make_unique<llvm::Module>(name, *ctx);
+
     module->setDataLayout(tm->createDataLayout());
     module->setTargetTriple(tm->getTargetTriple());
 
     // set up a builder to generate the LLVM intermediate representation
-    auto builder = CodeGenBuilder(logger_, module, ctx);
+    auto builder = CodeGenBuilder(logger_, *module);
     builder.build(ast_ctx);
 
     // verify the module
-    verifyModule(*module, &llvm::errs());
+    llvm::verifyModule(*module, &llvm::errs());
 
-    emit(tm, module, name,
+    emit(std::move(tm), std::move(module), name,
          OutputFileType::LLVMIRFile); // TODO OutputFileType may be an argument
+
     return;
   }
   logger_.error(EMPTY_POS, "LLVM TargetMachine could not be intialized.");
   exit(EXIT_FAILURE); // TODO may be an exception
+}
+
+void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
+  tm->getTargetTriple();
 }
 
 void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
@@ -196,7 +208,7 @@ void CodeGenBuilder::visit(AssignmentNode &assignment) {
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
-  module_->setModuleIdentifier(module_node.ident->value);
+  module_.setModuleIdentifier(module_node.ident->value);
 
   for (auto &type : *module_node.get_types()) {
     // NOTE TypeDeclarations are simply new key:value pairs in types_
@@ -208,7 +220,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   for (auto &var : *module_node.get_vars()) {
     auto type = getLLVMType(var->type);
     auto value = new llvm::GlobalVariable(
-        *module_, type, false, llvm::GlobalValue::InternalLinkage,
+        module_, type, false, llvm::GlobalValue::InternalLinkage,
         llvm::Constant::getNullValue(type), var->ident->value);
 
     values_[var.get()] = value;
@@ -218,11 +230,11 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
     proc->accept(*this);
   }
 
-  auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
+  auto main = module_.getOrInsertFunction("main", builder_->getInt32Ty());
   const auto function = cast<llvm::Function>(main.getCallee());
   const auto entry =
-      llvm::BasicBlock::Create(builder_.getContext(), "entry", function);
-  builder_.SetInsertPoint(entry);
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", function);
+  builder_->SetInsertPoint(entry);
 
   // statements
   if (module_node.get_statements() &&
@@ -230,7 +242,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
     module_node.get_statements()->accept(*this);
   }
 
-  builder_.CreateRet(builder_.getInt32(0));
+  builder_->CreateRet(builder_->getInt32(0));
 }
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &) {}
@@ -261,25 +273,25 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   auto fun_type =
       llvm::FunctionType::get(builder_.getVoidTy(), param_types, false);
 
-  auto callee = module_->getOrInsertFunction(proc.ident->value, fun_type);
+  auto callee = module_.getOrInsertFunction(proc.ident->value, fun_type);
   const auto func = cast<llvm::Function>(callee.getCallee());
   const auto entry =
-      llvm::BasicBlock::Create(builder_.getContext(), "entry", func);
-  builder_.SetInsertPoint(entry);
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
 
-  const auto layout = module_->getDataLayout();
+  const auto layout = module_.getDataLayout();
 
   // allocate space for params
   llvm::Function::arg_iterator curr_arg = func->arg_begin();
   for (auto &param : proc_type->formal_parameters) {
     auto *param_type =
-        param->by_reference ? builder_.getPtrTy() : getLLVMType(param->type);
+        param->by_reference ? builder_->getPtrTy() : getLLVMType(param->type);
     auto *alloc =
-        builder_.CreateAlloca(param_type, nullptr, param->ident->value);
+        builder_->CreateAlloca(param_type, nullptr, param->ident->value);
     alloc->setAlignment(layout.getABITypeAlign(param_type));
 
     // initialize memory with given value
-    builder_.CreateStore(curr_arg, alloc);
+    builder_->CreateStore(curr_arg, alloc);
     // associate param with memory area for any expressions that need the
     // latest declared value
     values_[param.get()] = alloc;
@@ -292,7 +304,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     const auto &var = proc.get_vars()->at(i);
     llvm::Type *type = getLLVMType(var->type);
 
-    auto *alloc = builder_.CreateAlloca(type, nullptr, var->ident->value);
+    auto *alloc = builder_->CreateAlloca(type, nullptr, var->ident->value);
     alloc->setAlignment(layout.getABITypeAlign(type));
 
     // associate var with memory area for any exprs that need latest value
@@ -301,7 +313,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
 
   // TODO body statements
 
-  builder_.CreateRetVoid();
+  builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
 void CodeGenBuilder::visit(IdentExpressionNode &) {}
@@ -388,7 +400,7 @@ void CodeGenBuilder::visit(RecordTypeNode &record_type) {
   for (auto &field : record_type.field_lists) {
     field_types.push_back(getLLVMType(field->type));
   }
-  auto struct_type = llvm::StructType::get(builder_.getContext(), field_types);
+  auto struct_type = llvm::StructType::get(builder_->getContext(), field_types);
   types_[&record_type] = struct_type;
 }
 void CodeGenBuilder::visit(RepeatStatementNode &repeat_statement) {}
@@ -410,9 +422,9 @@ llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
   } else if (types_[type]) {
     return types_[type];
   } else if (type == ASTContext::INTEGER.get()) {
-    return builder_.getInt64Ty();
+    return builder_->getInt64Ty();
   } else if (type == ASTContext::BOOLEAN.get()) {
-    return builder_.getInt1Ty();
+    return builder_->getInt1Ty();
   }
 
   type->accept(*this);
