@@ -8,21 +8,35 @@ pkgs.stdenv.mkDerivation rec {
 
   src = ./.;
 
-  buildInputs =
-    (import ./dependencies.nix {
-      inherit pkgs;
-    })
-    ++ [ makeWrapper ];
+  nativeBuildInputs = with pkgs; [
+    ninja
+    cmake
+    clang
+    clang-tools
+    libgcc
+  ];
+
+  buildInputs = with pkgs; [
+    boost
+    llvm
+  ];
+
+  checkInputs = with pkgs; [
+    catch2_3
+  ];
 
   doCheck = true;
 
+  configurePhase = ''
+    cmake . -G Ninja
+  '';
+
   buildPhase = ''
-    cmake .
-    cmake --build . --parallel $NIX_BUILD_CORES
+    ninja
   '';
 
   checkPhase = ''
-    make test
+    ninja test
   '';
 
   installPhase = ''
