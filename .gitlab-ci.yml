@@ -57,4 +57,4 @@ test:
     - ctest --test-dir build
   artifacts:
     reports:
-      junit: tests/result-junit.xml
+      junit: tests/results/*

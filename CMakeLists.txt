@@ -132,9 +132,9 @@ target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs}
 set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
 if ($ENV{CI})
   message(STATUS "Detected CI environment")
-  set(CATCH_REPORTER "JUnit::out=result-junit.xml")
+  set(CATCH_REPORTER "JUnit")
 endif()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER})
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER} OUTPUT_DIR "results")
