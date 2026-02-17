@@ -137,4 +137,8 @@ endif()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER} OUTPUT_DIR "results")
+catch_discover_tests(oberon0c_tests
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+          REPORTER ${CATCH_REPORTER}
+          OUTPUT_DIR "results"
+          OUTPUT_SUFFIX ".xml")
