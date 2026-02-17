@@ -116,7 +116,7 @@ public:
   const T value;
 };
 
-class NumberExpressionNode final : public LiteralExpressionNode<int64_t> {
+class NumberExpressionNode final : public LiteralExpressionNode<int32_t> {
 public:
   NumberExpressionNode(const FilePos pos, int number, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}

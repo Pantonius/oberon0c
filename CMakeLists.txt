@@ -120,6 +120,7 @@ set(TEST_SOURCES
   tests/parser/parser_tests.cpp
   tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
+  tests/code_gen/code_gen_tests.cpp
 )
 
 # Configure Unit Tests

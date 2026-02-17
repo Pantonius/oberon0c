@@ -388,10 +388,11 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
 }
 void CodeGenBuilder::visit(UnaryExpressionNode &) {}
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
-  value_ = value_ = llvm::ConstantInt::getSigned(
-      builder_->getInt32Ty(), static_cast<int32_t>(number.value));
+  value_ = builder_->getInt32(number.value);
 }
-void CodeGenBuilder::visit(BooleanExpressionNode &) {}
+void CodeGenBuilder::visit(BooleanExpressionNode &boolean) {
+  value_ = builder_->getInt1(boolean.value);
+}
 void CodeGenBuilder::visit(ProcedureTypeNode &) {
 } // TODO probably not of interest for now
 void CodeGenBuilder::visit(RecordTypeNode &record_type) {

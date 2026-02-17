@@ -26,6 +26,7 @@ using std::map;
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
 class CodeGenBuilder final : private NodeVisitor {
+  friend class CodeGenBuilderTest;
 
 public:
   CodeGenBuilder(Logger &logger, llvm::Module &mod)
