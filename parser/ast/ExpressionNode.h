@@ -18,6 +18,8 @@ using std::unique_ptr;
 using std::variant;
 using std::vector;
 
+class DeclarationNode;
+
 class ExpressionNode : public Node {
 private:
 public:
@@ -96,9 +98,9 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      TypeNode *const type_node)
+                      const DeclarationNode *decl, TypeNode *type_node)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
-        ident(std::move(ident)), selectors(std::move(selectors)) {}
+        ident(std::move(ident)), selectors(std::move(selectors)), decl(decl) {}
   ~IdentExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) override final;
@@ -107,6 +109,7 @@ public:
 
   const unique_ptr<IdentNode> ident;
   const vector<unique_ptr<SelectorNode>> selectors;
+  const DeclarationNode *decl;
 };
 
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
