@@ -25,6 +25,7 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
+#include <stdexcept>
 
 std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
@@ -318,7 +319,16 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
-void CodeGenBuilder::visit(IdentExpressionNode &) {}
+void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
+  llvm::AllocaInst *alloc;
+  try {
+    alloc = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
+  } catch (std::out_of_range &e) {
+    logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
+  }
+
+  value_ = alloc;
+}
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
   const auto left_type = binary_expr.left_expression->type;
   const auto right_type = binary_expr.right_expression->type;
