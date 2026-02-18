@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 #include "global.h"
+#include "parser/ast/ExpressionNode.h"
 #include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
@@ -386,7 +387,21 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
     }
   }
 }
-void CodeGenBuilder::visit(UnaryExpressionNode &) {}
+void CodeGenBuilder::visit(UnaryExpressionNode &unary_expr) {
+  unary_expr.expression->accept(*this);
+  auto value = value_;
+  switch (unary_expr.op) {
+  case UnaryOpType::plus:
+    break;
+  case UnaryOpType::minus:
+    value_ = builder_->CreateNeg(value);
+    break;
+  case UnaryOpType::u_not:
+    value_ = builder_->CreateNot(value);
+  default:
+    logger_.error(unary_expr.pos(), "UNKNOWN OPERATOR");
+  }
+}
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
   value_ = builder_->getInt32(number.value);
 }
