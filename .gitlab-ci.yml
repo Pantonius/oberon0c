@@ -56,5 +56,7 @@ test:
   script:
     - ctest --test-dir build
   artifacts:
+    paths:
+      - build/Testing/Temporary/LastTest.log
     reports:
       junit: tests/results/*.xml
