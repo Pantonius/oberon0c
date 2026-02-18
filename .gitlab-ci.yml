@@ -58,5 +58,6 @@ test:
   artifacts:
     paths:
       - build/Testing/Temporary/LastTest.log
+    when: always
     reports:
       junit: tests/results/*.xml
