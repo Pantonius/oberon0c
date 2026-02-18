@@ -398,8 +398,10 @@ void CodeGenBuilder::visit(UnaryExpressionNode &unary_expr) {
     break;
   case UnaryOpType::u_not:
     value_ = builder_->CreateNot(value);
+    break;
   default:
     logger_.error(unary_expr.pos(), "UNKNOWN OPERATOR");
+    exit(EXIT_FAILURE);
   }
 }
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
