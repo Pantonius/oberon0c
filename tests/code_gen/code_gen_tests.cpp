@@ -3,6 +3,10 @@
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/ExpressionNode.h"
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/generators/catch_generators_adapters.hpp>
+#include <catch2/generators/catch_generators_random.hpp>
+#include <cstdint>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
@@ -79,18 +83,18 @@ TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen NumberExpressionsNode Test",
 
 TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen UnaryExpressionNode Test",
                  "[code_gen]") {
-  testUnaryNumberExpression(42, UnaryOpType::plus);
+  auto num = GENERATE(take(10000, random(INT32_MIN, INT32_MAX)));
+  testUnaryNumberExpression(num, UnaryOpType::plus);
 
   auto value = static_cast<llvm::ConstantInt *>(getValue());
 
-  REQUIRE(value->getSExtValue() == 42);
+  REQUIRE(value->getSExtValue() == num);
 
-  testUnaryNumberExpression(42, UnaryOpType::minus);
+  testUnaryNumberExpression(num, UnaryOpType::minus);
 
   value = static_cast<llvm::ConstantInt *>(getValue());
 
-  REQUIRE(value->isNegative());
-  REQUIRE(value->getSExtValue() == -42);
+  REQUIRE(value->getSExtValue() == -num);
 
   testUnaryBoolExpression(true, UnaryOpType::u_not);
 
