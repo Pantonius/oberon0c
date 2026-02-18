@@ -59,5 +59,5 @@ TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen Number-Expressions Test",
   value = static_cast<llvm::ConstantInt *>(getValue());
 
   REQUIRE(value->isNegative());
-  REQUIRE(value->getSExtValue() == -41);
+  REQUIRE(value->getSExtValue() == -42);
 }
