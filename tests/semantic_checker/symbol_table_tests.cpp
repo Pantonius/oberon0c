@@ -66,8 +66,10 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
 
     auto type = symbol_table.lookup_type(*rec_ident, selectors);
+    auto decl = static_cast<const VarDeclarationNode *>(
+        symbol_table.lookup(*rec_ident).value());
     IdentExpressionNode ident_expr(EMPTY_POS, std::move(rec_ident),
-                                   std::move(selectors), type);
+                                   std::move(selectors), decl, type);
 
     // Should be the type of the record field
     REQUIRE(ident_expr.type == rec_type.field_lists[0]->type);
@@ -85,9 +87,11 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
                        EMPTY_POS, 2, ASTContext::INTEGER.get())));
 
     auto type = symbol_table.lookup_type(rec_ident, selectors);
+    auto decl = static_cast<const VarDeclarationNode *>(
+        symbol_table.lookup(rec_ident).value());
     IdentExpressionNode ident_expr(EMPTY_POS,
                                    std::make_unique<IdentNode>(rec_ident),
-                                   std::move(selectors), type);
+                                   std::move(selectors), decl, type);
 
     // Should be the type of the array
     REQUIRE(ident_expr.type == array_type.type);
@@ -102,9 +106,11 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field2")));
 
     auto type = symbol_table.lookup_type(rec_ident, selectors);
+    auto decl = static_cast<const VarDeclarationNode *>(
+        symbol_table.lookup(rec_ident).value());
     IdentExpressionNode ident_expr(EMPTY_POS,
                                    std::make_unique<IdentNode>(rec_ident),
-                                   std::move(selectors), type);
+                                   std::move(selectors), decl, type);
 
     // Should be the type of the record field
     REQUIRE(ident_expr.type == rec_type.field_lists[1]->type);

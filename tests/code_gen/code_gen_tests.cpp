@@ -1,7 +1,9 @@
 #include "codegen/CodeGen.h"
 #include "global.h"
 #include "parser/ast/ASTContext.h"
+#include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
+#include "parser/ast/IdentNode.h"
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/generators/catch_generators_adapters.hpp>
@@ -9,6 +11,7 @@
 #include <cstdint>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/IR/Value.h>
 #include <memory>
 
@@ -54,6 +57,17 @@ protected:
     UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
 
     u_expr.accept(builder);
+  }
+
+  void testIdentExpression() {
+    VarDeclarationNode var_decl(EMPTY_POS,
+                                std::make_unique<IdentNode>(EMPTY_POS, "test"),
+                                ASTContext::INTEGER.get());
+    auto ident = std::make_unique<IdentNode>(EMPTY_POS, "test");
+    IdentExpressionNode ident_expr(EMPTY_POS, std::move(ident), {}, &var_decl,
+                                   ASTContext::INTEGER.get());
+
+    ident_expr.accept(builder);
   }
 };
 
@@ -101,4 +115,14 @@ TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen UnaryExpressionNode Test",
   value = static_cast<llvm::ConstantInt *>(getValue());
 
   REQUIRE(value->isZero());
+}
+
+TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen IdentExpressionNode Test",
+                 "[code_gen]") {
+  testIdentExpression();
+
+  auto load = static_cast<llvm::AllocaInst *>(getValue());
+
+  REQUIRE(load->getName() == "test");
+  REQUIRE(load->getAllocatedType()->isIntegerTy());
 }
