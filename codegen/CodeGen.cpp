@@ -1,6 +1,5 @@
 #include "CodeGen.h"
 #include "global.h"
-#include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
@@ -21,16 +20,21 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/Triple.h>
+#include <memory>
 
-llvm::TargetMachine *CodeGen::init() {
+std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
   llvm::InitializeAllTargetInfos();
   llvm::InitializeAllTargets();
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllAsmParsers();
   llvm::InitializeAllAsmPrinters();
+
   // use default target triple of host
-  const string triple = llvm::sys::getDefaultTargetTriple();
+  const string triple_ = llvm::sys::getDefaultTargetTriple();
+  const auto triple = llvm::Triple(triple_);
+
   // set up target
   string error;
   if (const auto target = llvm::TargetRegistry::lookupTarget(triple, error);
@@ -42,14 +46,16 @@ llvm::TargetMachine *CodeGen::init() {
     const string features;
     const llvm::TargetOptions opt;
     constexpr auto model = std::optional<llvm::Reloc::Model>();
-    return target->createTargetMachine(llvm::Triple(triple), cpu, features, opt,
-                                       model);
+
+    return std::unique_ptr<llvm::TargetMachine>(
+        target->createTargetMachine(triple, cpu, features, opt, model));
   }
   return nullptr;
 }
 
-void CodeGen::emit(llvm::TargetMachine *tm, llvm::Module *module,
-                   const string &name, const OutputFileType type) {
+void CodeGen::emit(std::unique_ptr<llvm::TargetMachine> tm,
+                   std::unique_ptr<llvm::Module> module, const string &name,
+                   const OutputFileType type) {
   string ext;
   switch (type) {
   case OutputFileType::AssemblyFile:
@@ -101,27 +107,32 @@ void CodeGen::emit(llvm::TargetMachine *tm, llvm::Module *module,
 }
 
 void CodeGen::build(ASTContext &ast_ctx, string name) {
-  if (const auto tm = init()) {
-    logger_.debug("HERE WE ARE NOW");
+  if (auto tm = init()) {
     // set up LLVM module
-    llvm::LLVMContext ctx;
-    const auto module = new llvm::Module(name, ctx);
+    auto ctx = std::make_unique<llvm::LLVMContext>();
+    auto module = std::make_unique<llvm::Module>(name, *ctx);
+
     module->setDataLayout(tm->createDataLayout());
     module->setTargetTriple(tm->getTargetTriple());
 
     // set up a builder to generate the LLVM intermediate representation
-    auto builder = CodeGenBuilder(logger_, module, ctx);
+    auto builder = CodeGenBuilder(logger_, *module);
     builder.build(ast_ctx);
 
     // verify the module
-    verifyModule(*module, &llvm::errs());
+    llvm::verifyModule(*module, &llvm::errs());
 
-    emit(tm, module, name,
+    emit(std::move(tm), std::move(module), name,
          OutputFileType::LLVMIRFile); // TODO OutputFileType may be an argument
+
     return;
   }
   logger_.error(EMPTY_POS, "LLVM TargetMachine could not be intialized.");
   exit(EXIT_FAILURE); // TODO may be an exception
+}
+
+void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
+  tm->getTargetTriple();
 }
 
 void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
@@ -173,30 +184,30 @@ void CodeGenBuilder::visit(AssignmentNode &assignment) {
     auto copy_length =
         std::min(larray->expression->value, rarray->expression->value);
 
-    auto layout = module_->getDataLayout();
+    auto layout = module_.getDataLayout();
     // needed allocation size for given llvm type
     auto elem_size = layout.getTypeAllocSize(getLLVMType(larray->type));
 
-    auto size = builder_.getInt64(copy_length * elem_size);
+    auto size = builder_->getInt64(copy_length * elem_size);
 
-    value_ = builder_.CreateMemCpy(lvalue, {}, rvalue, {}, size);
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
   } else if (rtype->getNodeType() == NodeType::record_type) {
     // RECORD
-    auto layout = module_->getDataLayout();
+    auto layout = module_.getDataLayout();
     // needed size is the entire rhs
-    auto size = builder_.getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
+    auto size = builder_->getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
 
     // copy that record into lhs
-    value_ = builder_.CreateMemCpy(lvalue, {}, rvalue, {}, size);
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
   } else {
     // straight up variable assignment to value: i := 4
-    value_ = builder_.CreateStore(rvalue, lvalue);
+    value_ = builder_->CreateStore(rvalue, lvalue);
   }
 }
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
-  module_->setModuleIdentifier(module_node.ident->value);
+  module_.setModuleIdentifier(module_node.ident->value);
 
   for (auto &type : *module_node.get_types()) {
     // NOTE TypeDeclarations are simply new key:value pairs in types_
@@ -208,7 +219,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   for (auto &var : *module_node.get_vars()) {
     auto type = getLLVMType(var->type);
     auto value = new llvm::GlobalVariable(
-        *module_, type, false, llvm::GlobalValue::InternalLinkage,
+        module_, type, false, llvm::GlobalValue::InternalLinkage,
         llvm::Constant::getNullValue(type), var->ident->value);
 
     values_[var.get()] = value;
@@ -218,11 +229,11 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
     proc->accept(*this);
   }
 
-  auto main = module_->getOrInsertFunction("main", builder_.getInt32Ty());
+  auto main = module_.getOrInsertFunction("main", builder_->getInt32Ty());
   const auto function = cast<llvm::Function>(main.getCallee());
   const auto entry =
-      llvm::BasicBlock::Create(builder_.getContext(), "entry", function);
-  builder_.SetInsertPoint(entry);
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", function);
+  builder_->SetInsertPoint(entry);
 
   // statements
   if (module_node.get_statements() &&
@@ -230,7 +241,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
     module_node.get_statements()->accept(*this);
   }
 
-  builder_.CreateRet(builder_.getInt32(0));
+  builder_->CreateRet(builder_->getInt32(0));
 }
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &) {}
@@ -253,33 +264,33 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   vector<llvm::Type *> param_types;
   for (auto &param : proc_type->formal_parameters) {
     auto param_type = getLLVMType(param->type);
-    param_types.push_back(param->by_reference
-                              ? llvm::PointerType::get(builder_.getContext(), 0)
-                              : param_type);
+    param_types.push_back(
+        param->by_reference ? llvm::PointerType::get(builder_->getContext(), 0)
+                            : param_type);
   }
   // NOTE as of now, there are no return types; all procedures return void
   auto fun_type =
-      llvm::FunctionType::get(builder_.getVoidTy(), param_types, false);
+      llvm::FunctionType::get(builder_->getVoidTy(), param_types, false);
 
-  auto callee = module_->getOrInsertFunction(proc.ident->value, fun_type);
+  auto callee = module_.getOrInsertFunction(proc.ident->value, fun_type);
   const auto func = cast<llvm::Function>(callee.getCallee());
   const auto entry =
-      llvm::BasicBlock::Create(builder_.getContext(), "entry", func);
-  builder_.SetInsertPoint(entry);
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
 
-  const auto layout = module_->getDataLayout();
+  const auto layout = module_.getDataLayout();
 
   // allocate space for params
   llvm::Function::arg_iterator curr_arg = func->arg_begin();
   for (auto &param : proc_type->formal_parameters) {
     auto *param_type =
-        param->by_reference ? builder_.getPtrTy() : getLLVMType(param->type);
+        param->by_reference ? builder_->getPtrTy() : getLLVMType(param->type);
     auto *alloc =
-        builder_.CreateAlloca(param_type, nullptr, param->ident->value);
+        builder_->CreateAlloca(param_type, nullptr, param->ident->value);
     alloc->setAlignment(layout.getABITypeAlign(param_type));
 
     // initialize memory with given value
-    builder_.CreateStore(curr_arg, alloc);
+    builder_->CreateStore(curr_arg, alloc);
     // associate param with memory area for any expressions that need the
     // latest declared value
     values_[param.get()] = alloc;
@@ -292,7 +303,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     const auto &var = proc.get_vars()->at(i);
     llvm::Type *type = getLLVMType(var->type);
 
-    auto *alloc = builder_.CreateAlloca(type, nullptr, var->ident->value);
+    auto *alloc = builder_->CreateAlloca(type, nullptr, var->ident->value);
     alloc->setAlignment(layout.getABITypeAlign(type));
 
     // associate var with memory area for any exprs that need latest value
@@ -301,7 +312,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
 
   // TODO body statements
 
-  builder_.CreateRetVoid();
+  builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
 void CodeGenBuilder::visit(IdentExpressionNode &) {}
@@ -319,43 +330,43 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
       right_type == ASTContext::INTEGER.get()) {
     switch (binary_expr.op) {
     case BinaryOpType::plus:
-      value_ = builder_.CreateAdd(left_value, right_value);
+      value_ = builder_->CreateAdd(left_value, right_value);
       break;
     case BinaryOpType::minus:
-      value_ = builder_.CreateSub(left_value, right_value);
+      value_ = builder_->CreateSub(left_value, right_value);
       break;
     case BinaryOpType::times:
-      value_ = builder_.CreateMul(left_value, right_value);
+      value_ = builder_->CreateMul(left_value, right_value);
       break;
     case BinaryOpType::divide:
     case BinaryOpType::div:
-      value_ = builder_.CreateSDiv(left_value, right_value);
+      value_ = builder_->CreateSDiv(left_value, right_value);
       break;
     case BinaryOpType::mod:
       // a mod n = a - n * floor(a/n)
       // floor(x) = fptosi(x)
-      value_ = builder_.CreateSDiv(left_value, right_value);
-      value_ = builder_.CreateFPToSI(value_, left_value->getType());
-      value_ = builder_.CreateMul(value_, right_value);
-      value_ = builder_.CreateSub(value_, left_value);
+      value_ = builder_->CreateSDiv(left_value, right_value);
+      value_ = builder_->CreateFPToSI(value_, left_value->getType());
+      value_ = builder_->CreateMul(value_, right_value);
+      value_ = builder_->CreateSub(value_, left_value);
       break;
     case BinaryOpType::eq:
-      value_ = builder_.CreateICmpEQ(left_value, right_value);
+      value_ = builder_->CreateICmpEQ(left_value, right_value);
       break;
     case BinaryOpType::neq:
-      value_ = builder_.CreateICmpNE(left_value, right_value);
+      value_ = builder_->CreateICmpNE(left_value, right_value);
       break;
     case BinaryOpType::lt:
-      value_ = builder_.CreateICmpSLT(left_value, right_value);
+      value_ = builder_->CreateICmpSLT(left_value, right_value);
       break;
     case BinaryOpType::leq:
-      value_ = builder_.CreateICmpSLE(left_value, right_value);
+      value_ = builder_->CreateICmpSLE(left_value, right_value);
       break;
     case BinaryOpType::gt:
-      value_ = builder_.CreateICmpSGT(left_value, right_value);
+      value_ = builder_->CreateICmpSGT(left_value, right_value);
       break;
     case BinaryOpType::geq:
-      value_ = builder_.CreateICmpSGE(left_value, right_value);
+      value_ = builder_->CreateICmpSGE(left_value, right_value);
       break;
     default:
       logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
@@ -377,7 +388,7 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
 void CodeGenBuilder::visit(UnaryExpressionNode &) {}
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
   value_ = value_ = llvm::ConstantInt::getSigned(
-      builder_.getInt32Ty(), static_cast<int32_t>(number.value));
+      builder_->getInt32Ty(), static_cast<int32_t>(number.value));
 }
 void CodeGenBuilder::visit(BooleanExpressionNode &) {}
 void CodeGenBuilder::visit(ProcedureTypeNode &) {
@@ -388,7 +399,7 @@ void CodeGenBuilder::visit(RecordTypeNode &record_type) {
   for (auto &field : record_type.field_lists) {
     field_types.push_back(getLLVMType(field->type));
   }
-  auto struct_type = llvm::StructType::get(builder_.getContext(), field_types);
+  auto struct_type = llvm::StructType::get(builder_->getContext(), field_types);
   types_[&record_type] = struct_type;
 }
 void CodeGenBuilder::visit(RepeatStatementNode &repeat_statement) {}
@@ -410,9 +421,9 @@ llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
   } else if (types_[type]) {
     return types_[type];
   } else if (type == ASTContext::INTEGER.get()) {
-    return builder_.getInt64Ty();
+    return builder_->getInt64Ty();
   } else if (type == ASTContext::BOOLEAN.get()) {
-    return builder_.getInt1Ty();
+    return builder_->getInt1Ty();
   }
 
   type->accept(*this);

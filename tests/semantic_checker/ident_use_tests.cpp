@@ -121,7 +121,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
     REQUIRE(logger.getErrorCount() == 1);
   }
 
-  SECTION("Array variable access") {
+  SECTION("variable as array index") {
     // rec.field1[i]
     auto rec_ident = make_unique<IdentNode>(EMPTY_POS, "rec");
 
@@ -132,14 +132,44 @@ TEST_CASE("Semantic Checker", "[sema]") {
         EMPTY_POS, sema.onIdentExpression(
                        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "i"), {})));
 
-    auto array_ident_expr =
-        unique_ptr<IdentExpressionNode>(dynamic_cast<IdentExpressionNode *>(
-            sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
-                                   std::move(selectors))
-                .release()));
+    auto array_ident_expr = dynamic_cast<IdentExpressionNode *>(
+        sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
+                               std::move(selectors))
+            .release());
 
     REQUIRE(logger.getErrorCount() == 0);
     REQUIRE(array_ident_expr->type == ASTContext::INTEGER.get());
     REQUIRE(!array_ident_expr->is_const());
+
+    delete array_ident_expr;
+  }
+
+  SECTION("variable and constant as array index") {
+    // rec.field1[i - 2]
+    auto rec_ident = make_unique<IdentNode>(EMPTY_POS, "rec");
+
+    std::vector<std::unique_ptr<SelectorNode>> selectors;
+    selectors.emplace_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
+    selectors.emplace_back(sema.onArrayIndex(
+        EMPTY_POS,
+        sema.onBinaryExpression(
+            EMPTY_POS,
+            sema.onIdentExpression(EMPTY_POS,
+                                   make_unique<IdentNode>(EMPTY_POS, "i"), {}),
+            BinaryOpType::minus,
+            make_unique<NumberExpressionNode>(EMPTY_POS, 2,
+                                              ASTContext::INTEGER.get()))));
+
+    auto array_ident_expr = dynamic_cast<IdentExpressionNode *>(
+        sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
+                               std::move(selectors))
+            .release());
+
+    REQUIRE(logger.getErrorCount() == 0);
+    REQUIRE(array_ident_expr->type == ASTContext::INTEGER.get());
+    REQUIRE(!array_ident_expr->is_const());
+
+    delete array_ident_expr;
   }
 }

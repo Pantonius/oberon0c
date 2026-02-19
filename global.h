@@ -7,9 +7,11 @@
 #ifndef OBERON_LLVM_GLOBAL_H
 #define OBERON_LLVM_GLOBAL_H
 
+#include <memory>
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 using std::streampos;
 using std::string;
@@ -36,6 +38,15 @@ template <typename T> static string to_string(T *obj) {
   stringstream stream;
   stream << *obj;
   return stream.str();
+}
+
+template <typename Derived, typename Base>
+std::unique_ptr<Derived> dynamic_unique_ptr_copy_cast(Base *p) {
+  auto cast = dynamic_cast<Derived *>(p);
+  if (cast) {
+    return std::make_unique<Derived>(*cast);
+  }
+  return {};
 }
 
 #endif // OBERON_LLVM_GLOBAL_H

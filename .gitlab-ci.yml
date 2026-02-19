@@ -1,0 +1,60 @@
+# This file is a template, and might need editing before it works on your project.
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/development/cicd/templates/
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/C++.gitlab-ci.yml
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^(\[Draft\]|\(Draft\)|Draft:)/
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+
+default:
+  image: alpine
+  before_script:
+    - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
+
+build:test:
+  stage: build
+  variables:
+    FF_USE_FASTZIP: "1"
+    ARTIFACT_COMPRESSION_LEVEL: "slowest"
+  script:
+    - cmake -B build
+    - cmake --build build -t oberon0c_tests
+  artifacts:
+    paths:
+      - build/oberon0c_tests
+      - build/oberon0c_tests*.cmake
+      - build/CTestTestfile.cmake    
+  cache:
+    paths:
+      - build/
+
+build:release:
+  stage: build
+  script:
+    - cmake -B build
+    - cmake --build build -t oberon0c
+  cache:
+    paths:
+      - build/
+  artifacts:
+    paths:
+      - build/oberon0c
+
+# run tests using the binary built before
+test:
+  stage: test
+  needs: ["build:test"]
+  script:
+    - ctest --test-dir build
+  artifacts:
+    reports:
+      junit: tests/result-junit.xml

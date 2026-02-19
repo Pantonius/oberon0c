@@ -28,6 +28,7 @@ private:
   SemanticChecker sema_;
 
   BinaryOpType relation();
+  bool boolean();
   int number();
   unique_ptr<IdentNode> ident();
   ArrayTypeNode *array_type();
@@ -78,6 +79,7 @@ private:
   bool peek_factor();
   bool peek_ident();
   bool peek_selector();
+  bool peek_boolean(bool advanceOnTrue = false);
   bool peek_number(bool advanceOnTrue = false);
   bool peek_procedure_call_without_ident();
   bool peek_record_type();

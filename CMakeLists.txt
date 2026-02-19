@@ -9,10 +9,15 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
-  add_compile_options(-fsanitize=address -g)
-  add_link_options(-fsanitize=address)
+  # add_compile_options(-fsanitize=address -g)
+  # add_link_options(-fsanitize=address)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
-  set(CMAKE_CXX_FLAGS_DEBUG "-g")
+  # define DEBUG macro
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-D_DEBUG)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1 -g)
+    add_link_options(-fsanitize=address)
+  endif()
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wweak-vtables)
     if (WIN32)
@@ -26,15 +31,14 @@ endif ()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# define DEBUG macro
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-  add_definitions(-D_DEBUG)
-  add_compile_options(-fsanitize=address)
-  add_link_options(-fsanitize=address)
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
+
 
 # add the cmake folder of the project for extension modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -115,8 +119,8 @@ set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 set(TEST_SOURCES
   tests/declaration_validity/const_decl.cpp
-  tests/parser_tests.cpp
-  tests/symbol_table_tests.cpp
+  tests/parser/parser_tests.cpp
+  tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
 )
 
@@ -126,6 +130,12 @@ find_package(Catch2 3 REQUIRED)
 add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
 target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
 
+set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
+if ($ENV{CI})
+  message(STATUS "Detected CI environment")
+  set(CATCH_REPORTER "JUnit::out=result-junit.xml")
+endif()
+
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER "console::out=-::colour-mode=ansi")
+catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER})

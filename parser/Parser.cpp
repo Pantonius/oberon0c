@@ -24,7 +24,7 @@ void Parser::module() {
   if (!expect_token_type(TokenType::kw_module)) {
     logger_.info("You might be missing MODULE.");
   }
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto module_ident = Parser::ident();
 
@@ -50,7 +50,7 @@ void Parser::module() {
 
 /* ident = letter {letter | digit} */
 unique_ptr<IdentNode> Parser::ident() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
   if (expect_token_type(TokenType::const_ident)) {
     // Cast token pointer to IdentToken
     auto ident = dynamic_cast<const IdentToken *>(last_token_.get())->value();
@@ -73,7 +73,7 @@ std::vector<unique_ptr<IdentNode>> Parser::ident_list() {
 
 // type = ident | ArrayType | RecordType
 TypeNode *Parser::type() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
   const TokenType &node_type = scanner_.peek()->type();
 
   if (peek_ident()) {
@@ -91,7 +91,7 @@ TypeNode *Parser::type() {
 
 // ArrayType = "ARRAY" expression "OF" type
 ArrayTypeNode *Parser::array_type() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_array);
   auto expression = Parser::expression();
@@ -107,7 +107,7 @@ bool Parser::peek_array_type() {
 
 // RecordType = "RECORD" FieldList {";" FieldList} "END"
 RecordTypeNode *Parser::record_type() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_record);
 
@@ -171,7 +171,7 @@ void Parser::declaration_sequence(DeclarationSequenceNode *decls) {
 
 // ConstDeclaration = ident "=" expression ";"
 unique_ptr<ConstDeclarationNode> Parser::const_declaration() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto ident = Parser::ident();
   expect_token_type(TokenType::op_eq);
@@ -185,7 +185,7 @@ bool Parser::peek_const_declaration() { return peek_ident(); }
 
 // TypeDeclaration = ident "=" type ";"
 std::unique_ptr<TypeDeclarationNode> Parser::type_declaration() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto ident = Parser::ident();
   expect_token_type(TokenType::op_eq);
@@ -225,7 +225,7 @@ bool Parser::peek_var_declaration() { return peek_ident(); }
 
 // expression = SimpleExpr [relation SimpleExpr]
 std::unique_ptr<ExpressionNode> Parser::expression() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto first_expr = simple_expr();
   if (!peek_check_token_type_within(RELATION_TOKEN_TYPES)) {
@@ -250,7 +250,7 @@ BinaryOpType Parser::relation() {
 
 // SimpleExpr = ["+" | "-"] term {AddOperator term}
 std::unique_ptr<ExpressionNode> Parser::simple_expr() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   unique_ptr<ExpressionNode> expr;
   if (peek_check_token_type_within(SIGN_TOKEN_TYPES, NO_ADVANCE_ON_TRUE)
@@ -268,7 +268,7 @@ std::unique_ptr<ExpressionNode> Parser::simple_expr() {
   // add op
   while (peek_check_token_type_within(ADD_OPERATOR_TOKEN_TYPES,
                                       NO_ADVANCE_ON_TRUE)) {
-    const FilePos &pos = scanner_.peek()->start();
+    const FilePos pos = scanner_.peek()->start();
 
     auto left_expression = std::move(expr); // old expression
     auto op = add_operator();
@@ -299,7 +299,7 @@ BinaryOpType Parser::add_operator() {
 
 // term = factor {MulOperator factor}
 std::unique_ptr<ExpressionNode> Parser::term() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto expr = factor();
 
@@ -325,7 +325,7 @@ BinaryOpType Parser::mul_operator() {
 }
 // factor = ident selector | number | "(" expression ")" | "~" factor
 std::unique_ptr<ExpressionNode> Parser::factor() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
   const TokenType &token_type = scanner_.peek()->type();
 
   if (peek_ident()) {
@@ -345,16 +345,24 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto op = UnaryOpType::u_not;
     auto expression = Parser::expression();
     return sema_.onUnaryExpression(pos, std::move(expression), op);
+  } else if (peek_boolean()) {
+    auto boolean = Parser::boolean();
+    return make_unique<BooleanExpressionNode>(EMPTY_POS, boolean,
+                                              ASTContext::BOOLEAN.get());
   } else {
     logger_.error(pos, "Expected factor found " + to_string(token_type));
     exit(EXIT_FAILURE);
   }
 }
 
-bool Parser::peek_factor() {
-  return peek_ident() || peek_number() ||
+bool inline Parser::peek_factor() {
+  return peek_ident() || peek_number() || peek_boolean() ||
          peek_check_token_type(TokenType::lparen) ||
          peek_check_token_type(TokenType::op_not);
+}
+
+bool inline Parser::peek_boolean(bool advanceOnTrue) {
+  return peek_check_token_type(TokenType::boolean_literal, advanceOnTrue);
 }
 
 bool Parser::peek_number(bool advanceOnTrue) {
@@ -368,22 +376,22 @@ bool Parser::peek_number(bool advanceOnTrue) {
       .has_value();
 }
 
-bool Parser::peek_char_constant() {
+bool inline Parser::peek_char_constant() {
   return peek_check_token_type(TokenType::char_literal);
 }
 
-bool Parser::peek_string() {
+bool inline Parser::peek_string() {
   return peek_check_token_type(TokenType::string_literal);
 }
 
 // ProcedureCall = ident selector ["(" ActualParameters ")"]
-std::unique_ptr<ProcedureCallNode> Parser::procedure_call() {
+std::unique_ptr<ProcedureCallNode> inline Parser::procedure_call() {
   return Parser::procedure_call(ident());
 }
 
 std::unique_ptr<ProcedureCallNode>
 Parser::procedure_call(unique_ptr<IdentNode> ident) {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto selectors = Parser::selectors();
 
@@ -408,7 +416,7 @@ inline std::unique_ptr<AssignmentNode> Parser::assignment() {
 
 std::unique_ptr<AssignmentNode>
 Parser::assignment(unique_ptr<IdentNode> ident) {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   auto selectors = Parser::selectors();
   expect_token_type(TokenType::op_becomes);
@@ -433,7 +441,7 @@ bool Parser::peek_selector() {
 
 // StatementSequence = statement {";" statement}
 unique_ptr<StatementSequenceNode> Parser::statement_sequence() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   vector<unique_ptr<StatementNode>> statement_sequence;
   do {
@@ -458,7 +466,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
     return while_statement();
   }
 
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
   const TokenType &type = scanner_.peek()->type();
   logger_.error(pos, "Expected statement found " + to_string(type));
   exit(EXIT_FAILURE);
@@ -467,7 +475,7 @@ std::unique_ptr<StatementNode> Parser::statement() {
 // IfStatement = "IF" expression "THEN" StatementSequence {"ELSIF" expression
 // "THEN" StatementSequence} ["ELSE" StatementSequence] "END"
 std::unique_ptr<IfStatementNode> Parser::if_statement() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_if);
   auto condition = expression();
@@ -478,7 +486,7 @@ std::unique_ptr<IfStatementNode> Parser::if_statement() {
 
   vector<unique_ptr<ElsIfStatementNode>> elsifs;
   while (peek_check_token_type(TokenType::kw_elsif, ADVANCE_ON_TRUE)) {
-    const FilePos &local_pos = scanner_.peek()->start();
+    const FilePos local_pos = scanner_.peek()->start();
 
     auto elsif_condition = Parser::expression();
     sema_.expect_bool(elsif_condition.get());
@@ -505,7 +513,7 @@ std::unique_ptr<IfStatementNode> Parser::if_statement() {
 
 // WhileStatement = "WHILE" expression "DO" StatementSequence "END"
 std::unique_ptr<WhileStatementNode> Parser::while_statement() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_while);
   auto condition = expression();
@@ -522,7 +530,7 @@ std::unique_ptr<WhileStatementNode> Parser::while_statement() {
 
 // RepeatStatement = "REPEAT" StatementSequence "UNTIL" expression
 std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   expect_token_type(TokenType::kw_repeat);
   auto body = statement_sequence();
@@ -536,7 +544,7 @@ std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
 
 // ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ";"
 std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
-  const FilePos &pos = scanner_.peek()->start();
+  const FilePos pos = scanner_.peek()->start();
 
   // ProcedureHeading = "PROCEDURE" ident [FormalParameters]
   expect_token_type(TokenType::kw_procedure);
@@ -601,7 +609,7 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   vector<unique_ptr<SelectorNode>> selectors;
   while (auto token = peek_check_token_type_within(
              {TokenType::period, TokenType::lbrack}, ADVANCE_ON_TRUE)) {
-    const FilePos &pos = scanner_.peek()->start();
+    const FilePos pos = scanner_.peek()->start();
 
     switch (*token) {
     case TokenType::period: {
@@ -625,6 +633,19 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   return selectors;
 }
 
+/* boolean = "TRUE" | "FALSE" */
+bool Parser::boolean() {
+  if (peek_boolean(true)) {
+    return dynamic_cast<const BooleanLiteralToken *>(last_token_.get())
+        ->value();
+  }
+
+  const Token *curr = scanner_.peek();
+  logger_.error(curr->start(),
+                "Expected boolean, found " + to_string(curr->type()));
+  exit(EXIT_FAILURE);
+}
+
 /* number = integer */
 int Parser::number() {
   if (peek_number(true)) {
@@ -639,7 +660,7 @@ int Parser::number() {
     case TokenType::long_literal:
       return dynamic_cast<const LongLiteralToken *>(last_token_.get())->value();
     default:
-      const FilePos &pos = scanner_.peek()->start();
+      const FilePos pos = scanner_.peek()->start();
       const TokenType &token_type = scanner_.peek()->type();
       logger_.error(pos, "Expected number found " + to_string(token_type));
       break;
