@@ -21,11 +21,12 @@ using std::vector;
 class ExpressionNode : public Node {
 private:
 public:
-  ExpressionNode(const NodeType &type, const FilePos pos, TypeNode *type_node)
+  ExpressionNode(const NodeType &type, const FilePos pos,
+                 TypeNode *const type_node)
       : Node(type, pos), type(type_node) {};
   ~ExpressionNode() = default;
 
-  TypeNode *type;
+  TypeNode *const type;
 
   [[nodiscard]] virtual bool is_const() const = 0;
 };
@@ -43,7 +44,7 @@ public:
         expression(std::move(expression)) {}
   ~ArrayIndexNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<ExpressionNode> expression;
@@ -55,7 +56,7 @@ public:
       : SelectorNode(NodeType::record_selector, pos), ident(std::move(ident)) {}
   ~RecordFieldNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> ident;
@@ -77,12 +78,12 @@ class UnaryExpressionNode final : public ExpressionNode {
 public:
   UnaryExpressionNode(const FilePos pos, const UnaryOpType op,
                       unique_ptr<ExpressionNode> expression,
-                      TypeNode *type_node)
+                      TypeNode *const type_node)
       : ExpressionNode(NodeType::unary_expression, pos, type_node), op(op),
         expression(std::move(expression)) {}
   ~UnaryExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 
@@ -95,12 +96,12 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      TypeNode *type_node)
+                      TypeNode *const type_node)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
         ident(std::move(ident)), selectors(std::move(selectors)) {}
   ~IdentExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 
@@ -111,7 +112,7 @@ public:
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
 public:
   LiteralExpressionNode(const NodeType &type, const FilePos pos, T value,
-                        TypeNode *type_node)
+                        TypeNode *const type_node)
       : ExpressionNode(type, pos, type_node), value(value) {};
   ~LiteralExpressionNode() = default;
 
@@ -120,22 +121,20 @@ public:
 
 class NumberExpressionNode final : public LiteralExpressionNode<int32_t> {
 public:
-  NumberExpressionNode(const FilePos pos, int number, TypeNode *type_node)
-      : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}
+  NumberExpressionNode(const FilePos pos, int number);
   ~NumberExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final { return true; };
 };
 
 class BooleanExpressionNode final : public LiteralExpressionNode<bool> {
 public:
-  BooleanExpressionNode(const FilePos pos, bool boolean, TypeNode *type_node)
-      : LiteralExpressionNode(NodeType::boolean, pos, boolean, type_node) {};
+  BooleanExpressionNode(const FilePos pos, bool boolean);
   ~BooleanExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final { return true; };
 };
@@ -180,13 +179,13 @@ public:
                        unique_ptr<ExpressionNode> left_expression,
                        const BinaryOpType op,
                        unique_ptr<ExpressionNode> right_expression,
-                       TypeNode *type_node)
+                       TypeNode *const type_node)
       : ExpressionNode(NodeType::binary_expression, pos, type_node),
         left_expression(std::move(left_expression)), op(op),
         right_expression(std::move(right_expression)) {}
   ~BinaryExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 

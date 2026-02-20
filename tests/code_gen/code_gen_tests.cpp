@@ -29,28 +29,25 @@ protected:
   llvm::IRBuilder<> *getBuilder() { return builder.builder_.get(); }
 
   void testBoolExpression(bool boolean_) {
-    BooleanExpressionNode boolean(EMPTY_POS, boolean_,
-                                  ASTContext::BOOLEAN.get());
+    BooleanExpressionNode boolean(EMPTY_POS, boolean_);
 
     boolean.accept(builder);
   }
 
   void testNumberExpression(int num) {
-    NumberExpressionNode number(EMPTY_POS, num, ASTContext::INTEGER.get());
+    NumberExpressionNode number(EMPTY_POS, num);
 
     number.accept(builder);
   }
 
   void testUnaryNumberExpression(int num, UnaryOpType op) {
-    auto number = std::make_unique<NumberExpressionNode>(
-        EMPTY_POS, num, ASTContext::INTEGER.get());
+    auto number = std::make_unique<NumberExpressionNode>(EMPTY_POS, num);
     UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
 
     u_expr.accept(builder);
   }
   void testUnaryBoolExpression(bool boolean, UnaryOpType op) {
-    auto number = std::make_unique<BooleanExpressionNode>(
-        EMPTY_POS, boolean, ASTContext::BOOLEAN.get());
+    auto number = std::make_unique<BooleanExpressionNode>(EMPTY_POS, boolean);
     UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
 
     u_expr.accept(builder);

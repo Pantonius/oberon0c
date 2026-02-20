@@ -32,6 +32,7 @@ public:
   virtual void visit(StatementSequenceNode &) = 0;
   virtual void visit(IdentNode &) = 0;
   virtual void visit(IdentTypeNode &) = 0;
+  virtual void visit(StdTypeNode &) = 0;
   virtual void visit(FieldNode &) = 0;
   virtual void visit(WhileStatementNode &) = 0;
 };

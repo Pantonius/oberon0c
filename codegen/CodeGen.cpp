@@ -1,6 +1,7 @@
 #include "CodeGen.h"
 #include "global.h"
 #include "parser/ast/ExpressionNode.h"
+#include "parser/ast/TypeNode.h"
 #include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
@@ -328,8 +329,7 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
   const auto right_value = value_;
 
   // TODO
-  if (left_type == ASTContext::INTEGER.get() &&
-      right_type == ASTContext::INTEGER.get()) {
+  if (left_type == ASTContext::INTEGER && right_type == ASTContext::INTEGER) {
     switch (binary_expr.op) {
     case BinaryOpType::plus:
       value_ = builder_->CreateAdd(left_value, right_value);
@@ -374,8 +374,8 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
       logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
       exit(EXIT_FAILURE);
     }
-  } else if (left_type == ASTContext::BOOLEAN.get() &&
-             right_type == ASTContext::BOOLEAN.get()) {
+  } else if (left_type == ASTContext::BOOLEAN &&
+             right_type == ASTContext::BOOLEAN) {
     switch (binary_expr.op) {
     case BinaryOpType::b_and:
       break;
@@ -430,6 +430,8 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
 }
 void CodeGenBuilder::visit(IdentNode &ident) {}
 void CodeGenBuilder::visit(IdentTypeNode &ident) {}
+void CodeGenBuilder::visit(StdTypeNode &) {}
+
 void CodeGenBuilder::visit(FieldNode &field) {}
 void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}
 
@@ -439,9 +441,9 @@ llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
     exit(EXIT_FAILURE);
   } else if (types_[type]) {
     return types_[type];
-  } else if (type == ASTContext::INTEGER.get()) {
+  } else if (type == ASTContext::INTEGER) {
     return builder_->getInt64Ty();
-  } else if (type == ASTContext::BOOLEAN.get()) {
+  } else if (type == ASTContext::BOOLEAN) {
     return builder_->getInt1Ty();
   }
 

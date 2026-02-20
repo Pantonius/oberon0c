@@ -8,15 +8,11 @@
 
 Node::~Node() = default;
 
-NodeType Node::getNodeType() const {
-    return nodeType_;
-}
+NodeType Node::getNodeType() const { return nodeType_; }
 
-FilePos Node::pos() const {
-    return pos_;
-}
+FilePos Node::pos() const { return pos_; }
 
-std::ostream& operator<<(std::ostream &stream, const Node &node) {
-    node.print(stream);
-    return stream;
+std::ostream &operator<<(std::ostream &stream, const Node &node) {
+  node.print(stream);
+  return stream;
 }

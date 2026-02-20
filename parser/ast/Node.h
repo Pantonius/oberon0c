@@ -32,6 +32,7 @@ enum class NodeType : char {
   record_selector,
   statement,
   statement_sequence,
+  std_type,
   type_declaration,
   unary_expression,
   var_declaration,
@@ -50,6 +51,8 @@ public:
   Node(const NodeType nodeType, FilePos pos)
       : nodeType_(nodeType), pos_(std::move(pos)) {};
   virtual ~Node();
+
+  bool operator==(const Node &) const = default;
 
   [[nodiscard]] NodeType getNodeType() const;
   [[nodiscard]] FilePos pos() const;

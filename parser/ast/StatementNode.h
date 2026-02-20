@@ -26,7 +26,7 @@ public:
         ref(ref) {}
   ~AssignmentNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentExpressionNode> ident_expr;
@@ -42,7 +42,7 @@ public:
         condition(std::move(condition)), body(std::move(body)) {}
   ~ElsIfStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> condition;
@@ -61,7 +61,7 @@ public:
         else_statement_sequence(std::move(else_statement_sequence)) {}
   ~IfStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> condition;
@@ -81,7 +81,7 @@ public:
         actual_parameters(std::move(actual_parameters)) {}
   ~ProcedureCallNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> ident;
@@ -97,7 +97,7 @@ public:
         condition(std::move(condition)), body(std::move(body)) {}
   ~WhileStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> condition;
@@ -112,7 +112,7 @@ public:
         condition(std::move(condition)), body(std::move(body)) {}
   ~RepeatStatementNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<ExpressionNode> condition;

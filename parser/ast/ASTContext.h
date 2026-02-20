@@ -4,24 +4,9 @@
 #include "ModuleNode.h"
 #include "functional"
 #include "parser/ast/TypeNode.h"
+#include <unordered_set>
 
 using std::function;
-
-class StdType {
-private:
-  const unique_ptr<IdentTypeNode> type_;
-  unique_ptr<IdentTypeNode> std_ident_type_(string name) {
-    return std::make_unique<IdentTypeNode>(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, name));
-  };
-
-public:
-  StdType(const string name) : type_(std_ident_type_(name)) {};
-  ~StdType() = default;
-
-  IdentTypeNode *get() const { return type_.get(); };
-  const string get_name() const { return type_->ident->value; };
-};
 
 class ASTContext {
 private:
@@ -31,8 +16,9 @@ private:
 public:
   ASTContext() {}; // TODO add standard environment
   ~ASTContext() = default;
-  static const StdType INTEGER;
-  static const StdType BOOLEAN;
+  static const std::unordered_map<std::string, StdTypeNode *const> std_types;
+  static StdTypeNode *const BOOLEAN;
+  static StdTypeNode *const INTEGER;
 
   // NOTE for multi-module use this should be a vector
   ModuleNode *get_module();

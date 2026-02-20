@@ -6,6 +6,7 @@ void DeclarationSequenceNode::add_const(
     unique_ptr<ConstDeclarationNode> const_decl) {
   constants_.push_back(std::move(const_decl));
 }
+
 vector<unique_ptr<ConstDeclarationNode>> *
 DeclarationSequenceNode::get_consts() {
   return &constants_;
@@ -15,6 +16,7 @@ void DeclarationSequenceNode::add_type(
     unique_ptr<TypeDeclarationNode> type_decl) {
   types_.push_back(std::move(type_decl));
 }
+
 vector<unique_ptr<TypeDeclarationNode>> *DeclarationSequenceNode::get_types() {
   return &types_;
 }
@@ -22,6 +24,7 @@ vector<unique_ptr<TypeDeclarationNode>> *DeclarationSequenceNode::get_types() {
 void DeclarationSequenceNode::add_var(unique_ptr<VarDeclarationNode> var_decl) {
   variables_.push_back(std::move(var_decl));
 }
+
 vector<unique_ptr<VarDeclarationNode>> *DeclarationSequenceNode::get_vars() {
   return &variables_;
 }
@@ -30,6 +33,7 @@ void DeclarationSequenceNode::add_procedure(
     unique_ptr<ProcedureDeclarationNode> proc_decl) {
   procedures_.push_back(std::move(proc_decl));
 }
+
 vector<unique_ptr<ProcedureDeclarationNode>> *
 DeclarationSequenceNode::get_procs() {
   return &procedures_;

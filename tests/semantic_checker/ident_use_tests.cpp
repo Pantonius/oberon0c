@@ -26,11 +26,9 @@ TEST_CASE("Semantic Checker", "[sema]") {
   // END;
   // i : INTEGER
 
-  auto array_type =
-      sema.onArrayType(EMPTY_POS,
-                       std::make_unique<NumberExpressionNode>(
-                           EMPTY_POS, 4, ASTContext::INTEGER.get()),
-                       ASTContext::INTEGER.get());
+  auto array_type = sema.onArrayType(
+      EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, 4),
+      ASTContext::INTEGER);
 
   vector<unique_ptr<IdentNode>> field1;
   field1.emplace_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
@@ -40,7 +38,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
 
   vector<pair<vector<unique_ptr<IdentNode>>, TypeNode *>> field_list;
   field_list.emplace_back(std::move(field1), array_type);
-  field_list.emplace_back(std::move(field2), ASTContext::INTEGER.get());
+  field_list.emplace_back(std::move(field2), ASTContext::INTEGER);
 
   auto rec_type = sema.onRecordType(EMPTY_POS, std::move(field_list));
 
@@ -59,8 +57,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
 
     idents.emplace_back(make_unique<IdentNode>(EMPTY_POS, "i"));
 
-    int_vars =
-        sema.onVars(EMPTY_POS, std::move(idents), ASTContext::INTEGER.get());
+    int_vars = sema.onVars(EMPTY_POS, std::move(idents), ASTContext::INTEGER);
   }
 
   SECTION("Is in enclosing scope") {
@@ -78,11 +75,9 @@ TEST_CASE("Semantic Checker", "[sema]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field2")));
 
-    auto assign =
-        sema.onAssign(EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "rec"),
-                      std::move(selectors),
-                      make_unique<NumberExpressionNode>(
-                          EMPTY_POS, 3, ASTContext::INTEGER.get()));
+    auto assign = sema.onAssign(
+        EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "rec"),
+        std::move(selectors), make_unique<NumberExpressionNode>(EMPTY_POS, 3));
 
     REQUIRE(logger.getErrorCount() == 0);
   }
@@ -95,8 +90,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(make_unique<ArrayIndexNode>(
-        EMPTY_POS, make_unique<NumberExpressionNode>(
-                       EMPTY_POS, 3, ASTContext::INTEGER.get())));
+        EMPTY_POS, make_unique<NumberExpressionNode>(EMPTY_POS, 3)));
 
     auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
                                          std::move(selectors));
@@ -112,8 +106,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(make_unique<ArrayIndexNode>(
-        EMPTY_POS, make_unique<NumberExpressionNode>(
-                       EMPTY_POS, 6, ASTContext::INTEGER.get())));
+        EMPTY_POS, make_unique<NumberExpressionNode>(EMPTY_POS, 6)));
 
     auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
                                          std::move(selectors));
@@ -138,7 +131,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
             .release());
 
     REQUIRE(logger.getErrorCount() == 0);
-    REQUIRE(array_ident_expr->type == ASTContext::INTEGER.get());
+    REQUIRE(array_ident_expr->type == ASTContext::INTEGER);
     REQUIRE(!array_ident_expr->is_const());
 
     delete array_ident_expr;
@@ -158,8 +151,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
             sema.onIdentExpression(EMPTY_POS,
                                    make_unique<IdentNode>(EMPTY_POS, "i"), {}),
             BinaryOpType::minus,
-            make_unique<NumberExpressionNode>(EMPTY_POS, 2,
-                                              ASTContext::INTEGER.get()))));
+            make_unique<NumberExpressionNode>(EMPTY_POS, 2))));
 
     auto array_ident_expr = dynamic_cast<IdentExpressionNode *>(
         sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
@@ -167,7 +159,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
             .release());
 
     REQUIRE(logger.getErrorCount() == 0);
-    REQUIRE(array_ident_expr->type == ASTContext::INTEGER.get());
+    REQUIRE(array_ident_expr->type == ASTContext::INTEGER);
     REQUIRE(!array_ident_expr->is_const());
 
     delete array_ident_expr;

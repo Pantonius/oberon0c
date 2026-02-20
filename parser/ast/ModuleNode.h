@@ -18,7 +18,7 @@ public:
       : Node(NodeType::module, pos), ident(std::move(ident)) {}
   ~ModuleNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> ident;

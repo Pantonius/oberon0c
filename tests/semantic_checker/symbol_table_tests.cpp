@@ -24,9 +24,8 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
   //   field2 : INTEGER
   // END;
   ArrayTypeNode array_type(EMPTY_POS,
-                           make_unique<NumberExpressionNode>(
-                               EMPTY_POS, 4, ASTContext::INTEGER.get()),
-                           ASTContext::INTEGER.get());
+                           make_unique<NumberExpressionNode>(EMPTY_POS, 4),
+                           ASTContext::INTEGER);
 
   symbol_table.beginScope();
 
@@ -37,7 +36,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
 
   rec_fields.emplace_back(make_unique<VarDeclarationNode>(
       EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field2"),
-      ASTContext::INTEGER.get()));
+      ASTContext::INTEGER));
   symbol_table.insert(*rec_fields[1]->ident.get(), rec_fields[1].get());
 
   RecordTypeNode rec_type(EMPTY_POS, std::move(rec_fields));
@@ -81,8 +80,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(std::make_unique<ArrayIndexNode>(
-        EMPTY_POS, std::make_unique<NumberExpressionNode>(
-                       EMPTY_POS, 2, ASTContext::INTEGER.get())));
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, 2)));
 
     auto type = symbol_table.lookup_type(rec_ident, selectors);
     IdentExpressionNode ident_expr(EMPTY_POS,
@@ -128,8 +126,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
 
     std::vector<std::unique_ptr<SelectorNode>> selectors;
     selectors.emplace_back(std::make_unique<ArrayIndexNode>(
-        EMPTY_POS, std::make_unique<NumberExpressionNode>(
-                       EMPTY_POS, 2, ASTContext::INTEGER.get())));
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, 2)));
 
     REQUIRE_THROWS_AS(symbol_table.lookup_type(rec_ident, selectors),
                       WrongTypeException);
@@ -143,8 +140,7 @@ TEST_CASE("Test SymbolTable", "[symbol_table]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(std::make_unique<ArrayIndexNode>(
-        EMPTY_POS, std::make_unique<NumberExpressionNode>(
-                       EMPTY_POS, 5, ASTContext::INTEGER.get())));
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, 5)));
 
     REQUIRE_THROWS_AS(symbol_table.lookup_type(rec_ident, selectors),
                       OutOfRangeException);

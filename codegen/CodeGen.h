@@ -3,6 +3,7 @@
 
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/NodeVisitor.h"
+#include "parser/ast/TypeNode.h"
 #include "util/Logger.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/DataLayout.h>
@@ -69,6 +70,7 @@ private:
   void visit(StatementSequenceNode &) override final;
   void visit(IdentNode &) override final;
   void visit(IdentTypeNode &) override final;
+  void visit(StdTypeNode &) override final;
   void visit(FieldNode &) override final;
   void visit(WhileStatementNode &) override final;
 

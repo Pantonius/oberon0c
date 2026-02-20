@@ -335,8 +335,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors));
   } else if (peek_number()) {
     auto number = Parser::number();
-    return make_unique<NumberExpressionNode>(pos, number,
-                                             ASTContext::INTEGER.get());
+    return make_unique<NumberExpressionNode>(pos, number);
   } else if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     auto expression = Parser::expression();
     expect_token_type(TokenType::rparen);
@@ -347,8 +346,7 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     return sema_.onUnaryExpression(pos, std::move(expression), op);
   } else if (peek_boolean()) {
     auto boolean = Parser::boolean();
-    return make_unique<BooleanExpressionNode>(EMPTY_POS, boolean,
-                                              ASTContext::BOOLEAN.get());
+    return make_unique<BooleanExpressionNode>(EMPTY_POS, boolean);
   } else {
     logger_.error(pos, "Expected factor found " + to_string(token_type));
     exit(EXIT_FAILURE);
