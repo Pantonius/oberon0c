@@ -3,6 +3,10 @@
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/ExpressionNode.h"
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+#include <catch2/generators/catch_generators_adapters.hpp>
+#include <catch2/generators/catch_generators_random.hpp>
+#include <cstdint>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
@@ -36,9 +40,24 @@ protected:
 
     number.accept(builder);
   }
+
+  void testUnaryNumberExpression(int num, UnaryOpType op) {
+    auto number = std::make_unique<NumberExpressionNode>(
+        EMPTY_POS, num, ASTContext::INTEGER.get());
+    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
+
+    u_expr.accept(builder);
+  }
+  void testUnaryBoolExpression(bool boolean, UnaryOpType op) {
+    auto number = std::make_unique<BooleanExpressionNode>(
+        EMPTY_POS, boolean, ASTContext::BOOLEAN.get());
+    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
+
+    u_expr.accept(builder);
+  }
 };
 
-TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen Boolean-Expressions Test",
+TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen BooleanExpressionsNode Test",
                  "[code_gen]") {
   testBoolExpression(true);
 
@@ -46,7 +65,7 @@ TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen Boolean-Expressions Test",
   REQUIRE(value->isOne());
 }
 
-TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen Number-Expressions Test",
+TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen NumberExpressionsNode Test",
                  "[code_gen]") {
   testNumberExpression(42);
 
@@ -60,4 +79,26 @@ TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen Number-Expressions Test",
 
   REQUIRE(value->isNegative());
   REQUIRE(value->getSExtValue() == -42);
+}
+
+TEST_CASE_METHOD(CodeGenBuilderTest, "CodeGen UnaryExpressionNode Test",
+                 "[code_gen]") {
+  auto num = GENERATE(take(10000, random(INT32_MIN, INT32_MAX)));
+  testUnaryNumberExpression(num, UnaryOpType::plus);
+
+  auto value = static_cast<llvm::ConstantInt *>(getValue());
+
+  REQUIRE(value->getSExtValue() == num);
+
+  testUnaryNumberExpression(num, UnaryOpType::minus);
+
+  value = static_cast<llvm::ConstantInt *>(getValue());
+
+  REQUIRE(value->getSExtValue() == -num);
+
+  testUnaryBoolExpression(true, UnaryOpType::u_not);
+
+  value = static_cast<llvm::ConstantInt *>(getValue());
+
+  REQUIRE(value->isZero());
 }

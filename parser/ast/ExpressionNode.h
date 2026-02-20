@@ -63,7 +63,9 @@ public:
 
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
+
 enum class UnaryOpType { plus, minus, u_not };
+
 std::ostream &operator<<(std::ostream &, const UnaryOpType &);
 
 const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
