@@ -6,6 +6,7 @@
 #include "global.h"
 #include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -110,22 +111,25 @@ TypeNode *SemanticChecker::onIdentType(const FilePos pos,
 }
 
 ArrayTypeNode *SemanticChecker::onArrayType(const FilePos pos,
-                                            unique_ptr<ExpressionNode> expr_,
+                                            unique_ptr<ExpressionNode> expr,
                                             TypeNode *type) {
-  if (!expr_) {
+  if (!expr) {
     logger_.error(pos, "Undefined array size.");
     exit(EXIT_FAILURE);
   }
 
-  auto num = dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr_.get());
+  auto num = dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr.get());
 
   if (!num) {
-    logger_.error(num->pos(), "Array size is not a constant number.");
-    exit(EXIT_FAILURE);
+    logger_.error(pos, "Array size is not a constant number.");
+    throw NonConstException(*expr);
+    return {};
   }
 
   if (num->value < 0) {
     logger_.error(num->pos(), "Array size cannot be negative");
+    throw NegativeIntegerException(*num);
+    return {};
   }
 
   auto array_type = std::make_unique<ArrayTypeNode>(pos, std::move(num), type);
@@ -173,6 +177,10 @@ SemanticChecker::onIdentExpression(const FilePos pos,
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
+    return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
+                                                 std::move(selectors), type);
+  } catch (const std::exception &e) {
+    logger_.error(pos, e.what());
     return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
                                                  std::move(selectors), type);
   }
@@ -456,7 +464,12 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         value = left_number->value / right_number->value;
         break;
       case BinaryOpType::mod:
-        value = left_number->value % right_number->value;
+        value = left_number->value -
+                right_number->value *
+                    floor(float(left_number->value) / right_number->value);
+
+        if (value < 0)
+          value -= right_number->value;
         break;
       default:
         logger_.error(pos, "INTERNAL ERROR");

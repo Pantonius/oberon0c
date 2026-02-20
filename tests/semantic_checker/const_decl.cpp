@@ -31,26 +31,6 @@ TEST_CASE("Sema Const Declaration", "[sema][const_decl]") {
     REQUIRE(const_decl_number->value == number);
   }
 
-  SECTION("Foldable expression") {
-    auto num_a = 20;
-    auto num_b = 33;
-    auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
-        BinaryOpType::plus,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
-    auto const_decl = sema.onConst(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "foldable"),
-        std::move(binary_expr));
-
-    REQUIRE(const_decl->expression->getNodeType() == NodeType::number);
-    auto const_decl_number = dynamic_cast<const NumberExpressionNode *>(
-        const_decl->expression.get());
-    REQUIRE(const_decl_number->value == num_a + num_b);
-  }
-
   SECTION("Non-constant expression") {
     vector<unique_ptr<IdentNode>> var_idents;
     var_idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "non"));

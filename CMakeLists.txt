@@ -120,6 +120,8 @@ set(TEST_SOURCES
   tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
   tests/semantic_checker/const_decl.cpp
+  tests/semantic_checker/expression.cpp
+  tests/semantic_checker/type.cpp
   tests/code_gen/code_gen_tests.cpp
 )
 
