@@ -270,7 +270,16 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   builder_->CreateRet(builder_->getInt32(0));
 }
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
-void CodeGenBuilder::visit(VarDeclarationNode &) {}
+void CodeGenBuilder::visit(VarDeclarationNode &var) {
+  const auto layout = module_.getDataLayout();
+  llvm::Type *type = getLLVMType(var.type);
+
+  auto *alloc = builder_->CreateAlloca(type, nullptr, var.ident->value);
+  alloc->setAlignment(layout.getABITypeAlign(type));
+
+  // associate var with memory area for any exprs that need latest value
+  values_[&var] = alloc;
+}
 void CodeGenBuilder::visit(TypeDeclarationNode &) {}
 void CodeGenBuilder::visit(ParamDeclarationNode &) {}
 
@@ -304,9 +313,8 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
       llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
   builder_->SetInsertPoint(entry);
 
-  const auto layout = module_.getDataLayout();
-
   // allocate space for params
+  const auto layout = module_.getDataLayout();
   llvm::Function::arg_iterator curr_arg = func->arg_begin();
   for (auto &param : proc_type->formal_parameters) {
     auto *param_type =
@@ -325,15 +333,8 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   }
 
   // allocate space for vars
-  for (size_t i = 0; i < proc.get_vars()->size(); i++) {
-    const auto &var = proc.get_vars()->at(i);
-    llvm::Type *type = getLLVMType(var->type);
-
-    auto *alloc = builder_->CreateAlloca(type, nullptr, var->ident->value);
-    alloc->setAlignment(layout.getABITypeAlign(type));
-
-    // associate var with memory area for any exprs that need latest value
-    values_[var.get()] = alloc;
+  for (auto &var : *proc.get_vars()) {
+    var->accept(*this);
   }
 
   // TODO body statements
