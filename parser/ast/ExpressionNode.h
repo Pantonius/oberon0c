@@ -18,6 +18,8 @@ using std::unique_ptr;
 using std::variant;
 using std::vector;
 
+class DeclarationNode;
+
 class ExpressionNode : public Node {
 private:
 public:
@@ -63,7 +65,9 @@ public:
 
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
+
 enum class UnaryOpType { plus, minus, u_not };
+
 std::ostream &operator<<(std::ostream &, const UnaryOpType &);
 
 const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
@@ -93,9 +97,9 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      TypeNode *type_node, const DeclarationNode *ref)
+                      const DeclarationNode *decl, TypeNode *type_node)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
-        ident(std::move(ident)), selectors(std::move(selectors)), ref(ref) {}
+        ident(std::move(ident)), selectors(std::move(selectors)), decl(decl) {}
   ~IdentExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
@@ -104,7 +108,7 @@ public:
 
   const unique_ptr<IdentNode> ident;
   vector<unique_ptr<SelectorNode>> selectors;
-  const DeclarationNode *ref;
+  const DeclarationNode *decl;
 };
 
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
@@ -117,7 +121,7 @@ public:
   const T value;
 };
 
-class NumberExpressionNode final : public LiteralExpressionNode<int64_t> {
+class NumberExpressionNode final : public LiteralExpressionNode<int32_t> {
 public:
   NumberExpressionNode(const FilePos pos, int number, TypeNode *type_node)
       : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}

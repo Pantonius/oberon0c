@@ -1,6 +1,7 @@
 #include "CodeGen.h"
 #include "global.h"
 #include "parser/ast/ExpressionNode.h"
+#include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
@@ -23,6 +24,7 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
+#include <stdexcept>
 
 std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
@@ -185,7 +187,7 @@ TypeNode *CodeGenBuilder::traverse_selectors(
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  auto ltype = assignment.ident_expr->ref->type;
+  auto ltype = assignment.ident_expr->decl->type;
   auto rtype = assignment.expression->type;
 
   assignment.ident_expr->accept(*this);
@@ -340,15 +342,20 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   llvm::verifyFunction(*func, &llvm::errs());
 }
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
-  value_ = values_[ident_expr.ref];
+  try {
+    value_ = values_.at(ident_expr.decl);
 
-  if (ident_expr.selectors.size() > 0) {
-    auto type = traverse_selectors(ident_expr.ref, ident_expr.selectors.begin(),
-                                   ident_expr.selectors.end());
+    if (ident_expr.selectors.size() > 0) {
+      auto type =
+          traverse_selectors(ident_expr.decl, ident_expr.selectors.begin(),
+                             ident_expr.selectors.end());
 
-    if (peekRefCtx()) {
-      value_ = builder_->CreateLoad(getLLVMType(type), value_);
+      if (peekRefCtx()) {
+        value_ = builder_->CreateLoad(getLLVMType(type), value_);
+      }
     }
+  } catch (std::out_of_range &e) {
+    logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
   }
 }
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
@@ -420,10 +427,25 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
     }
   }
 }
-void CodeGenBuilder::visit(UnaryExpressionNode &) {}
+void CodeGenBuilder::visit(UnaryExpressionNode &unary_expr) {
+  unary_expr.expression->accept(*this);
+  auto value = value_;
+  switch (unary_expr.op) {
+  case UnaryOpType::plus:
+    break;
+  case UnaryOpType::minus:
+    value_ = builder_->CreateNeg(value);
+    break;
+  case UnaryOpType::u_not:
+    value_ = builder_->CreateNot(value);
+    break;
+  default:
+    logger_.error(unary_expr.pos(), "UNKNOWN OPERATOR");
+    exit(EXIT_FAILURE);
+  }
+}
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
-  value_ = llvm::ConstantInt::getSigned(builder_->getInt32Ty(),
-                                        static_cast<int32_t>(number.value));
+  value_ = builder_->getInt32(number.value);
 }
 void CodeGenBuilder::visit(BooleanExpressionNode &boolean) {
   value_ = builder_->getInt1(boolean.value);

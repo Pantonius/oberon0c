@@ -54,7 +54,11 @@ test:
   stage: test
   needs: ["build:test"]
   script:
+    - mkdir tests/results
     - ctest --test-dir build
   artifacts:
+    paths:
+      - build/Testing/Temporary/LastTest.log
     reports:
-      junit: tests/result-junit.xml
+      junit: tests/results/*.xml
+    when: always
