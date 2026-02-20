@@ -87,3 +87,34 @@ private:
   SymbolTable symbol_table_;
   ASTContext context_;
 };
+
+class NonConstException : public std::exception {
+private:
+  const Node &node_;
+  const string msg_;
+
+public:
+  NonConstException(const Node &node)
+      : node_(node),
+        msg_("Non-constant value in const declaration:" + to_string(&node)) {}
+  NonConstException(const Node &node, const string msg)
+      : node_(node), msg_(msg) {}
+
+  const char *what() const noexcept override { return msg_.c_str(); }
+  const Node &get_node() const noexcept { return node_; }
+};
+
+class UndeclaredArgumentException : public std::exception {
+private:
+  const string name_;
+  const string msg_;
+
+public:
+  UndeclaredArgumentException(const string name)
+      : name_(name), msg_("Undeclared argument: " + name) {}
+  UndeclaredArgumentException(const string name, const string msg)
+      : name_(name), msg_(msg) {}
+
+  const char *what() const noexcept override { return msg_.c_str(); }
+  const string get_name() const noexcept { return name_; }
+};

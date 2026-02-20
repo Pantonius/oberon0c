@@ -116,10 +116,10 @@ enable_testing()
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 set(TEST_SOURCES
-  tests/declaration_validity/const_decl.cpp
   tests/parser/parser_tests.cpp
   tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
+  tests/semantic_checker/const_decl.cpp
   tests/code_gen/code_gen_tests.cpp
 )
 

@@ -6,6 +6,7 @@
 #include "global.h"
 #include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <utility>
@@ -32,16 +33,17 @@ unique_ptr<ConstDeclarationNode>
 SemanticChecker::onConst(const FilePos pos, unique_ptr<IdentNode> ident,
                          unique_ptr<ExpressionNode> expr) {
 
-  // TODO CHECK expr is constant? type of that constant?
   if (!expr) {
-    logger_.error(pos, "undefined constant value: " + ident->value);
-    exit(EXIT_FAILURE);
+    logger_.error(pos, "Undefined constant value: " + ident->value);
+    throw UndeclaredArgumentException(ident->value);
+    return {};
   }
 
   if (!expr->is_const()) {
     logger_.error(pos,
                   "Non-constant value in const declaration: " + ident->value);
-    exit(EXIT_FAILURE);
+    throw NonConstException(*expr);
+    return {};
   }
 
   auto type = expr->type;
