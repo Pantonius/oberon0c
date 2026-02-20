@@ -88,14 +88,14 @@ public:
   const unique_ptr<ExpressionNode> expression;
 };
 
-// TODO: think about merge with IdentNode
+class DeclarationNode;
 class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      TypeNode *type_node)
+                      TypeNode *type_node, const DeclarationNode *ref)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
-        ident(std::move(ident)), selectors(std::move(selectors)) {}
+        ident(std::move(ident)), selectors(std::move(selectors)), ref(ref) {}
   ~IdentExpressionNode() override = default;
 
   void accept(NodeVisitor &visitor) final;
@@ -103,7 +103,8 @@ public:
   bool is_const() const final;
 
   const unique_ptr<IdentNode> ident;
-  const vector<unique_ptr<SelectorNode>> selectors;
+  vector<unique_ptr<SelectorNode>> selectors;
+  const DeclarationNode *ref;
 };
 
 template <typename T> class LiteralExpressionNode : public ExpressionNode {

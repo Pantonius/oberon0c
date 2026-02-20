@@ -4,6 +4,7 @@
 #include "ast/ModuleNode.h"
 #include "ast/TypeNode.h"
 #include "global.h"
+#include "parser/SymbolTable.h"
 #include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
 #include <cstdlib>
@@ -170,8 +171,8 @@ SemanticChecker::onIdentExpression(const FilePos pos,
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
-    return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
-                                                 std::move(selectors), type);
+    return std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), type, nullptr);
   }
 
   // lookup ident declaration
@@ -201,8 +202,8 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   } else if (node->getNodeType() == NodeType::var_declaration ||
              node->getNodeType() == NodeType::param_declaration) {
 
-    return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
-                                                 std::move(selectors), type);
+    return std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), type, node);
   } else {
     logger_.error(pos, "Identifier is not a constant or variable.");
     exit(EXIT_FAILURE);
@@ -553,18 +554,24 @@ SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
   try {
     lhs_type = symbol_table_.lookup_type(*ident, selectors);
     if (auto opt_decl = symbol_table_.lookup(*ident)) {
-      decl = *opt_decl;
+      if ((*opt_decl)->getNodeType() == NodeType::var_declaration ||
+          (*opt_decl)->getNodeType() == NodeType::param_declaration) {
+        decl = *opt_decl;
+      } else {
+        throw WrongNodeTypeException(
+            *ident, "VarDeclarationNode / ParamDeclarationNode");
+      }
     }
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     auto ident_expr = std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), lhs_type);
+        pos, std::move(ident), std::move(selectors), lhs_type, decl);
     return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
-                                            std::move(expr), decl);
+                                            std::move(expr));
   }
 
   auto ident_expr = std::make_unique<IdentExpressionNode>(
-      pos, std::move(ident), std::move(selectors), lhs_type);
+      pos, std::move(ident), std::move(selectors), lhs_type, decl);
   if (ident_expr->type == nullptr) {
     logger_.error(pos, "'" + to_string(ident_expr.get()) +
                            "' has no associated type");
@@ -579,7 +586,7 @@ SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
   }
 
   return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
-                                          std::move(expr), decl);
+                                          std::move(expr));
 }
 
 unique_ptr<ArrayIndexNode>

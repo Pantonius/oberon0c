@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 #include "global.h"
+#include "parser/ast/ExpressionNode.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
@@ -150,28 +151,51 @@ TypeNode *CodeGenBuilder::traverse_selectors(
     const vector<unique_ptr<SelectorNode>>::iterator end) {
 
   TypeNode *curr_type = ref->type;
+  llvm::Value *value = value_;
+
   for (auto it = start; it != end; it++) {
     const auto sel = it->get();
     if (sel->getNodeType() == NodeType::array_selector) {
+      auto array_index = dynamic_cast<ArrayIndexNode *>(sel);
       auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
 
+      // visit index expression
+      array_index->expression->accept(*this);
+
+      // value_ is now the llvm::Value of the index expression
+      value =
+          builder_->CreateInBoundsGEP(getLLVMType(curr_type), value, {value_});
       curr_type = array_type->type;
     } else if (sel->getNodeType() == NodeType::record_selector) {
+      auto record_selector = dynamic_cast<RecordFieldNode *>(sel);
+      auto record_type = dynamic_cast<RecordTypeNode *>(curr_type);
+
+      // find the field index referred to by the selector ident
+      auto field_index = record_type->find_field_index(*record_selector->ident);
+
+      value = builder_->CreateInBoundsGEP(getLLVMType(curr_type), value,
+                                          {builder_->getInt32(field_index)});
+      curr_type = record_type->field_lists.at(field_index)->type;
     }
   }
+
+  value_ = value;
+
+  return curr_type;
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  auto ltype = assignment.ref->type;
+  auto ltype = assignment.ident_expr->ref->type;
   auto rtype = assignment.expression->type;
 
-  llvm::Value *lvalue;
-  if (assignment.ident_expr->selectors.size() > 0) {
+  assignment.ident_expr->accept(*this);
+  llvm::Value *lvalue = value_;
 
-  } else {
-    llvm::Value *lvalue = values_[assignment.ref];
-  }
+  // only want a ptr value if not structured, because structured values (arrays
+  // and records) are going to be copied
+  pushRefCtx(!rtype->is_structured());
   assignment.expression->accept(*this);
+  popRefCtx();
   llvm::Value *rvalue = value_;
 
   if (rtype->getNodeType() == NodeType::array_type) {
@@ -315,7 +339,18 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
-void CodeGenBuilder::visit(IdentExpressionNode &) {}
+void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
+  value_ = values_[ident_expr.ref];
+
+  if (ident_expr.selectors.size() > 0) {
+    auto type = traverse_selectors(ident_expr.ref, ident_expr.selectors.begin(),
+                                   ident_expr.selectors.end());
+
+    if (peekRefCtx()) {
+      value_ = builder_->CreateLoad(getLLVMType(type), value_);
+    }
+  }
+}
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
   const auto left_type = binary_expr.left_expression->type;
   const auto right_type = binary_expr.right_expression->type;
@@ -387,10 +422,12 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
 }
 void CodeGenBuilder::visit(UnaryExpressionNode &) {}
 void CodeGenBuilder::visit(NumberExpressionNode &number) {
-  value_ = value_ = llvm::ConstantInt::getSigned(
-      builder_->getInt32Ty(), static_cast<int32_t>(number.value));
+  value_ = llvm::ConstantInt::getSigned(builder_->getInt32Ty(),
+                                        static_cast<int32_t>(number.value));
 }
-void CodeGenBuilder::visit(BooleanExpressionNode &) {}
+void CodeGenBuilder::visit(BooleanExpressionNode &boolean) {
+  value_ = builder_->getInt1(boolean.value);
+}
 void CodeGenBuilder::visit(ProcedureTypeNode &) {
 } // TODO probably not of interest for now
 void CodeGenBuilder::visit(RecordTypeNode &record_type) {
@@ -421,11 +458,20 @@ llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
   } else if (types_[type]) {
     return types_[type];
   } else if (type == ASTContext::INTEGER.get()) {
-    return builder_->getInt64Ty();
+    return builder_->getInt32Ty();
   } else if (type == ASTContext::BOOLEAN.get()) {
     return builder_->getInt1Ty();
   }
 
   type->accept(*this);
   return types_[type];
+}
+
+void CodeGenBuilder::pushRefCtx(const bool ref_status) {
+  ref_ctx_.push(ref_status);
+}
+
+void CodeGenBuilder::popRefCtx() { return ref_ctx_.pop(); }
+bool CodeGenBuilder::peekRefCtx() const {
+  return ref_ctx_.empty() ? false : ref_ctx_.top();
 }

@@ -19,11 +19,9 @@ class AssignmentNode final : public StatementNode {
 public:
   explicit AssignmentNode(const FilePos pos,
                           unique_ptr<IdentExpressionNode> ident_expr,
-                          unique_ptr<ExpressionNode> expression,
-                          const DeclarationNode *ref)
+                          unique_ptr<ExpressionNode> expression)
       : StatementNode(NodeType::assignment, pos),
-        ident_expr(std::move(ident_expr)), expression(std::move(expression)),
-        ref(ref) {}
+        ident_expr(std::move(ident_expr)), expression(std::move(expression)) {}
   ~AssignmentNode() override = default;
 
   void accept(NodeVisitor &) final;
@@ -31,7 +29,6 @@ public:
 
   const unique_ptr<IdentExpressionNode> ident_expr;
   const unique_ptr<ExpressionNode> expression;
-  const DeclarationNode *ref;
 };
 
 class ElsIfStatementNode final : public StatementNode {

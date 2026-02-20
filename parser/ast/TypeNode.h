@@ -23,6 +23,8 @@ public:
   ~TypeNode() override = default;
 
   bool is_equivalent(TypeNode *) const;
+
+  virtual bool is_structured() const = 0;
 };
 
 class IdentTypeNode final : public TypeNode {
@@ -33,6 +35,8 @@ public:
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
+
+  bool is_structured() const override { return false; };
 
   const unique_ptr<IdentNode> ident;
 };
@@ -47,6 +51,8 @@ public:
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
+
+  bool is_structured() const final { return true; };
 
   const unique_ptr<NumberExpressionNode> expression;
   TypeNode *type;
@@ -79,7 +85,10 @@ public:
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
 
+  bool is_structured() const final { return true; };
+
   const VarDeclarationNode *find_field(const IdentNode &ident) const;
+  size_t find_field_index(const IdentNode &ident) const;
 
   const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
 };
@@ -109,6 +118,8 @@ public:
 
   void accept(NodeVisitor &visitor) final;
   void print(std::ostream &stream) const final;
+
+  bool is_structured() const final { return false; };
 
   vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
 };
