@@ -2,6 +2,7 @@
 #include "global.h"
 #include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
@@ -143,11 +144,66 @@ void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
       array_type.expression->value); // TODO check signedness
   types_[&array_type] = type;
 }
-void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  // get lvalue
-  // get rvalue
 
-  // builder_->CreateStore(
+TypeNode *CodeGenBuilder::traverse_selectors(
+    const DeclarationNode *ref,
+    const vector<unique_ptr<SelectorNode>>::iterator start,
+    const vector<unique_ptr<SelectorNode>>::iterator end) {
+
+  TypeNode *curr_type = ref->type;
+  for (auto it = start; it != end; it++) {
+    const auto sel = it->get();
+    if (sel->getNodeType() == NodeType::array_selector) {
+      auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
+
+      curr_type = array_type->type;
+    } else if (sel->getNodeType() == NodeType::record_selector) {
+    }
+  }
+}
+
+void CodeGenBuilder::visit(AssignmentNode &assignment) {
+  auto ltype = assignment.ref->type;
+  auto rtype = assignment.expression->type;
+
+  llvm::Value *lvalue;
+  if (assignment.ident_expr->selectors.size() > 0) {
+
+  } else {
+    llvm::Value *lvalue = values_[assignment.ref];
+  }
+  assignment.expression->accept(*this);
+  llvm::Value *rvalue = value_;
+
+  if (rtype->getNodeType() == NodeType::array_type) {
+    // ARRAY
+    // copy that array into lhs
+    auto larray = dynamic_cast<const ArrayTypeNode *>(ltype);
+    auto rarray = dynamic_cast<const ArrayTypeNode *>(rtype);
+
+    // the copy length is the smaller of the two (don't want to copy dead space)
+    auto copy_length =
+        std::min(larray->expression->value, rarray->expression->value);
+
+    auto layout = module_.getDataLayout();
+    // needed allocation size for given llvm type
+    auto elem_size = layout.getTypeAllocSize(getLLVMType(larray->type));
+
+    auto size = builder_->getInt64(copy_length * elem_size);
+
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
+  } else if (rtype->getNodeType() == NodeType::record_type) {
+    // RECORD
+    auto layout = module_.getDataLayout();
+    // needed size is the entire rhs
+    auto size = builder_->getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
+
+    // copy that record into lhs
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
+  } else {
+    // straight up variable assignment to value: i := 4
+    value_ = builder_->CreateStore(rvalue, lvalue);
+  }
 }
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
@@ -192,6 +248,7 @@ void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &) {}
 void CodeGenBuilder::visit(TypeDeclarationNode &) {}
 void CodeGenBuilder::visit(ParamDeclarationNode &) {}
+
 void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
 void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   auto proc_type = dynamic_cast<ProcedureTypeNode *>(proc.type);
@@ -206,18 +263,15 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   }
 
   vector<llvm::Type *> param_types;
-  bool has_by_ref = false;
   for (auto &param : proc_type->formal_parameters) {
     auto param_type = getLLVMType(param->type);
     param_types.push_back(
         param->by_reference ? llvm::PointerType::get(builder_->getContext(), 0)
                             : param_type);
-    if (param->by_reference)
-      has_by_ref = true;
   }
   // NOTE as of now, there are no return types; all procedures return void
   auto fun_type =
-      llvm::FunctionType::get(builder_->getVoidTy(), param_types, has_by_ref);
+      llvm::FunctionType::get(builder_->getVoidTy(), param_types, false);
 
   auto callee = module_.getOrInsertFunction(proc.ident->value, fun_type);
   const auto func = cast<llvm::Function>(callee.getCallee());
@@ -264,53 +318,82 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
 }
 void CodeGenBuilder::visit(IdentExpressionNode &) {}
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
-  // const auto left_type = binary_expr.left_expression->type;
-  // const auto right_type = binary_expr.right_expression->type;
-  //
-  // binary_expr.left_expression->accept(*this);
-  // const auto left_value = value_;
-  // binary_expr.right_expression->accept(*this);
-  // const auto right_value = value_;
-  //
-  // // TODO
-  // if (left_type == ASTContext::INTEGER.get() &&
-  //     right_type == ASTContext::INTEGER.get()) {
-  //   switch (binary_expr.op) {
-  //   case BinaryOpType::plus:
-  //     break;
-  //   case BinaryOpType::minus:
-  //     break;
-  //   case BinaryOpType::times:
-  //     break;
-  //   case BinaryOpType::divide:
-  //   case BinaryOpType::div:
-  //     break;
-  //   case BinaryOpType::mod:
-  //     break;
-  //   case BinaryOpType::eq:
-  //     break;
-  //   case BinaryOpType::neq:
-  //     break;
-  //   case BinaryOpType::lt:
-  //     break;
-  //   case BinaryOpType::leq:
-  //     break;
-  //   case BinaryOpType::gt:
-  //     break;
-  //   case BinaryOpType::geq:
-  //     break;
-  //   default:
-  //     logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
-  //     exit(EXIT_FAILURE);
-  //   }
-  // } else if (left_type == ASTContext::BOOLEAN.get() &&
-  //            right_type == ASTContext::BOOLEAN.get()) {
-  // }
+  const auto left_type = binary_expr.left_expression->type;
+  const auto right_type = binary_expr.right_expression->type;
+
+  binary_expr.left_expression->accept(*this);
+  const auto left_value = value_;
+  binary_expr.right_expression->accept(*this);
+  const auto right_value = value_;
+
+  // TODO
+  if (left_type == ASTContext::INTEGER.get() &&
+      right_type == ASTContext::INTEGER.get()) {
+    switch (binary_expr.op) {
+    case BinaryOpType::plus:
+      value_ = builder_->CreateAdd(left_value, right_value);
+      break;
+    case BinaryOpType::minus:
+      value_ = builder_->CreateSub(left_value, right_value);
+      break;
+    case BinaryOpType::times:
+      value_ = builder_->CreateMul(left_value, right_value);
+      break;
+    case BinaryOpType::divide:
+    case BinaryOpType::div:
+      value_ = builder_->CreateSDiv(left_value, right_value);
+      break;
+    case BinaryOpType::mod:
+      // a mod n = a - n * floor(a/n)
+      // floor(x) = fptosi(x)
+      value_ = builder_->CreateSDiv(left_value, right_value);
+      value_ = builder_->CreateFPToSI(value_, left_value->getType());
+      value_ = builder_->CreateMul(value_, right_value);
+      value_ = builder_->CreateSub(value_, left_value);
+      break;
+    case BinaryOpType::eq:
+      value_ = builder_->CreateICmpEQ(left_value, right_value);
+      break;
+    case BinaryOpType::neq:
+      value_ = builder_->CreateICmpNE(left_value, right_value);
+      break;
+    case BinaryOpType::lt:
+      value_ = builder_->CreateICmpSLT(left_value, right_value);
+      break;
+    case BinaryOpType::leq:
+      value_ = builder_->CreateICmpSLE(left_value, right_value);
+      break;
+    case BinaryOpType::gt:
+      value_ = builder_->CreateICmpSGT(left_value, right_value);
+      break;
+    case BinaryOpType::geq:
+      value_ = builder_->CreateICmpSGE(left_value, right_value);
+      break;
+    default:
+      logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
+      exit(EXIT_FAILURE);
+    }
+  } else if (left_type == ASTContext::BOOLEAN.get() &&
+             right_type == ASTContext::BOOLEAN.get()) {
+    switch (binary_expr.op) {
+    case BinaryOpType::b_and:
+      break;
+    case BinaryOpType::b_or:
+      break;
+    default:
+      logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
+      exit(EXIT_FAILURE);
+    }
+  }
 }
 void CodeGenBuilder::visit(UnaryExpressionNode &) {}
-void CodeGenBuilder::visit(NumberExpressionNode &) {}
-void CodeGenBuilder::visit(BooleanExpressionNode &) {}
-void CodeGenBuilder::visit(ProcedureTypeNode &procedure_type) {
+void CodeGenBuilder::visit(NumberExpressionNode &number) {
+  value_ = builder_->getInt32(number.value);
+}
+void CodeGenBuilder::visit(BooleanExpressionNode &boolean) {
+  value_ = builder_->getInt1(boolean.value);
+}
+void CodeGenBuilder::visit(ProcedureTypeNode &) {
 } // TODO probably not of interest for now
 void CodeGenBuilder::visit(RecordTypeNode &record_type) {
 

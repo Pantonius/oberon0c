@@ -120,6 +120,7 @@ set(TEST_SOURCES
   tests/parser/parser_tests.cpp
   tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
+  tests/code_gen/code_gen_tests.cpp
 )
 
 # Configure Unit Tests
@@ -131,9 +132,13 @@ target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs}
 set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
 if ($ENV{CI})
   message(STATUS "Detected CI environment")
-  set(CATCH_REPORTER "JUnit::out=result-junit.xml")
+  set(CATCH_REPORTER "JUnit")
 endif()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests REPORTER ${CATCH_REPORTER})
+catch_discover_tests(oberon0c_tests
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+          REPORTER ${CATCH_REPORTER}
+          OUTPUT_DIR "results"
+          OUTPUT_SUFFIX ".xml")

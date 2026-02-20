@@ -26,6 +26,7 @@ using std::map;
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
 class CodeGenBuilder final : private NodeVisitor {
+  friend class CodeGenBuilderTest;
 
 public:
   CodeGenBuilder(Logger &logger, llvm::Module &mod)
@@ -72,6 +73,10 @@ private:
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);
+  TypeNode *
+  traverse_selectors(const DeclarationNode *ref,
+                     const vector<unique_ptr<SelectorNode>>::iterator start,
+                     const vector<unique_ptr<SelectorNode>>::iterator end);
 };
 
 class CodeGen final {
