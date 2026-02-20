@@ -3,9 +3,13 @@
 #include "parser/ast/ExpressionNode.h"
 #include "util/Logger.h"
 #include <optional>
+#include <ostream>
 
 void IdentTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void IdentTypeNode::print(ostream &stream) const { ident->print(stream); }
+
+void StdTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void StdTypeNode::print(std::ostream &stream) const { ident->print(stream); }
 
 void ArrayTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ArrayTypeNode::print(ostream &stream) const {

@@ -84,10 +84,11 @@ unique_ptr<TypeDeclarationNode> SemanticChecker::onTypeDeclaration(
 
 TypeNode *SemanticChecker::onIdentType(const FilePos pos,
                                        unique_ptr<IdentNode> ident) {
-  if (ident->value == ASTContext::INTEGER.get_name())
-    return ASTContext::INTEGER.get();
-  if (ident->value == context_.BOOLEAN.get_name())
-    return context_.BOOLEAN.get();
+  try {
+    auto std_type = ASTContext::std_types.at(ident->value);
+    return std_type;
+  } catch (...) {
+  }
 
   auto type_decl_ = symbol_table_.lookup(*ident);
 
@@ -351,11 +352,10 @@ unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
       if (op == UnaryOpType::u_not)
         value = !boolean->value;
 
-      return std::make_unique<NumberExpressionNode>(pos, value,
-                                                    ASTContext::INTEGER.get());
+      return std::make_unique<NumberExpressionNode>(pos, value);
     }
 
-    type = ASTContext::BOOLEAN.get();
+    type = ASTContext::BOOLEAN;
     break;
   case UnaryOpType::plus:
   case UnaryOpType::minus:
@@ -369,11 +369,10 @@ unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
       if (op == UnaryOpType::minus)
         value = -number->value;
 
-      return std::make_unique<NumberExpressionNode>(pos, value,
-                                                    ASTContext::INTEGER.get());
+      return std::make_unique<NumberExpressionNode>(pos, value);
     }
 
-    type = ASTContext::INTEGER.get();
+    type = ASTContext::INTEGER;
     break;
   default:
     logger_.error(expr->pos(), "Unknown operation");
@@ -417,11 +416,10 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
       else
         value = left_bool->value | right_bool->value;
 
-      return std::make_unique<BooleanExpressionNode>(pos, value,
-                                                     ASTContext::BOOLEAN.get());
+      return std::make_unique<BooleanExpressionNode>(pos, value);
     }
 
-    type = ASTContext::BOOLEAN.get();
+    type = ASTContext::BOOLEAN;
     break;
   case BinaryOpType::plus:
   case BinaryOpType::minus:
@@ -446,7 +444,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         break;
       case BinaryOpType::minus:
         value = left_number->value - right_number->value;
-        type = ASTContext::INTEGER.get();
+        type = ASTContext::INTEGER;
         break;
       case BinaryOpType::times:
         value = left_number->value * right_number->value;
@@ -463,11 +461,10 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         exit(EXIT_FAILURE);
       }
 
-      return std::make_unique<NumberExpressionNode>(pos, value,
-                                                    ASTContext::INTEGER.get());
+      return std::make_unique<NumberExpressionNode>(pos, value);
     }
 
-    type = ASTContext::INTEGER.get();
+    type = ASTContext::INTEGER;
     break;
   default:
     if (left_expr->getNodeType() == NodeType::number &&
@@ -500,8 +497,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         logger_.error(pos, "INTERNAL ERROR");
         exit(EXIT_FAILURE);
       }
-      return std::make_unique<BooleanExpressionNode>(pos, value,
-                                                     ASTContext::BOOLEAN.get());
+      return std::make_unique<BooleanExpressionNode>(pos, value);
     } else if (left_expr->getNodeType() == NodeType::boolean &&
                right_expr->getNodeType() == NodeType::boolean) {
       auto left_boolean =
@@ -533,11 +529,10 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         logger_.error(pos, "INTERNAL ERROR");
         exit(EXIT_FAILURE);
       }
-      return std::make_unique<BooleanExpressionNode>(pos, value,
-                                                     ASTContext::BOOLEAN.get());
+      return std::make_unique<BooleanExpressionNode>(pos, value);
     }
 
-    type = ASTContext::BOOLEAN.get();
+    type = ASTContext::BOOLEAN;
     break;
   }
 
@@ -586,7 +581,7 @@ unique_ptr<ArrayIndexNode>
 SemanticChecker::onArrayIndex(const FilePos pos,
                               unique_ptr<ExpressionNode> expr_) {
 
-  if (expr_->type != ASTContext::INTEGER.get()) {
+  if (expr_->type != ASTContext::INTEGER) {
     logger_.error(pos, "Array index is not an INTEGER");
   }
   if (auto number_expr =
@@ -623,17 +618,17 @@ void SemanticChecker::expect_unique_within_scope(const IdentNode *ident,
 }
 
 void SemanticChecker::expect_bool(ExpressionNode *expr) {
-  if (expr->type != ASTContext::BOOLEAN.get()) {
+  if (expr->type != ASTContext::BOOLEAN) {
     logger_.error(expr->pos(), "Expression should be of type " +
-                                   ASTContext::BOOLEAN.get_name() + ".");
+                                   to_string(ASTContext::BOOLEAN) + ".");
     // exit(EXIT_FAILURE);
   }
 }
 
 void SemanticChecker::expect_number(ExpressionNode *expr) {
-  if (expr->type != ASTContext::INTEGER.get()) {
+  if (expr->type != ASTContext::INTEGER) {
     logger_.error(expr->pos(), "Expression should be of type " +
-                                   ASTContext::INTEGER.get_name() + ".");
+                                   to_string(ASTContext::INTEGER) + ".");
     // exit(EXIT_FAILURE);
   }
 }
@@ -642,7 +637,7 @@ template <typename L, typename T>
 unique_ptr<LiteralExpressionNode<T>>
 SemanticChecker::clone_literal(LiteralExpressionNode<T> *literal) {
   if (literal) {
-    return std::make_unique<L>(literal->pos(), literal->value, literal->type);
+    return std::make_unique<L>(literal->pos(), literal->value);
   }
 
   return nullptr;

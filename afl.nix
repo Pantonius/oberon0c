@@ -1,6 +1,7 @@
 {
   pkgs,
   lib,
+  oberon0c,
   writeShellScriptBin,
   makeWrapper,
 }:
@@ -18,14 +19,14 @@ pkgs.stdenv.mkDerivation rec {
     fileset = sourceFiles;
   };
 
-  buildInputs =
-    (import ./dependencies.nix {
-      inherit pkgs;
-    })
-    ++ [
-      makeWrapper
-      pkgs.aflplusplus
-    ];
+  inputsFrom = [
+    oberon0c
+  ];
+
+  buildInputs = [
+    makeWrapper
+    pkgs.aflplusplus
+  ];
 
   dontConfigure = true;
 

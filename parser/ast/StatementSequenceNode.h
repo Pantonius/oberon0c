@@ -16,7 +16,7 @@ public:
       : Node(NodeType::statement_sequence, pos), stmts(std::move(stmts)) {}
   ~StatementSequenceNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   vector<unique_ptr<StatementNode>> stmts;

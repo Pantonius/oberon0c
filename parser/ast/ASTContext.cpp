@@ -1,9 +1,23 @@
 #include "ASTContext.h"
 #include "TypeNode.h"
 #include "global.h"
+#include "parser/ast/IdentNode.h"
+#include <memory>
+#include <unordered_set>
 
-const StdType ASTContext::INTEGER = StdType("INTEGER");
-const StdType ASTContext::BOOLEAN = StdType("BOOLEAN");
+const std::unordered_map<std::string, StdTypeNode *const>
+    ASTContext::std_types = {
+        {"BOOLEAN",
+         new StdTypeNode(EMPTY_POS,
+                         std::make_unique<IdentNode>(EMPTY_POS, "BOOLEAN"),
+                         StdType::BOOLEAN)},
+        {"INTEGER",
+         new StdTypeNode(EMPTY_POS,
+                         std::make_unique<IdentNode>(EMPTY_POS, "INTEGER"),
+                         StdType::INTEGER)}};
+
+StdTypeNode *const ASTContext::BOOLEAN = ASTContext::std_types.at("BOOLEAN");
+StdTypeNode *const ASTContext::INTEGER = ASTContext::std_types.at("INTEGER");
 
 ModuleNode *ASTContext::get_module() { return module_.get(); }
 

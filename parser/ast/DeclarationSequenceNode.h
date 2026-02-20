@@ -14,26 +14,26 @@ class DeclarationNode : public Node {
 private:
 public:
   DeclarationNode(const NodeType &type, const FilePos pos,
-                  unique_ptr<IdentNode> ident, TypeNode *type_node)
+                  unique_ptr<IdentNode> ident, TypeNode *const type_node)
       : Node(type, pos), ident(std::move(ident)), type(type_node) {}
   ~DeclarationNode() override = default;
 
   const unique_ptr<IdentNode> ident;
-  TypeNode *type;
+  TypeNode *const type;
 };
 
 class ConstDeclarationNode final : public DeclarationNode {
 public:
   ConstDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                        unique_ptr<ExpressionNode> expression,
-                       TypeNode *type_node)
+                       TypeNode *const type_node)
       : DeclarationNode(NodeType::const_declaration, pos, std::move(ident),
                         type_node),
         expression(std::move(expression)) {}
   ~ConstDeclarationNode() final = default;
 
-  void accept(NodeVisitor &visitor) final;
-  void print(std::ostream &stream) const final;
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const override final;
 
   const unique_ptr<ExpressionNode> expression;
 };
@@ -41,25 +41,25 @@ public:
 class TypeDeclarationNode final : public DeclarationNode {
 public:
   TypeDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
-                      TypeNode *type_node)
+                      TypeNode *const type_node)
       : DeclarationNode(NodeType::type_declaration, pos, std::move(ident),
                         type_node) {}
   ~TypeDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
-  void print(std::ostream &stream) const final;
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const override final;
 };
 
 class VarDeclarationNode final : public DeclarationNode {
 public:
   VarDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
-                     TypeNode *type_node)
+                     TypeNode *const type_node)
       : DeclarationNode(NodeType::var_declaration, pos, std::move(ident),
                         type_node) {}
   ~VarDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
-  void print(std::ostream &stream) const final;
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const override final;
 };
 
 class ProtoParam {
@@ -70,7 +70,7 @@ public:
 class ParamDeclarationNode final : public DeclarationNode {
 public:
   ParamDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
-                       bool by_reference, TypeNode *type_node)
+                       bool by_reference, TypeNode *const type_node)
       : DeclarationNode(NodeType::param_declaration, pos, std::move(ident),
                         type_node),
         by_reference(by_reference) {}
@@ -115,13 +115,13 @@ private:
 
 public:
   ProcedureDeclarationNode(const FilePos pos, unique_ptr<IdentNode> proc_name,
-                           ProcedureTypeNode *type_node)
+                           ProcedureTypeNode *const type_node)
       : DeclarationNode(NodeType::procedure_declaration, pos,
                         std::move(proc_name), type_node) {}
   ~ProcedureDeclarationNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
-  void print(std::ostream &stream) const final;
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const override final;
 
   // ProcedureHeading
 

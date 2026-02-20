@@ -21,6 +21,8 @@ struct FilePos {
   string fileName;
   int lineNo, charNo;
   streampos offset;
+
+  bool operator==(const FilePos &) const = default;
 };
 static const FilePos EMPTY_POS = {"", 0, 0, 0};
 
