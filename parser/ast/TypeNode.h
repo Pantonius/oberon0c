@@ -26,6 +26,8 @@ public:
   ~TypeNode() override = default;
 
   bool operator==(const TypeNode &) const = default;
+
+  virtual bool isPrimitiveType() const { return false; }
 };
 
 class IdentTypeNode final : public TypeNode {
@@ -36,8 +38,6 @@ public:
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
-
-  bool is_structured() const override { return false; };
 
   const unique_ptr<IdentNode> ident;
 };
@@ -51,6 +51,8 @@ public:
   ~StdTypeNode() override = default;
 
   bool operator==(const StdTypeNode &) const = default;
+
+  bool isPrimitiveType() const override { return true; }
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
@@ -75,8 +77,6 @@ public:
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
-
-  bool is_structured() const final { return true; };
 
   const unique_ptr<NumberExpressionNode> expression;
   TypeNode *type;
@@ -109,8 +109,6 @@ public:
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
-  bool is_structured() const final { return true; };
-
   const VarDeclarationNode *find_field(const IdentNode &ident) const;
   size_t find_field_index(const IdentNode &ident) const;
 
@@ -142,8 +140,6 @@ public:
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
-
-  bool is_structured() const final { return false; };
 
   vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
 };

@@ -95,7 +95,7 @@ protected:
 
     auto ident = make_ident("test");
     IdentExpressionNode ident_expr(EMPTY_POS, std::move(ident), {}, &var_decl,
-                                   ASTContext::INTEGER);
+                                   ASTContext::INTEGER, false);
 
     ident_expr.accept(builder);
   }

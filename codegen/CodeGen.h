@@ -24,6 +24,7 @@
 #include <llvm/TargetParser/Host.h>
 #include <memory>
 #include <stack>
+#include <vector>
 
 using std::map;
 using std::stack;
@@ -80,10 +81,8 @@ private:
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);
-  TypeNode *
-  traverse_selectors(const DeclarationNode *ref,
-                     const vector<unique_ptr<SelectorNode>>::iterator start,
-                     const vector<unique_ptr<SelectorNode>>::iterator end);
+  TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,
+                         const vector<unique_ptr<SelectorNode>> &selectors);
   void init_values(llvm::Value *, llvm::Type *);
 };
 

@@ -178,7 +178,7 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), decl, type);
+        pos, std::move(ident), std::move(selectors), decl, type, false);
   }
 
   // lookup ident declaration
@@ -209,7 +209,7 @@ SemanticChecker::onIdentExpression(const FilePos pos,
              node->getNodeType() == NodeType::param_declaration) {
 
     return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), decl, type);
+        pos, std::move(ident), std::move(selectors), decl, type, false);
   } else {
     logger_.error(pos, "Identifier is not a constant or variable.");
     exit(EXIT_FAILURE);
@@ -565,13 +565,13 @@ SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     auto ident_expr = std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), decl, lhs_type);
+        pos, std::move(ident), std::move(selectors), decl, lhs_type, true);
     return std::make_unique<AssignmentNode>(pos, std::move(ident_expr),
                                             std::move(expr));
   }
 
   auto ident_expr = std::make_unique<IdentExpressionNode>(
-      pos, std::move(ident), std::move(selectors), decl, lhs_type);
+      pos, std::move(ident), std::move(selectors), decl, lhs_type, true);
   if (ident_expr->type == nullptr) {
     logger_.error(pos, "'" + to_string(ident_expr.get()) +
                            "' has no associated type");

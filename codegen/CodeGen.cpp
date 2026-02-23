@@ -18,6 +18,7 @@
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/Casting.h>
@@ -30,6 +31,7 @@
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
@@ -162,6 +164,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   }
 
   for (auto &var : *module_node.get_vars()) {
+    var->type->accept(*this);
     auto type = getLLVMType(var->type);
     auto value = new llvm::GlobalVariable(
         module_, type, false, llvm::GlobalValue::InternalLinkage,
@@ -209,7 +212,7 @@ void CodeGenBuilder::visit(VarDeclarationNode &var) {
   llvm::AllocaInst *alloca =
       tmp_builder.CreateAlloca(llvm_type, nullptr, var.ident->value);
   values_.insert({&var, alloca});
-  builder_->CreateStore(llvm::Constant::getNullValue(llvm_type), alloca);
+  init_values(alloca, llvm_type);
 }
 
 void CodeGenBuilder::visit(TypeDeclarationNode &type) {
@@ -289,15 +292,10 @@ void CodeGenBuilder::visit(StdTypeNode &std_type) {
 
 void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
   array_type.type->accept(*this);
-  try {
-    auto type = llvm::ArrayType::get(
-        types_.at(array_type.type),
-        array_type.expression->value); // TODO check signedness
-    types_[&array_type] = type;
-  } catch (std::out_of_range &e) {
-    logger_.debug("No llvm::Type for " + to_string(array_type.type));
-    exit(EXIT_FAILURE);
-  }
+  auto type = llvm::ArrayType::get(
+      getLLVMType(array_type.type),
+      array_type.expression->value); // TODO check signedness
+  types_[&array_type] = type;
 } // TODO probably not of interest for now
 
 void CodeGenBuilder::visit(RecordTypeNode &record_type) {
@@ -329,46 +327,40 @@ void CodeGenBuilder::visit(ProcedureTypeNode &proc_type) {
   types_[&proc_type] = llvm_type;
 }
 
-void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  auto ltype = assignment.ident_expr->decl->type;
-  auto rtype = assignment.expression->type;
+void CodeGenBuilder::visit(AssignmentNode &assign) {
+  auto ltype = assign.ident_expr->decl->type;
+  auto rtype = assign.expression->type;
 
-  assignment.ident_expr->accept(*this);
+  assign.ident_expr->accept(*this);
   llvm::Value *lvalue = value_;
 
-  // only want a ptr value if not structured, because structured values (arrays
-  // and records) are going to be copied
+  assign.expression->accept(*this);
   llvm::Value *rvalue = value_;
 
-  if (rtype->getNodeType() == NodeType::array_type) {
-    // ARRAY
-    // copy that array into lhs
-    auto larray = dynamic_cast<const ArrayTypeNode *>(ltype);
-    auto rarray = dynamic_cast<const ArrayTypeNode *>(rtype);
-
-    // the copy length is the smaller of the two (don't want to copy dead space)
-    auto copy_length =
-        std::min(larray->expression->value, rarray->expression->value);
-
-    auto layout = module_.getDataLayout();
-    // needed allocation size for given llvm type
-    auto elem_size = layout.getTypeAllocSize(getLLVMType(larray->type));
-
-    auto size = builder_->getInt64(copy_length * elem_size);
-
-    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
-  } else if (rtype->getNodeType() == NodeType::record_type) {
-    // RECORD
-    auto layout = module_.getDataLayout();
-    // needed size is the entire rhs
-    auto size = builder_->getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
-
-    // copy that record into lhs
-    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
-  } else {
-    // straight up variable assignment to value: i := 4
+  if (rvalue->getType()->isSingleValueType() &&
+      assign.expression->type->isPrimitiveType()) {
     value_ = builder_->CreateStore(rvalue, lvalue);
+    return;
   }
+
+  if (!rvalue->getType()->isPointerTy()) {
+    logger_.debug(
+        "rvalue of assignment is neither a primitive value nor a pointer");
+    exit(EXIT_FAILURE);
+  }
+
+  auto llvm_ltype = getLLVMType(ltype);
+  auto llvm_rtype = getLLVMType(rtype);
+
+  auto lsize = module_.getDataLayout().getTypeAllocSize(llvm_ltype);
+  auto rsize = module_.getDataLayout().getTypeAllocSize(llvm_rtype);
+
+  if (lsize != rsize) {
+    logger_.debug("Assignment sizes differ");
+    exit(EXIT_FAILURE);
+  }
+
+  value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, lsize);
 }
 
 void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
@@ -376,14 +368,20 @@ void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
-  llvm::AllocaInst *alloca;
+  llvm::AllocaInst *base_ptr;
   try {
-    alloca = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
+    base_ptr = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
   } catch (std::out_of_range &e) {
     logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
   }
 
-  value_ = builder_->CreateLoad(alloca->getAllocatedType(), alloca, false);
+  auto elem_type =
+      get_elem_ptr(ident_expr.decl, base_ptr, ident_expr.selectors);
+
+  if (elem_type->isPrimitiveType() && !ident_expr.is_lvalue) {
+    value_ = builder_->CreateLoad(getLLVMType(elem_type), value_);
+    return;
+  }
 }
 
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
@@ -500,16 +498,20 @@ llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
   return llvm_type;
 }
 
-TypeNode *CodeGenBuilder::traverse_selectors(
-    const DeclarationNode *ref,
-    const vector<unique_ptr<SelectorNode>>::iterator start,
-    const vector<unique_ptr<SelectorNode>>::iterator end) {
+TypeNode *CodeGenBuilder::get_elem_ptr(
+    const DeclarationNode *ref, llvm::Value *base_ptr,
+    const vector<unique_ptr<SelectorNode>> &selectors) {
 
   TypeNode *curr_type = ref->type;
   llvm::Value *value = value_;
 
-  for (auto it = start; it != end; it++) {
-    const auto sel = it->get();
+  std::vector<llvm::Value *> idxs;
+
+  // Add zero as first index to dereference through the struct pointer.
+  idxs.push_back(builder_->getInt32(0));
+
+  for (auto &selector : selectors) {
+    const auto sel = selector.get();
     if (sel->getNodeType() == NodeType::array_selector) {
       auto array_index = dynamic_cast<ArrayIndexNode *>(sel);
       auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
@@ -518,8 +520,8 @@ TypeNode *CodeGenBuilder::traverse_selectors(
       array_index->expression->accept(*this);
 
       // value_ is now the llvm::Value of the index expression
-      value =
-          builder_->CreateInBoundsGEP(getLLVMType(curr_type), value, {value_});
+      idxs.push_back(value_);
+
       curr_type = array_type->type;
     } else if (sel->getNodeType() == NodeType::record_selector) {
       auto record_selector = dynamic_cast<RecordFieldNode *>(sel);
@@ -528,56 +530,17 @@ TypeNode *CodeGenBuilder::traverse_selectors(
       // find the field index referred to by the selector ident
       auto field_index = record_type->find_field_index(*record_selector->ident);
 
-      value = builder_->CreateInBoundsGEP(getLLVMType(curr_type), value,
-                                          {builder_->getInt32(field_index)});
+      idxs.push_back(builder_->getInt32(field_index));
       curr_type = record_type->field_lists.at(field_index)->type;
     }
   }
 
-  value_ = value;
+  value_ = builder_->CreateInBoundsGEP(getLLVMType(ref->type), base_ptr, idxs);
 
   return curr_type;
 }
 
 void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
-  builder_->CreateStore(llvm::Constant::getNullValue(llvm_type), ptr);
-
-  // if (llvm_type->isIntegerTy(1)) {
-  //   builder_->CreateStore(builder_->getInt1(false), ptr);
-  //   return;
-  // }
-  //
-  // if (llvm_type->isIntegerTy(32)) {
-  //   builder_->CreateStore(builder_->getInt32(0), ptr);
-  //   return;
-  // }
-  //
-  // if (auto llvm_array_type = llvm::dyn_cast<llvm::ArrayType>(llvm_type)) {
-  //   for (unsigned i = 0; i <= llvm_array_type->getNumElements(); i++) {
-  //     auto elem_ptr =
-  //         builder_->CreateConstInBoundsGEP1_32(llvm_array_type, ptr, i);
-  //     init_values(elem_ptr, llvm_array_type->getElementType());
-  //   }
-  //   return;
-  // }
-  //
-  // if (auto llvm_record_type = llvm::dyn_cast<llvm::StructType>(llvm_type)) {
-  //   for (unsigned i = 0; i <= llvm_record_type->getNumElements(); ++i) {
-  //     auto elem_ptr = builder_->CreateStructGEP(llvm_record_type, ptr, i);
-  //     init_values(elem_ptr, llvm_record_type->getElementType(i));
-  //   }
-  //   return;
-  // }
-  //
-  // logger_.debug("Unknown llvm type: ");
-  // llvm_type->print(llvm::errs());
-}
-
-void CodeGenBuilder::pushRefCtx(const bool ref_status) {
-  ref_ctx_.push(ref_status);
-}
-
-void CodeGenBuilder::popRefCtx() { return ref_ctx_.pop(); }
-bool CodeGenBuilder::peekRefCtx() const {
-  return ref_ctx_.empty() ? false : ref_ctx_.top();
+  auto size = module_.getDataLayout().getTypeAllocSize(llvm_type);
+  builder_->CreateMemSet(ptr, builder_->getInt32(0), size, {});
 }
