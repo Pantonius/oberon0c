@@ -330,16 +330,14 @@ void CodeGenBuilder::visit(ProcedureTypeNode &proc_type) {
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  auto ltype = assignment.ref->type;
+  auto ltype = assignment.ident_expr->decl->type;
   auto rtype = assignment.expression->type;
 
-  llvm::Value *lvalue;
-  if (assignment.ident_expr->selectors.size() > 0) {
+  assignment.ident_expr->accept(*this);
+  llvm::Value *lvalue = value_;
 
-  } else {
-    lvalue = values_[assignment.ref];
-  }
-  assignment.expression->accept(*this);
+  // only want a ptr value if not structured, because structured values (arrays
+  // and records) are going to be copied
   llvm::Value *rvalue = value_;
 
   if (rtype->getNodeType() == NodeType::array_type) {
@@ -508,15 +506,37 @@ TypeNode *CodeGenBuilder::traverse_selectors(
     const vector<unique_ptr<SelectorNode>>::iterator end) {
 
   TypeNode *curr_type = ref->type;
+  llvm::Value *value = value_;
+
   for (auto it = start; it != end; it++) {
     const auto sel = it->get();
     if (sel->getNodeType() == NodeType::array_selector) {
+      auto array_index = dynamic_cast<ArrayIndexNode *>(sel);
       auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
 
+      // visit index expression
+      array_index->expression->accept(*this);
+
+      // value_ is now the llvm::Value of the index expression
+      value =
+          builder_->CreateInBoundsGEP(getLLVMType(curr_type), value, {value_});
       curr_type = array_type->type;
     } else if (sel->getNodeType() == NodeType::record_selector) {
+      auto record_selector = dynamic_cast<RecordFieldNode *>(sel);
+      auto record_type = dynamic_cast<RecordTypeNode *>(curr_type);
+
+      // find the field index referred to by the selector ident
+      auto field_index = record_type->find_field_index(*record_selector->ident);
+
+      value = builder_->CreateInBoundsGEP(getLLVMType(curr_type), value,
+                                          {builder_->getInt32(field_index)});
+      curr_type = record_type->field_lists.at(field_index)->type;
     }
   }
+
+  value_ = value;
+
+  return curr_type;
 }
 
 void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
@@ -551,4 +571,13 @@ void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
   //
   // logger_.debug("Unknown llvm type: ");
   // llvm_type->print(llvm::errs());
+}
+
+void CodeGenBuilder::pushRefCtx(const bool ref_status) {
+  ref_ctx_.push(ref_status);
+}
+
+void CodeGenBuilder::popRefCtx() { return ref_ctx_.pop(); }
+bool CodeGenBuilder::peekRefCtx() const {
+  return ref_ctx_.empty() ? false : ref_ctx_.top();
 }

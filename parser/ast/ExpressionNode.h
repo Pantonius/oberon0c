@@ -93,7 +93,7 @@ public:
   const unique_ptr<ExpressionNode> expression;
 };
 
-// TODO: think about merge with IdentNode
+class DeclarationNode;
 class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
