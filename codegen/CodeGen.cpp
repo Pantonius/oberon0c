@@ -218,6 +218,8 @@ void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   auto falseBlock =
       llvm::BasicBlock::Create(builder_->getContext(), "falseBlock");
 
+  // [
+  return_points_.push(tailBlock);
   builder_->CreateCondBr(condition, trueBlock, falseBlock);
 
   builder_->SetInsertPoint(trueBlock);
@@ -225,15 +227,35 @@ void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   builder_->CreateBr(tailBlock);
 
   builder_->SetInsertPoint(falseBlock);
-  // for (auto &elsif : if_stmt.elsifs) {
-  //   elsif->accept(*this);
-  // }
-  // if_stmt.else_statement_sequence->accept(NodeVisitor & visitor)
+  for (auto &elsif : if_stmt.elsifs) {
+    elsif->accept(*this);
+  }
+  if (if_stmt.else_statement_sequence) {
+    if_stmt.else_statement_sequence->accept(*this);
+  }
   builder_->CreateBr(tailBlock);
+  return_points_.pop();
+  // ]
 
   builder_->SetInsertPoint(tailBlock);
 }
-void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
+void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
+  elsif.condition->accept(*this);
+  auto condition = value_;
+
+  auto trueBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "trueBlock");
+  auto falseBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "falseBlock");
+
+  builder_->CreateCondBr(condition, trueBlock, falseBlock);
+
+  builder_->SetInsertPoint(trueBlock);
+  elsif.body->accept(*this);
+  builder_->CreateBr(return_points_.top());
+
+  builder_->SetInsertPoint(falseBlock);
+}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
