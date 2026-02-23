@@ -165,7 +165,6 @@ TypeNode *CodeGenBuilder::traverse_selectors(
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  return;
   auto ltype = assignment.ref->type;
   auto rtype = assignment.expression->type;
 
