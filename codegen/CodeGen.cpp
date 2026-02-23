@@ -207,7 +207,32 @@ void CodeGenBuilder::visit(AssignmentNode &assignment) {
     value_ = builder_->CreateStore(rvalue, lvalue);
   }
 }
-void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
+void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
+  if_stmt.condition->accept(*this);
+  auto condition = value_;
+
+  auto tailBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "tailBlock");
+  auto trueBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "trueBlock");
+  auto falseBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "falseBlock");
+
+  builder_->CreateCondBr(condition, trueBlock, falseBlock);
+
+  builder_->SetInsertPoint(trueBlock);
+  if_stmt.body->accept(*this);
+  builder_->CreateBr(tailBlock);
+
+  builder_->SetInsertPoint(falseBlock);
+  // for (auto &elsif : if_stmt.elsifs) {
+  //   elsif->accept(*this);
+  // }
+  // if_stmt.else_statement_sequence->accept(NodeVisitor & visitor)
+  builder_->CreateBr(tailBlock);
+
+  builder_->SetInsertPoint(tailBlock);
+}
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
