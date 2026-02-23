@@ -16,9 +16,23 @@
 void SemanticChecker::onModuleStart(const FilePos pos,
                                     unique_ptr<IdentNode> ident) {
   auto module = make_unique<ModuleNode>(pos, std::move(ident));
-  // TODO uniqueness check
   symbol_table_.beginScope();
   context_.set_module(std::move(module));
+
+  // introduce std environment: WriteInt(val: Integer), WriteLn()
+  // auto write_int_arg = std::make_unique<ParamDeclarationNode>(
+  //     EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "val"), false,
+  //     ASTContext::INTEGER);
+  // vector<unique_ptr<ParamDeclarationNode>> write_int_params;
+  // write_int_params.push_back(std::move(write_int_arg));
+  // // TODO this type should be held somewhere (ASTContext?)
+  // auto write_int_type = std::make_unique<ProcedureTypeNode>(
+  //     EMPTY_POS, std::move(write_int_params));
+  // auto write_int_decl = std::make_unique<ProcedureDeclarationNode>(
+  //     EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "WriteInt"),
+  //     write_int_type.get());
+  //
+  // symbol_table_.insert(*write_int_decl->ident, write_int_decl.get());
 }
 
 void SemanticChecker::onModuleEnd(const FilePos pos, const IdentNode &ident) {

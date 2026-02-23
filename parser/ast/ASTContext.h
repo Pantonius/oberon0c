@@ -4,7 +4,6 @@
 #include "ModuleNode.h"
 #include "functional"
 #include "parser/ast/TypeNode.h"
-#include <unordered_set>
 
 using std::function;
 
@@ -19,6 +18,11 @@ public:
   static const std::unordered_map<std::string, StdTypeNode *const> std_types;
   static StdTypeNode *const BOOLEAN;
   static StdTypeNode *const INTEGER;
+
+  static const std::unordered_map<std::string, ProcedureDeclarationNode *const>
+      std_funcs;
+  static DeclarationNode *const WRITE_INT;
+  static DeclarationNode *const WRITE_LN;
 
   // NOTE for multi-module use this should be a vector
   ModuleNode *get_module();
