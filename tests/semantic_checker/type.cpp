@@ -90,4 +90,46 @@ TEST_CASE("Sema Record Type", "[sema][type][record]") {
     REQUIRE(record->field_lists[3]->ident->value == "field4");
     REQUIRE(record->field_lists[3]->type == ASTContext::BOOLEAN.get());
   }
+
+  SECTION("Record field uniqueness") {
+    vector<pair<vector<unique_ptr<IdentNode>>, TypeNode *>> fields;
+
+    vector<unique_ptr<IdentNode>> var_idents_int;
+    var_idents_int.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
+
+    fields.emplace_back(std::move(var_idents_int), ASTContext::INTEGER.get());
+
+    vector<unique_ptr<IdentNode>> var_idents_bool;
+    var_idents_bool.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
+
+    fields.emplace_back(std::move(var_idents_bool), ASTContext::BOOLEAN.get());
+
+    REQUIRE_THROWS_AS(sema.onRecordType(EMPTY_POS, std::move(fields)),
+                      DuplicateFieldException);
+  }
+}
+
+TEST_CASE("Procedure Type", "[sema][type][procedure]") {
+  Logger logger;
+  SemanticChecker sema(logger);
+
+  auto module_ident = make_unique<IdentNode>(EMPTY_POS, "Module");
+
+  sema.onModuleStart(EMPTY_POS, std::move(module_ident));
+
+  SECTION("Procedure parameter uniqueness") {
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
+        formal_parameters;
+
+    vector<unique_ptr<IdentNode>> idents;
+    idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "param1"));
+    idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "param1"));
+
+    formal_parameters.emplace_back(std::move(idents), false,
+                                   ASTContext::INTEGER.get());
+
+    REQUIRE_THROWS_AS(
+        sema.onProcedureType(EMPTY_POS, std::move(formal_parameters)),
+        DuplicateFieldException);
+  }
 }

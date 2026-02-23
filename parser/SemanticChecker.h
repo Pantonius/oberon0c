@@ -134,3 +134,18 @@ public:
   const char *what() const noexcept override { return msg_.c_str(); }
   const string get_name() const noexcept { return name_; }
 };
+
+class DuplicateFieldException : public std::exception {
+private:
+  const Node &node_;
+  const string msg_;
+
+public:
+  DuplicateFieldException(const Node &node)
+      : node_(node), msg_("Duplicate field: " + to_string(&node)) {}
+  DuplicateFieldException(const Node &node, const string msg)
+      : node_(node), msg_(msg) {}
+
+  const char *what() const noexcept override { return msg_.c_str(); }
+  const Node &get_node() const noexcept { return node_; }
+};

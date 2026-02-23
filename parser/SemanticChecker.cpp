@@ -220,10 +220,11 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   }
 }
 
-ProcedureTypeNode *SemanticChecker::onProcedureType(
-    const FilePos pos,
-    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
-        formal_parameters) {
+using FormalParameterType =
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>;
+ProcedureTypeNode *
+SemanticChecker::onProcedureType(const FilePos pos,
+                                 FormalParameterType formal_parameters) {
   symbol_table_.beginScope();
 
   vector<unique_ptr<ParamDeclarationNode>> params;
@@ -621,7 +622,7 @@ void SemanticChecker::expect_unique(const IdentNode *ident,
     logger_.error(ident->pos(), "Identifier already declared here: " +
                                     to_string(decl.value()->pos()) + ":" +
                                     to_string(*decl));
-    // exit(EXIT_FAILURE);
+    throw DuplicateFieldException(*ident);
   }
   symbol_table_.insert(*ident, value);
   return;
