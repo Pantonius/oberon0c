@@ -172,7 +172,7 @@ SemanticChecker::onIdentExpression(const FilePos pos,
                                    vector<unique_ptr<SelectorNode>> selectors) {
 
   // get ident type for more detailed error messages
-  TypeNode *type;
+  TypeNode *type = nullptr;
   try {
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
