@@ -173,6 +173,7 @@ SemanticChecker::onIdentExpression(const FilePos pos,
 
   // get ident type for more detailed error messages
   TypeNode *type = nullptr;
+  const DeclarationNode *decl;
   try {
     type = symbol_table_.lookup_type(*ident, selectors);
     decl = symbol_table_.lookup(*ident).value();

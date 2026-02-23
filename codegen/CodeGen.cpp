@@ -1,11 +1,14 @@
 #include "CodeGen.h"
 #include "global.h"
+#include "parser/ast/ASTContext.h"
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/TypeNode.h"
+#include <cstdlib>
 #include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -17,6 +20,7 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
+#include <llvm/Support/Casting.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
@@ -139,77 +143,14 @@ void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
   tm->getTargetTriple();
 }
 
-void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
+void CodeGenBuilder::build(ASTContext &ctx) {
+  // for (auto &std_type : ASTContext::std_types) {
+  //   std_type.second->accept(*this);
+  // }
 
-void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
-  auto type = llvm::ArrayType::get(
-      getLLVMType(array_type.type),
-      array_type.expression->value); // TODO check signedness
-  types_[&array_type] = type;
+  ctx.get_module()->accept(*this);
 }
 
-TypeNode *CodeGenBuilder::traverse_selectors(
-    const DeclarationNode *ref,
-    const vector<unique_ptr<SelectorNode>>::iterator start,
-    const vector<unique_ptr<SelectorNode>>::iterator end) {
-
-  TypeNode *curr_type = ref->type;
-  for (auto it = start; it != end; it++) {
-    const auto sel = it->get();
-    if (sel->getNodeType() == NodeType::array_selector) {
-      auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
-
-      curr_type = array_type->type;
-    } else if (sel->getNodeType() == NodeType::record_selector) {
-    }
-  }
-}
-
-void CodeGenBuilder::visit(AssignmentNode &assignment) {
-  auto ltype = assignment.ref->type;
-  auto rtype = assignment.expression->type;
-
-  llvm::Value *lvalue;
-  if (assignment.ident_expr->selectors.size() > 0) {
-
-  } else {
-    llvm::Value *lvalue = values_[assignment.ref];
-  }
-  assignment.expression->accept(*this);
-  llvm::Value *rvalue = value_;
-
-  if (rtype->getNodeType() == NodeType::array_type) {
-    // ARRAY
-    // copy that array into lhs
-    auto larray = dynamic_cast<const ArrayTypeNode *>(ltype);
-    auto rarray = dynamic_cast<const ArrayTypeNode *>(rtype);
-
-    // the copy length is the smaller of the two (don't want to copy dead space)
-    auto copy_length =
-        std::min(larray->expression->value, rarray->expression->value);
-
-    auto layout = module_.getDataLayout();
-    // needed allocation size for given llvm type
-    auto elem_size = layout.getTypeAllocSize(getLLVMType(larray->type));
-
-    auto size = builder_->getInt64(copy_length * elem_size);
-
-    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
-  } else if (rtype->getNodeType() == NodeType::record_type) {
-    // RECORD
-    auto layout = module_.getDataLayout();
-    // needed size is the entire rhs
-    auto size = builder_->getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
-
-    // copy that record into lhs
-    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
-  } else {
-    // straight up variable assignment to value: i := 4
-    value_ = builder_->CreateStore(rvalue, lvalue);
-  }
-}
-void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
-void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
@@ -247,88 +188,206 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
 
   builder_->CreateRet(builder_->getInt32(0));
 }
-void CodeGenBuilder::visit(ConstDeclarationNode &) {}
-void CodeGenBuilder::visit(VarDeclarationNode &) {}
-void CodeGenBuilder::visit(TypeDeclarationNode &) {}
-void CodeGenBuilder::visit(ParamDeclarationNode &) {}
 
-void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
+void CodeGenBuilder::visit(ConstDeclarationNode &) {}
+void CodeGenBuilder::visit(VarDeclarationNode &var) {
+  llvm::Function *parent_func = builder_->GetInsertBlock()->getParent();
+  llvm::IRBuilder<> tmp_builder(&parent_func->getEntryBlock(),
+                                parent_func->getEntryBlock().begin());
+  llvm::Type *llvm_type;
+  try {
+    llvm_type = types_.at(var.type);
+  } catch (std::out_of_range &e) {
+    var.type->accept(*this);
+    try {
+      llvm_type = types_.at(var.type);
+    } catch (std::out_of_range &e) {
+      logger_.debug("Error creating llvm type for " + to_string(var.type));
+      exit(EXIT_FAILURE);
+    }
+  }
+  llvm::AllocaInst *alloca =
+      tmp_builder.CreateAlloca(llvm_type, nullptr, var.ident->value);
+  values_.insert({&var, alloca});
+  builder_->CreateStore(llvm::Constant::getNullValue(llvm_type), alloca);
+}
+
+void CodeGenBuilder::visit(TypeDeclarationNode &type) {
+  type.type->accept(*this);
+}
+
+void CodeGenBuilder::visit(ParamDeclarationNode &param) {}
+
 void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
-  auto proc_type = dynamic_cast<ProcedureTypeNode *>(proc.type);
+  auto proc_type = static_cast<ProcedureTypeNode *>(proc.type);
+  proc_type->accept(*this);
+
+  llvm::FunctionType *llvm_func_type =
+      static_cast<llvm::FunctionType *>(getLLVMType(proc.type));
+  auto callee = module_.getOrInsertFunction(proc.ident->value, llvm_func_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+
+  const auto entry =
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
+
+  unsigned idx = 0;
+  for (auto &arg : func->args()) {
+    auto param_decl = proc_type->formal_parameters[idx++].get();
+    arg.setName(param_decl->ident->value);
+    values_[param_decl] = &arg;
+  }
 
   if (proc.get_procs()->size() > 0) {
     logger_.error(proc.pos(), "CodeGen found nested procs (unsupported).");
   }
 
   // introduce types
-  for (size_t i = 0; i < proc.get_types()->size(); i++) {
-    proc.get_types()->at(i)->accept(*this);
-  }
-
-  vector<llvm::Type *> param_types;
-  for (auto &param : proc_type->formal_parameters) {
-    auto param_type = getLLVMType(param->type);
-    param_types.push_back(
-        param->by_reference ? llvm::PointerType::get(builder_->getContext(), 0)
-                            : param_type);
-  }
-  // NOTE as of now, there are no return types; all procedures return void
-  auto fun_type =
-      llvm::FunctionType::get(builder_->getVoidTy(), param_types, false);
-
-  auto callee = module_.getOrInsertFunction(proc.ident->value, fun_type);
-  const auto func = cast<llvm::Function>(callee.getCallee());
-  const auto entry =
-      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
-  builder_->SetInsertPoint(entry);
-
-  const auto layout = module_.getDataLayout();
-
-  // allocate space for params
-  llvm::Function::arg_iterator curr_arg = func->arg_begin();
-  for (auto &param : proc_type->formal_parameters) {
-    auto *param_type =
-        param->by_reference ? builder_->getPtrTy() : getLLVMType(param->type);
-    auto *alloc =
-        builder_->CreateAlloca(param_type, nullptr, param->ident->value);
-    alloc->setAlignment(layout.getABITypeAlign(param_type));
-
-    // initialize memory with given value
-    builder_->CreateStore(curr_arg, alloc);
-    // associate param with memory area for any expressions that need the
-    // latest declared value
-    values_[param.get()] = alloc;
-
-    curr_arg++;
+  for (auto &type : *proc.get_types()) {
+    type->accept(*this);
   }
 
   // allocate space for vars
-  for (size_t i = 0; i < proc.get_vars()->size(); i++) {
-    const auto &var = proc.get_vars()->at(i);
-    llvm::Type *type = getLLVMType(var->type);
-
-    auto *alloc = builder_->CreateAlloca(type, nullptr, var->ident->value);
-    alloc->setAlignment(layout.getABITypeAlign(type));
-
-    // associate var with memory area for any exprs that need latest value
-    values_[var.get()] = alloc;
+  for (auto &var_decl : *proc.get_vars()) {
+    var_decl->accept(*this);
   }
 
-  // TODO body statements
+  // TODO: body statements
 
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
 }
-void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
-  llvm::AllocaInst *alloc;
+
+void CodeGenBuilder::visit(IdentTypeNode &ident) {
+  logger_.debug("Found IdentTypeNode after semantic check!");
+  exit(EXIT_FAILURE);
+}
+
+void CodeGenBuilder::visit(StdTypeNode &std_type) {
+  if (types_.contains(&std_type)) {
+    return;
+  }
+
+  llvm::Type *type;
+  llvm::Value *init_val;
+
+  switch (std_type.std_type) {
+  case StdType::BOOLEAN:
+    type = builder_->getInt1Ty();
+    init_val = builder_->getInt1(false);
+    break;
+  case StdType::INTEGER:
+    type = builder_->getInt32Ty();
+    init_val = builder_->getInt32(0);
+    break;
+  default:
+    break;
+  }
+
+  types_[&std_type] = type;
+}
+
+void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
+  array_type.type->accept(*this);
   try {
-    alloc = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
+    auto type = llvm::ArrayType::get(
+        types_.at(array_type.type),
+        array_type.expression->value); // TODO check signedness
+    types_[&array_type] = type;
+  } catch (std::out_of_range &e) {
+    logger_.debug("No llvm::Type for " + to_string(array_type.type));
+    exit(EXIT_FAILURE);
+  }
+} // TODO probably not of interest for now
+
+void CodeGenBuilder::visit(RecordTypeNode &record_type) {
+
+  vector<llvm::Type *> field_types;
+  for (auto &field : record_type.field_lists) {
+    field->type->accept(*this);
+    try {
+      field_types.push_back(types_.at(field->type));
+    } catch (std::out_of_range &e) {
+      logger_.debug("No llvm::Type for " + to_string(field->type));
+      exit(EXIT_FAILURE);
+    }
+  }
+  auto struct_type = llvm::StructType::get(builder_->getContext(), field_types);
+  types_[&record_type] = struct_type;
+}
+
+void CodeGenBuilder::visit(ProcedureTypeNode &proc_type) {
+  vector<llvm::Type *> param_types;
+  for (auto &param : proc_type.formal_parameters) {
+    auto param_llvm_type = getLLVMType(param->type);
+    param_types.push_back(param->by_reference ? builder_->getPtrTy()
+                                              : param_llvm_type);
+  }
+  auto llvm_type =
+      llvm::FunctionType::get(builder_->getVoidTy(), param_types, false);
+
+  types_[&proc_type] = llvm_type;
+}
+
+void CodeGenBuilder::visit(AssignmentNode &assignment) {
+  auto ltype = assignment.ref->type;
+  auto rtype = assignment.expression->type;
+
+  llvm::Value *lvalue;
+  if (assignment.ident_expr->selectors.size() > 0) {
+
+  } else {
+    lvalue = values_[assignment.ref];
+  }
+  assignment.expression->accept(*this);
+  llvm::Value *rvalue = value_;
+
+  if (rtype->getNodeType() == NodeType::array_type) {
+    // ARRAY
+    // copy that array into lhs
+    auto larray = dynamic_cast<const ArrayTypeNode *>(ltype);
+    auto rarray = dynamic_cast<const ArrayTypeNode *>(rtype);
+
+    // the copy length is the smaller of the two (don't want to copy dead space)
+    auto copy_length =
+        std::min(larray->expression->value, rarray->expression->value);
+
+    auto layout = module_.getDataLayout();
+    // needed allocation size for given llvm type
+    auto elem_size = layout.getTypeAllocSize(getLLVMType(larray->type));
+
+    auto size = builder_->getInt64(copy_length * elem_size);
+
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
+  } else if (rtype->getNodeType() == NodeType::record_type) {
+    // RECORD
+    auto layout = module_.getDataLayout();
+    // needed size is the entire rhs
+    auto size = builder_->getInt64(layout.getTypeAllocSize(getLLVMType(rtype)));
+
+    // copy that record into lhs
+    value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, size);
+  } else {
+    // straight up variable assignment to value: i := 4
+    value_ = builder_->CreateStore(rvalue, lvalue);
+  }
+}
+
+void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
+void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
+void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
+
+void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
+  llvm::AllocaInst *alloca;
+  try {
+    alloca = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
   } catch (std::out_of_range &e) {
     logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
   }
 
-  value_ = alloc;
+  value_ = builder_->CreateLoad(alloca->getAllocatedType(), alloca, false);
 }
+
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
   const auto left_type = binary_expr.left_expression->type;
   const auto right_type = binary_expr.right_expression->type;
@@ -420,17 +479,6 @@ void CodeGenBuilder::visit(NumberExpressionNode &number) {
 void CodeGenBuilder::visit(BooleanExpressionNode &boolean) {
   value_ = builder_->getInt1(boolean.value);
 }
-void CodeGenBuilder::visit(ProcedureTypeNode &) {
-} // TODO probably not of interest for now
-void CodeGenBuilder::visit(RecordTypeNode &record_type) {
-
-  vector<llvm::Type *> field_types;
-  for (auto &field : record_type.field_lists) {
-    field_types.push_back(getLLVMType(field->type));
-  }
-  auto struct_type = llvm::StructType::get(builder_->getContext(), field_types);
-  types_[&record_type] = struct_type;
-}
 void CodeGenBuilder::visit(RepeatStatementNode &repeat_statement) {}
 void CodeGenBuilder::visit(SelectorNode &selector) {}
 void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
@@ -439,24 +487,68 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
   }
 }
 void CodeGenBuilder::visit(IdentNode &ident) {}
-void CodeGenBuilder::visit(IdentTypeNode &ident) {}
-void CodeGenBuilder::visit(StdTypeNode &) {}
-
 void CodeGenBuilder::visit(FieldNode &field) {}
 void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}
 
-llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
-  if (!type) {
-    logger_.error(EMPTY_POS, "Encountered nullptr type in CodeGen.");
+llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
+  llvm::Type *llvm_type;
+  try {
+    llvm_type = types_.at(type);
+  } catch (std::out_of_range &e) {
+    logger_.debug("No llvm type found for " + to_string(type));
     exit(EXIT_FAILURE);
-  } else if (types_[type]) {
-    return types_[type];
-  } else if (type == ASTContext::INTEGER) {
-    return builder_->getInt64Ty();
-  } else if (type == ASTContext::BOOLEAN) {
-    return builder_->getInt1Ty();
   }
 
-  type->accept(*this);
-  return types_[type];
+  return llvm_type;
+}
+
+TypeNode *CodeGenBuilder::traverse_selectors(
+    const DeclarationNode *ref,
+    const vector<unique_ptr<SelectorNode>>::iterator start,
+    const vector<unique_ptr<SelectorNode>>::iterator end) {
+
+  TypeNode *curr_type = ref->type;
+  for (auto it = start; it != end; it++) {
+    const auto sel = it->get();
+    if (sel->getNodeType() == NodeType::array_selector) {
+      auto array_type = dynamic_cast<ArrayTypeNode *>(curr_type);
+
+      curr_type = array_type->type;
+    } else if (sel->getNodeType() == NodeType::record_selector) {
+    }
+  }
+}
+
+void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
+  builder_->CreateStore(llvm::Constant::getNullValue(llvm_type), ptr);
+
+  // if (llvm_type->isIntegerTy(1)) {
+  //   builder_->CreateStore(builder_->getInt1(false), ptr);
+  //   return;
+  // }
+  //
+  // if (llvm_type->isIntegerTy(32)) {
+  //   builder_->CreateStore(builder_->getInt32(0), ptr);
+  //   return;
+  // }
+  //
+  // if (auto llvm_array_type = llvm::dyn_cast<llvm::ArrayType>(llvm_type)) {
+  //   for (unsigned i = 0; i <= llvm_array_type->getNumElements(); i++) {
+  //     auto elem_ptr =
+  //         builder_->CreateConstInBoundsGEP1_32(llvm_array_type, ptr, i);
+  //     init_values(elem_ptr, llvm_array_type->getElementType());
+  //   }
+  //   return;
+  // }
+  //
+  // if (auto llvm_record_type = llvm::dyn_cast<llvm::StructType>(llvm_type)) {
+  //   for (unsigned i = 0; i <= llvm_record_type->getNumElements(); ++i) {
+  //     auto elem_ptr = builder_->CreateStructGEP(llvm_record_type, ptr, i);
+  //     init_values(elem_ptr, llvm_record_type->getElementType(i));
+  //   }
+  //   return;
+  // }
+  //
+  // logger_.debug("Unknown llvm type: ");
+  // llvm_type->print(llvm::errs());
 }
