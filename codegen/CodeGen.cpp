@@ -145,13 +145,7 @@ void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
   tm->getTargetTriple();
 }
 
-void CodeGenBuilder::build(ASTContext &ctx) {
-  // for (auto &std_type : ASTContext::std_types) {
-  //   std_type.second->accept(*this);
-  // }
-
-  ctx.get_module()->accept(*this);
-}
+void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
 
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
@@ -167,7 +161,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
     var->type->accept(*this);
     auto type = getLLVMType(var->type);
     auto value = new llvm::GlobalVariable(
-        module_, type, false, llvm::GlobalValue::InternalLinkage,
+        module_, type, false, llvm::GlobalValue::ExternalLinkage,
         llvm::Constant::getNullValue(type), var->ident->value);
 
     values_[var.get()] = value;
