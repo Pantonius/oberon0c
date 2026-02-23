@@ -165,6 +165,7 @@ TypeNode *CodeGenBuilder::traverse_selectors(
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
+  return;
   auto ltype = assignment.ref->type;
   auto rtype = assignment.expression->type;
 
@@ -208,15 +209,17 @@ void CodeGenBuilder::visit(AssignmentNode &assignment) {
   }
 }
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
   if_stmt.condition->accept(*this);
   auto condition = value_;
 
   auto tailBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "tailBlock");
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
   auto trueBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "trueBlock");
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
   auto falseBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "falseBlock");
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
 
   // [
   return_points_.push(tailBlock);
@@ -240,13 +243,15 @@ void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   builder_->SetInsertPoint(tailBlock);
 }
 void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
   elsif.condition->accept(*this);
   auto condition = value_;
 
   auto trueBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "trueBlock");
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
   auto falseBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "falseBlock");
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
 
   builder_->CreateCondBr(condition, trueBlock, falseBlock);
 
@@ -480,7 +485,31 @@ void CodeGenBuilder::visit(IdentTypeNode &ident) {}
 void CodeGenBuilder::visit(StdTypeNode &) {}
 
 void CodeGenBuilder::visit(FieldNode &field) {}
-void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}
+void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  auto tailBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+  auto conditionBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+  auto bodyBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+
+  // [
+  builder_->CreateBr(conditionBlock);
+
+  builder_->SetInsertPoint(conditionBlock);
+  while_stmt.condition->accept(*this);
+  auto condition = value_;
+  builder_->CreateCondBr(condition, bodyBlock, tailBlock);
+
+  builder_->SetInsertPoint(bodyBlock);
+  while_stmt.body->accept(*this);
+  builder_->CreateBr(conditionBlock);
+  // ]
+
+  builder_->SetInsertPoint(tailBlock);
+}
 
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *type) {
   if (!type) {
