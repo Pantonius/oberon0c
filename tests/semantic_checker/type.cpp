@@ -132,4 +132,22 @@ TEST_CASE("Procedure Type", "[sema][type][procedure]") {
         sema.onProcedureType(EMPTY_POS, std::move(formal_parameters)),
         DuplicateFieldException);
   }
+
+  SECTION("Procedure empty parameter type") {
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
+        formal_parameters;
+
+    vector<unique_ptr<IdentNode>> idents;
+    idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "param1"));
+
+    formal_parameters.emplace_back(std::move(idents), false, nullptr);
+
+    auto procedure =
+        sema.onProcedureType(EMPTY_POS, std::move(formal_parameters));
+
+    // should not throw any exceptions; just continue as declared
+    // TODO: reconsider
+    REQUIRE(procedure->formal_parameters.at(0)->ident->value == "param1");
+    REQUIRE(procedure->formal_parameters.at(0)->type == nullptr);
+  }
 }
