@@ -6,6 +6,8 @@
 #include "global.h"
 #include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <utility>
@@ -32,16 +34,17 @@ unique_ptr<ConstDeclarationNode>
 SemanticChecker::onConst(const FilePos pos, unique_ptr<IdentNode> ident,
                          unique_ptr<ExpressionNode> expr) {
 
-  // TODO CHECK expr is constant? type of that constant?
   if (!expr) {
-    logger_.error(pos, "undefined constant value: " + ident->value);
-    exit(EXIT_FAILURE);
+    logger_.error(pos, "Undefined constant value: " + ident->value);
+    throw UndeclaredArgumentException(ident->value);
+    return {};
   }
 
   if (!expr->is_const()) {
     logger_.error(pos,
                   "Non-constant value in const declaration: " + ident->value);
-    exit(EXIT_FAILURE);
+    throw NonConstException(*expr);
+    return {};
   }
 
   auto type = expr->type;
@@ -108,22 +111,25 @@ TypeNode *SemanticChecker::onIdentType(const FilePos pos,
 }
 
 ArrayTypeNode *SemanticChecker::onArrayType(const FilePos pos,
-                                            unique_ptr<ExpressionNode> expr_,
+                                            unique_ptr<ExpressionNode> expr,
                                             TypeNode *type) {
-  if (!expr_) {
+  if (!expr) {
     logger_.error(pos, "Undefined array size.");
     exit(EXIT_FAILURE);
   }
 
-  auto num = dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr_.get());
+  auto num = dynamic_unique_ptr_copy_cast<NumberExpressionNode>(expr.get());
 
   if (!num) {
-    logger_.error(num->pos(), "Array size is not a constant number.");
-    exit(EXIT_FAILURE);
+    logger_.error(pos, "Array size is not a constant number.");
+    throw NonConstException(*expr);
+    return {};
   }
 
   if (num->value < 0) {
     logger_.error(num->pos(), "Array size cannot be negative");
+    throw NegativeIntegerException(*num);
+    return {};
   }
 
   auto array_type = std::make_unique<ArrayTypeNode>(pos, std::move(num), type);
@@ -166,11 +172,15 @@ SemanticChecker::onIdentExpression(const FilePos pos,
                                    vector<unique_ptr<SelectorNode>> selectors) {
 
   // get ident type for more detailed error messages
-  TypeNode *type;
+  TypeNode *type = nullptr;
   try {
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
+    return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
+                                                 std::move(selectors), type);
+  } catch (const std::exception &e) {
+    logger_.error(pos, e.what());
     return std::make_unique<IdentExpressionNode>(pos, std::move(ident),
                                                  std::move(selectors), type);
   }
@@ -210,10 +220,11 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   }
 }
 
-ProcedureTypeNode *SemanticChecker::onProcedureType(
-    const FilePos pos,
-    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>
-        formal_parameters) {
+using FormalParameterType =
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>;
+ProcedureTypeNode *
+SemanticChecker::onProcedureType(const FilePos pos,
+                                 FormalParameterType formal_parameters) {
   symbol_table_.beginScope();
 
   vector<unique_ptr<ParamDeclarationNode>> params;
@@ -454,7 +465,12 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
         value = left_number->value / right_number->value;
         break;
       case BinaryOpType::mod:
-        value = left_number->value % right_number->value;
+        value = left_number->value -
+                right_number->value *
+                    floor(float(left_number->value) / right_number->value);
+
+        if (value < 0)
+          value -= right_number->value;
         break;
       default:
         logger_.error(pos, "INTERNAL ERROR");
@@ -606,7 +622,7 @@ void SemanticChecker::expect_unique(const IdentNode *ident,
     logger_.error(ident->pos(), "Identifier already declared here: " +
                                     to_string(decl.value()->pos()) + ":" +
                                     to_string(*decl));
-    // exit(EXIT_FAILURE);
+    throw DuplicateFieldException(*ident);
   }
   symbol_table_.insert(*ident, value);
   return;
