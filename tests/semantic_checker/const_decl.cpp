@@ -22,8 +22,7 @@ TEST_CASE("Sema Const Declaration", "[sema][const_decl]") {
     auto number = 42;
     auto const_decl = sema.onConst(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "simple_literal"),
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, number,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, number));
 
     REQUIRE(const_decl->expression->getNodeType() == NodeType::number);
     auto const_decl_number = dynamic_cast<const NumberExpressionNode *>(
@@ -35,8 +34,8 @@ TEST_CASE("Sema Const Declaration", "[sema][const_decl]") {
     vector<unique_ptr<IdentNode>> var_idents;
     var_idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "non"));
 
-    auto var_decl = sema.onVars(EMPTY_POS, std::move(var_idents),
-                                ASTContext::INTEGER.get());
+    auto var_decl =
+        sema.onVars(EMPTY_POS, std::move(var_idents), ASTContext::INTEGER);
     auto ident_expr = sema.onIdentExpression(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "non"), {});
 

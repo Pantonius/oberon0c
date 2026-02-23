@@ -20,22 +20,20 @@ TEST_CASE("Sema Array Type", "[sema][type][array]") {
 
   SECTION("Constant expression") {
     auto dim = 49;
-    auto expr = std::make_unique<NumberExpressionNode>(
-        EMPTY_POS, dim, ASTContext::INTEGER.get());
+    auto expr = std::make_unique<NumberExpressionNode>(EMPTY_POS, dim);
 
     auto array_type =
-        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER.get());
+        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER);
 
     REQUIRE(array_type->expression->value == dim);
   }
 
   SECTION("Constant negative expression") {
     auto dim = -49;
-    auto expr = std::make_unique<NumberExpressionNode>(
-        EMPTY_POS, dim, ASTContext::INTEGER.get());
+    auto expr = std::make_unique<NumberExpressionNode>(EMPTY_POS, dim);
 
     REQUIRE_THROWS_AS(
-        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER.get()),
+        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER),
         NegativeIntegerException);
   }
 
@@ -43,14 +41,14 @@ TEST_CASE("Sema Array Type", "[sema][type][array]") {
     vector<unique_ptr<IdentNode>> var_idents;
     var_idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "nonConst"));
 
-    auto var_decl = sema.onVars(EMPTY_POS, std::move(var_idents),
-                                ASTContext::INTEGER.get());
+    auto var_decl =
+        sema.onVars(EMPTY_POS, std::move(var_idents), ASTContext::INTEGER);
 
     auto expr = sema.onIdentExpression(
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "nonConst"), {});
 
     REQUIRE_THROWS_AS(
-        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER.get()),
+        sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER),
         NonConstException);
   }
 }
@@ -70,25 +68,25 @@ TEST_CASE("Sema Record Type", "[sema][type][record]") {
     var_idents_int.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
     var_idents_int.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field2"));
 
-    fields.emplace_back(std::move(var_idents_int), ASTContext::INTEGER.get());
+    fields.emplace_back(std::move(var_idents_int), ASTContext::INTEGER);
 
     vector<unique_ptr<IdentNode>> var_idents_bool;
     var_idents_bool.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field3"));
     var_idents_bool.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field4"));
 
-    fields.emplace_back(std::move(var_idents_bool), ASTContext::BOOLEAN.get());
+    fields.emplace_back(std::move(var_idents_bool), ASTContext::BOOLEAN);
 
     auto record = sema.onRecordType(EMPTY_POS, std::move(fields));
 
     REQUIRE(record->field_lists[0]->ident->value == "field1");
-    REQUIRE(record->field_lists[0]->type == ASTContext::INTEGER.get());
+    REQUIRE(record->field_lists[0]->type == ASTContext::INTEGER);
     REQUIRE(record->field_lists[1]->ident->value == "field2");
-    REQUIRE(record->field_lists[1]->type == ASTContext::INTEGER.get());
+    REQUIRE(record->field_lists[1]->type == ASTContext::INTEGER);
 
     REQUIRE(record->field_lists[2]->ident->value == "field3");
-    REQUIRE(record->field_lists[2]->type == ASTContext::BOOLEAN.get());
+    REQUIRE(record->field_lists[2]->type == ASTContext::BOOLEAN);
     REQUIRE(record->field_lists[3]->ident->value == "field4");
-    REQUIRE(record->field_lists[3]->type == ASTContext::BOOLEAN.get());
+    REQUIRE(record->field_lists[3]->type == ASTContext::BOOLEAN);
   }
 
   SECTION("Record field uniqueness") {
@@ -97,12 +95,12 @@ TEST_CASE("Sema Record Type", "[sema][type][record]") {
     vector<unique_ptr<IdentNode>> var_idents_int;
     var_idents_int.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
 
-    fields.emplace_back(std::move(var_idents_int), ASTContext::INTEGER.get());
+    fields.emplace_back(std::move(var_idents_int), ASTContext::INTEGER);
 
     vector<unique_ptr<IdentNode>> var_idents_bool;
     var_idents_bool.push_back(std::make_unique<IdentNode>(EMPTY_POS, "field1"));
 
-    fields.emplace_back(std::move(var_idents_bool), ASTContext::BOOLEAN.get());
+    fields.emplace_back(std::move(var_idents_bool), ASTContext::BOOLEAN);
 
     REQUIRE_THROWS_AS(sema.onRecordType(EMPTY_POS, std::move(fields)),
                       DuplicateFieldException);
@@ -126,7 +124,7 @@ TEST_CASE("Procedure Type", "[sema][type][procedure]") {
     idents.push_back(std::make_unique<IdentNode>(EMPTY_POS, "param1"));
 
     formal_parameters.emplace_back(std::move(idents), false,
-                                   ASTContext::INTEGER.get());
+                                   ASTContext::INTEGER);
 
     REQUIRE_THROWS_AS(
         sema.onProcedureType(EMPTY_POS, std::move(formal_parameters)),

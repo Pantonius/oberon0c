@@ -48,12 +48,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = 20;
     auto num_b = 33;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::plus,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -64,12 +61,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = 20;
     auto num_b = 33;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::times,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -80,12 +74,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = 20;
     auto num_b = 33;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::minus,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -96,12 +87,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = 8;
     auto num_b = 3;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::div,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -112,12 +100,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = 8;
     auto num_b = -3;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::div,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -128,12 +113,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = -8;
     auto num_b = 3;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::div,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -144,12 +126,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     auto num_a = -8;
     auto num_b = -3;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::div,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -160,12 +139,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     const auto num_a = 3;
     const auto num_b = 4;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::mod,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -176,12 +152,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     const auto num_a = 3;
     const auto num_b = -4;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::mod,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -193,12 +166,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     const auto num_a = -3;
     const auto num_b = 4;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::mod,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -210,12 +180,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
     const auto num_a = -3;
     const auto num_b = -4;
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a,
-                                               ASTContext::INTEGER.get()),
+        EMPTY_POS, std::make_unique<NumberExpressionNode>(EMPTY_POS, num_a),
         BinaryOpType::mod,
-        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b,
-                                               ASTContext::INTEGER.get()));
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, num_b));
     REQUIRE(binary_expr->getNodeType() == NodeType::number);
     auto expr_number =
         dynamic_cast<const NumberExpressionNode *>(binary_expr.get());
@@ -225,12 +192,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (T,T)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, true),
         BinaryOpType::b_and,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -239,12 +203,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (T,F)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, true),
         BinaryOpType::b_and,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -253,12 +214,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (F,T)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, false),
         BinaryOpType::b_and,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -267,12 +225,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (F,F)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, false),
         BinaryOpType::b_and,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -281,12 +236,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable or expression (T,T)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, true),
         BinaryOpType::b_or,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -295,12 +247,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (T,F)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, true),
         BinaryOpType::b_or,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -309,12 +258,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (F,T)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, false),
         BinaryOpType::b_or,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, true));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
@@ -323,12 +269,9 @@ TEST_CASE("Sema Binary Expression", "[sema][expression][binary]") {
 
   SECTION("Foldable and expression (F,F)") {
     auto binary_expr = sema.onBinaryExpression(
-        EMPTY_POS,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()),
+        EMPTY_POS, std::make_unique<BooleanExpressionNode>(EMPTY_POS, false),
         BinaryOpType::b_or,
-        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false,
-                                                ASTContext::BOOLEAN.get()));
+        std::make_unique<BooleanExpressionNode>(EMPTY_POS, false));
     REQUIRE(binary_expr->getNodeType() == NodeType::boolean);
     auto expr_bool =
         dynamic_cast<const BooleanExpressionNode *>(binary_expr.get());
