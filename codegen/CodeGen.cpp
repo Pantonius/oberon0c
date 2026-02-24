@@ -30,8 +30,6 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
-#include <stdexcept>
-#include <vector>
 
 std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
