@@ -30,8 +30,10 @@ build:test:
     - cmake --build build -t oberon0c_tests
   artifacts:
     paths:
-      - build/oberon0c_tests
-      - build/oberon0c_tests*.cmake
+      - build/oberon0c_utests
+      - build/oberon0c_utests*.cmake
+      - build/oberon0c_itests
+      - build/oberon0c_itests*.cmake
       - build/CTestTestfile.cmake    
   cache:
     paths:
