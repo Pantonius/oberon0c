@@ -165,6 +165,7 @@ TypeNode *CodeGenBuilder::traverse_selectors(
 }
 
 void CodeGenBuilder::visit(AssignmentNode &assignment) {
+  return;
   auto ltype = assignment.ref->type;
   auto rtype = assignment.expression->type;
 
@@ -251,7 +252,24 @@ void CodeGenBuilder::visit(VarDeclarationNode &) {}
 void CodeGenBuilder::visit(TypeDeclarationNode &) {}
 void CodeGenBuilder::visit(ParamDeclarationNode &) {}
 
-void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
+void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
+  if (procedure_call.selectors.size() > 0) {
+    logger_.error(procedure_call.pos(),
+                  "Cannot handle procedure calls with selectors as of yet.");
+    exit(EXIT_FAILURE);
+  }
+
+  auto func = functions_.at(procedure_call.ident->value);
+
+  vector<llvm::Value *> actual_values;
+  for (auto &param : procedure_call.actual_parameters) {
+    // TODO: conceptually simply visit as rvalues
+    param->accept(*this);
+    actual_values.push_back(value_);
+  }
+
+  builder_->CreateCall(func->getFunctionType(), func, actual_values);
+}
 void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   auto proc_type = dynamic_cast<ProcedureTypeNode *>(proc.type);
 
@@ -277,6 +295,8 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
 
   auto callee = module_.getOrInsertFunction(proc.ident->value, fun_type);
   const auto func = cast<llvm::Function>(callee.getCallee());
+  functions_.insert({proc.ident->value, func});
+
   const auto entry =
       llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
   builder_->SetInsertPoint(entry);

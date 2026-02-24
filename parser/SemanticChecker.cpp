@@ -339,7 +339,8 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
   }
 
   return std::make_unique<ProcedureCallNode>(
-      pos, std::move(ident), std::move(selectors), std::move(actual_params));
+      pos, std::move(ident), std::move(selectors), std::move(actual_params),
+      proc_decl);
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
