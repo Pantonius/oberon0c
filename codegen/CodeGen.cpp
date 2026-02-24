@@ -157,11 +157,11 @@ void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   auto condition = value_;
 
   auto tailBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+      llvm::BasicBlock::Create(builder_->getContext(), "ifTail", currentFunc);
   auto trueBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+      llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
   auto falseBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+      llvm::BasicBlock::Create(builder_->getContext(), "ifFalse", currentFunc);
 
   // [
   return_points_.push(tailBlock);
@@ -190,10 +190,10 @@ void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
   elsif.condition->accept(*this);
   auto condition = value_;
 
-  auto trueBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
-  auto falseBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+  auto trueBlock = llvm::BasicBlock::Create(builder_->getContext(), "elsifTrue",
+                                            currentFunc);
+  auto falseBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                             "elsifFalse", currentFunc);
 
   builder_->CreateCondBr(condition, trueBlock, falseBlock);
 
@@ -542,12 +542,12 @@ void CodeGenBuilder::visit(FieldNode &field) {}
 void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
   auto currentFunc = builder_->GetInsertBlock()->getParent();
 
-  auto tailBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
-  auto conditionBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
-  auto bodyBlock =
-      llvm::BasicBlock::Create(builder_->getContext(), "", currentFunc);
+  auto tailBlock = llvm::BasicBlock::Create(builder_->getContext(), "whileTail",
+                                            currentFunc);
+  auto conditionBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                                 "whileCondition", currentFunc);
+  auto bodyBlock = llvm::BasicBlock::Create(builder_->getContext(), "whileBody",
+                                            currentFunc);
 
   // [
   builder_->CreateBr(conditionBlock);
