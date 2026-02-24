@@ -214,6 +214,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   }
 
   for (auto &var : *module_node.get_vars()) {
+    var->type->accept(*this);
     auto type = getLLVMType(var->type);
     auto value = new llvm::GlobalVariable(
         module_, type, false, llvm::GlobalValue::InternalLinkage,
