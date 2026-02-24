@@ -74,15 +74,17 @@ protected:
     number.accept(builder);
   }
 
-  void testUnaryNumberExpression(int num, UnaryOpType op) {
+  void testUnaryNumberExpression(int &num, UnaryOpType op) {
     auto number = std::make_unique<NumberExpressionNode>(EMPTY_POS, num);
-    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
+    auto type = number->type;
+    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), type);
 
     u_expr.accept(builder);
   }
   void testUnaryBoolExpression(bool boolean, UnaryOpType op) {
-    auto number = std::make_unique<BooleanExpressionNode>(EMPTY_POS, boolean);
-    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(number), number->type);
+    auto boolean_ = std::make_unique<BooleanExpressionNode>(EMPTY_POS, boolean);
+    auto type = boolean_->type;
+    UnaryExpressionNode u_expr(EMPTY_POS, op, std::move(boolean_), type);
 
     u_expr.accept(builder);
   }
@@ -95,7 +97,7 @@ protected:
 
     auto ident = make_ident("test");
     IdentExpressionNode ident_expr(EMPTY_POS, std::move(ident), {}, &var_decl,
-                                   ASTContext::INTEGER);
+                                   ASTContext::INTEGER, false);
 
     ident_expr.accept(builder);
   }

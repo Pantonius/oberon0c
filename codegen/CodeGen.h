@@ -23,8 +23,11 @@
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 #include <memory>
+#include <stack>
+#include <vector>
 
 using std::map;
+using std::stack;
 
 enum class OutputFileType { AssemblyFile, LLVMIRFile, ObjectFile };
 
@@ -47,6 +50,7 @@ private:
   map<const TypeNode *, llvm::Type *> types_;
   map<const DeclarationNode *, llvm::Value *> values_;
   llvm::Value *value_;
+  stack<bool> ref_ctx_;
   map<string, llvm::Function *> functions_;
 
   void visit(ArrayTypeNode &) override final;
@@ -77,10 +81,8 @@ private:
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);
-  TypeNode *
-  traverse_selectors(const DeclarationNode *ref,
-                     const vector<unique_ptr<SelectorNode>>::iterator start,
-                     const vector<unique_ptr<SelectorNode>>::iterator end);
+  TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,
+                         const vector<unique_ptr<SelectorNode>> &selectors);
   void init_values(llvm::Value *, llvm::Type *);
 };
 

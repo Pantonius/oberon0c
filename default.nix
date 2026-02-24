@@ -18,7 +18,7 @@ pkgs.stdenv.mkDerivation rec {
 
   buildInputs = with pkgs; [
     boost
-    llvm
+    libllvm
   ];
 
   checkInputs = with pkgs; [
