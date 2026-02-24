@@ -4,7 +4,6 @@
   oberon0c,
   writeShellScriptBin,
   makeWrapper,
-  oberon0c,
 }:
 let
   fs = lib.fileset;
