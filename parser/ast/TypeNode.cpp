@@ -60,5 +60,15 @@ RecordTypeNode::find_field(const IdentNode &ident) const {
   throw FieldNotFoundException(ident);
 }
 
+size_t RecordTypeNode::find_field_index(const IdentNode &ident) const {
+  for (size_t i = 0; i < field_lists.size(); i++) {
+    if (ident.value == field_lists.at(i)->ident->value) {
+      return i;
+    }
+  }
+
+  throw FieldNotFoundException(ident);
+}
+
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
