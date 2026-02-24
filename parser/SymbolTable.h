@@ -54,7 +54,7 @@ public:
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 
-  const char *what() const noexcept override { return msg_.c_str(); }
+  const char *what() const noexcept override;
   const Node &get_node() const noexcept { return node_; }
 };
 
@@ -78,6 +78,17 @@ class OutOfRangeException : public LookupException {
 public:
   OutOfRangeException(const ArrayIndexNode &node)
       : LookupException(node, "Index is out of bounds") {}
+};
+
+class WrongNodeTypeException : public LookupException {
+private:
+  const string req_type_;
+
+public:
+  WrongNodeTypeException(const Node &node, const string req_type)
+      : LookupException(node, to_string(&node) + " is not a " + req_type +
+                                  " node type"),
+        req_type_(req_type) {}
 };
 
 class NullIdentException {

@@ -26,6 +26,8 @@ public:
   ~TypeNode() override = default;
 
   bool operator==(const TypeNode &) const = default;
+
+  virtual bool isPrimitiveType() const { return false; }
 };
 
 class IdentTypeNode final : public TypeNode {
@@ -49,6 +51,8 @@ public:
   ~StdTypeNode() override = default;
 
   bool operator==(const StdTypeNode &) const = default;
+
+  bool isPrimitiveType() const override { return true; }
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
@@ -106,6 +110,7 @@ public:
   void print(std::ostream &stream) const final;
 
   const VarDeclarationNode *find_field(const IdentNode &ident) const;
+  size_t find_field_index(const IdentNode &ident) const;
 
   const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
 };

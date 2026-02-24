@@ -52,7 +52,6 @@ SymbolTable::lookup_type(const IdentNode &ident,
 
   // Handle nullptr
   if (!lookup_node) {
-    logger_.error(ident.pos(), ident.value + " is not declared!");
     throw NotDeclaredException(ident);
     return {};
   }
@@ -104,3 +103,5 @@ SymbolTable::lookup_type(const IdentNode &ident,
   }
   return type;
 }
+
+const char *LookupException::what() const noexcept { return msg_.c_str(); }
