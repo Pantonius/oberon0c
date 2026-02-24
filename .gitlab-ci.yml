@@ -27,7 +27,7 @@ build:test:
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
     - cmake -B build
-    - cmake --build build -t oberon0c_tests
+    - cmake --build build -t oberon0c_utests oberon0c_itests
   artifacts:
     paths:
       - build/oberon0c_utests
