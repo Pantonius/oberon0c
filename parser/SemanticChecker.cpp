@@ -222,6 +222,46 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   }
 }
 
+unique_ptr<IdentExpressionNode> SemanticChecker::onIdentExpressionReference(
+    const FilePos pos, unique_ptr<IdentNode> ident,
+    vector<unique_ptr<SelectorNode>> selectors) {
+  // get ident type for more detailed error messages
+  TypeNode *type = nullptr;
+  const DeclarationNode *decl;
+  try {
+    type = symbol_table_.lookup_type(*ident, selectors);
+    decl = symbol_table_.lookup(*ident).value();
+    if (!decl) {
+      logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
+    }
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    return std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), decl, type, true);
+  }
+
+  // lookup ident declaration
+  auto node_lookup = symbol_table_.lookup(*ident);
+  if (!node_lookup) {
+    logger_.error(pos, "Undeclared identifier.");
+    exit(EXIT_FAILURE);
+  }
+
+  auto node = node_lookup.value();
+
+  if (node->getNodeType() == NodeType::var_declaration ||
+      node->getNodeType() == NodeType::param_declaration) {
+
+    return std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), decl, type, true);
+  } else {
+    logger_.error(
+        pos,
+        "Identifier is not a variable or parameter. Cannot pass by reference.");
+    exit(EXIT_FAILURE);
+  }
+}
+
 using FormalParameterType =
     vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>;
 ProcedureTypeNode *
@@ -280,6 +320,33 @@ void SemanticChecker::onProcedureEnd(const FilePos pos,
 
   // TODO checks
   symbol_table_.endScope();
+}
+
+const ProcedureTypeNode *SemanticChecker::onProcedureCallStart(
+    const FilePos pos, const IdentNode &ident,
+    const vector<unique_ptr<SelectorNode>> &selectors) {
+
+  if (selectors.size() > 0) {
+    logger_.error(pos, "Cannot handle selectors in procedure calls as of now.");
+    exit(EXIT_FAILURE);
+  }
+
+  // get procedure declaration
+  auto opt_decl = symbol_table_.lookup(ident);
+  if (!opt_decl) {
+    logger_.error(pos, "Undeclared procedure identifier.");
+    exit(EXIT_FAILURE);
+  }
+  if (opt_decl.value()->getNodeType() != NodeType::procedure_declaration) {
+    logger_.error(pos,
+                  "Identifier is not associated with a procedure declaration.");
+    exit(EXIT_FAILURE);
+  }
+  auto proc_decl =
+      dynamic_cast<const ProcedureDeclarationNode *>(opt_decl.value());
+
+  // look into procedure type
+  return dynamic_cast<const ProcedureTypeNode *>(proc_decl->type);
 }
 
 unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(

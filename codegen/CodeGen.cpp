@@ -189,7 +189,7 @@ void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
     exit(EXIT_FAILURE);
   }
 
-  auto func = functions_.at(procedure_call.ident->value);
+  auto callee = module_.getFunction(procedure_call.ident->value);
 
   vector<llvm::Value *> actual_values;
   for (auto &param : procedure_call.actual_parameters) {
@@ -198,7 +198,7 @@ void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
     actual_values.push_back(value_);
   }
 
-  builder_->CreateCall(func->getFunctionType(), func, actual_values);
+  builder_->CreateCall(callee, actual_values);
 }
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &var) {
@@ -263,7 +263,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     var_decl->accept(*this);
   }
 
-  // TODO: body statements
+  proc.get_statements()->accept(*this);
 
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
