@@ -1,11 +1,11 @@
 MODULE WhileStatement;
 
-VAR i: INTEGER;
+VAR i, j: INTEGER;
 
 BEGIN
-  WHILE TRUE DO
-    IF FALSE THEN
-      i := 1
-    END
+  i := 1;
+  WHILE i <= 10 DO
+    j := j + i;
+    i := i + 1
   END
 END WhileStatement.
