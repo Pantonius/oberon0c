@@ -28,11 +28,7 @@ TEST_CASE("Test Assignments"
 
     auto ast = parser.parse();
 
-    auto ctx = std::make_unique<llvm::LLVMContext>();
-    auto module = std::make_unique<llvm::Module>("test", *ctx);
-
-    llvm::DataLayout data_layout = llvm::DataLayout();
-    module->setDataLayout(data_layout);
+    auto module = setup_llvm_module();
 
     CodeGenBuilder builder(logger, *module);
     builder.build(*ast);

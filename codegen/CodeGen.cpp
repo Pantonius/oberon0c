@@ -4,7 +4,6 @@
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cstdlib>
-#include <iostream>
 #include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DataLayout.h>
@@ -253,7 +252,7 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
   llvm::verifyFunction(*func, &llvm::errs());
 }
 
-void CodeGenBuilder::visit(IdentTypeNode &ident) {
+void CodeGenBuilder::visit(IdentTypeNode &) {
   logger_.debug("Found IdentTypeNode after semantic check!");
   exit(EXIT_FAILURE);
 }
@@ -264,16 +263,13 @@ void CodeGenBuilder::visit(StdTypeNode &std_type) {
   }
 
   llvm::Type *type;
-  llvm::Value *init_val;
 
   switch (std_type.std_type) {
   case StdType::BOOLEAN:
     type = builder_->getInt1Ty();
-    init_val = builder_->getInt1(false);
     break;
   case StdType::INTEGER:
     type = builder_->getInt32Ty();
-    init_val = builder_->getInt32(0);
     break;
   default:
     break;
@@ -495,7 +491,6 @@ TypeNode *CodeGenBuilder::get_elem_ptr(
     const vector<unique_ptr<SelectorNode>> &selectors) {
 
   TypeNode *curr_type = ref->type;
-  llvm::Value *value = value_;
 
   std::vector<llvm::Value *> idxs;
 

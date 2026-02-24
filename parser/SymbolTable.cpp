@@ -103,3 +103,5 @@ SymbolTable::lookup_type(const IdentNode &ident,
   }
   return type;
 }
+
+const char *LookupException::what() const noexcept { return msg_.c_str(); }

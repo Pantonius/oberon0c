@@ -1,8 +1,20 @@
 #include <catch2/catch_test_macros.hpp>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/TargetSelect.h>
 #include <memory>
+
+static auto ctx = std::make_unique<llvm::LLVMContext>();
+
+inline std::unique_ptr<llvm::Module> setup_llvm_module() {
+  auto module = std::make_unique<llvm::Module>("test", *ctx);
+
+  llvm::DataLayout data_layout = llvm::DataLayout();
+  module->setDataLayout(data_layout);
+
+  return module;
+}
 
 inline std::unique_ptr<llvm::ExecutionEngine>
 create_jit(std::unique_ptr<llvm::Module> module) {

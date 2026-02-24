@@ -54,7 +54,7 @@ public:
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 
-  const char *what() const noexcept override { return msg_.c_str(); }
+  const char *what() const noexcept override;
   const Node &get_node() const noexcept { return node_; }
 };
 
