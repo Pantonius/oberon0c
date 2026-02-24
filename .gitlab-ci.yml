@@ -20,24 +20,39 @@ default:
   before_script:
     - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
 
-build:test:
+build:utests:
   stage: build
   variables:
     FF_USE_FASTZIP: "1"
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
     - cmake -B build
-    - cmake --build build -t oberon0c_utests oberon0c_itests
+    - cmake --build build -t oberon0c_utests
   artifacts:
     paths:
       - build/oberon0c_utests
-      - build/oberon0c_utests*.cmake
-      - build/oberon0c_itests
-      - build/oberon0c_itests*.cmake
-      - build/CTestTestfile.cmake    
+      - build/oberon0c_utests*.cmake 
   cache:
     paths:
       - build/
+
+build:itests:
+  stage: build
+  variables:
+    FF_USE_FASTZIP: 1
+    ARTIFACT_COMPRESSION_LEVEL: "slowest"
+  script:
+    - cmake -B build
+    - cmake --build build -t oberon0c_itests
+  artifacts:
+    paths:
+      - build/oberon0c_itests
+      - build/oberon0c_itests*.cmake
+    expire_in: 30 days
+  cache:
+    paths:
+      - build/
+
 
 build:release:
   stage: build
@@ -54,9 +69,10 @@ build:release:
 # run tests using the binary built before
 test:
   stage: test
-  needs: ["build:test"]
+  needs: ["build:utests", "build:itests"]
   script:
     - mkdir tests/results
+    - cmake -B build
     - ctest --test-dir build
   artifacts:
     paths:
