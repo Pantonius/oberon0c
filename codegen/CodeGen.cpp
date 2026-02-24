@@ -263,7 +263,12 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     var_decl->accept(*this);
   }
 
-  proc.get_statements()->accept(*this);
+  if (proc.get_statements()) {
+    logger_.warning(
+        proc.pos(),
+        "Found procedure declaration without statements in its body.");
+    proc.get_statements()->accept(*this);
+  }
 
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
