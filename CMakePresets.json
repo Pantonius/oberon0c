@@ -1,0 +1,77 @@
+
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 19,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "afl",
+      "inherits": "release",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/afl",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "afl-clang-lto",
+        "CMAKE_CXX_COMPILER": "afl-clang-lto++",
+        "CMAKE_AR": "llvm-ar",
+        "CMAKE_RANLIB": "llvm-ranlib"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "afl",
+      "configurePreset": "afl",
+      "cleanFirst": true,
+      "targets": "oberon0c"
+    },
+    {
+      "name": "afl-asan",
+      "configurePreset": "afl",
+      "cleanFirst": true,
+      "targets": "oberon0c",
+      "environment": {
+        "AFL_USE_ASAN": "1"
+      }
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-all",
+      "displayName": "Test All",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "stopOnFailure": false
+      }
+    }
+  ]
+}

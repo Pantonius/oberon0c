@@ -15,7 +15,7 @@ else ()
   # define DEBUG macro
   if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-D_DEBUG)
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1 -g)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
     add_link_options(-fsanitize=address)
   endif()
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
