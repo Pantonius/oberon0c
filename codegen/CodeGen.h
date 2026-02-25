@@ -6,6 +6,7 @@
 #include "parser/ast/TypeNode.h"
 #include "util/Logger.h"
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
@@ -24,7 +25,6 @@
 #include <llvm/TargetParser/Host.h>
 #include <memory>
 #include <stack>
-#include <vector>
 
 using std::map;
 using std::stack;
@@ -52,6 +52,8 @@ private:
   llvm::Value *value_;
   stack<bool> ref_ctx_;
   map<string, llvm::Function *> functions_;
+
+  std::stack<llvm::BasicBlock *> return_points_;
 
   void visit(ArrayTypeNode &) override final;
   void visit(AssignmentNode &) override final;

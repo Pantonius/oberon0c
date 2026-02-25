@@ -129,6 +129,8 @@ set(UTEST_SOURCES
 
 set(ITEST_SOURCES
   tests/integration_tests/assignment_tests.cpp
+  tests/integration_tests/if_tests.cpp
+  tests/integration_tests/while_tests.cpp
   tests/integration_tests/ident_expression_tests.cpp
   tests/integration_tests/setup_mcjit.h
 )

@@ -1,7 +1,6 @@
 {
   pkgs,
   lib,
-  oberon0c,
   writeShellScriptBin,
   makeWrapper,
 }:
