@@ -43,7 +43,7 @@ build:tests:
     FF_USE_FASTZIP: "1"
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
-    - cmake --preset debug
+    - cmake --preset debug -G Unix Makefiles
     - cmake --build --preset tests
   cache:
     key: test-bins-$CI_COMMIT_SHORT_SHA
@@ -54,12 +54,13 @@ build:release:
   stage: build
   rules: !reference [.default_rules, rules]
   script:
-    - cmake --preset release
+    - cmake --preset release -G Unix Makefiles
     - cmake --build --preset release
   artifacts:
     paths:
       - build/release/oberon0c
   cache:
+    key: release-$CI_COMMIT_SHORT_SHA
     paths:
       - build/release
 
