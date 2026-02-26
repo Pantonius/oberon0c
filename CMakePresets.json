@@ -39,11 +39,18 @@
   "buildPresets": [
     {
       "name": "debug",
-      "configurePreset": "debug"
+      "configurePreset": "debug",
+      "targets": "oberon0c"
     },
     {
       "name": "release",
-      "configurePreset": "release"
+      "configurePreset": "release",
+      "targets": "oberon0c"
+    },
+    {
+      "name": "tests",
+      "configurePreset": "debug",
+      "targets": [ "oberon0c_utests", "oberon0c_itests" ]
     },
     {
       "name": "afl",
