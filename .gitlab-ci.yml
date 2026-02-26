@@ -18,6 +18,9 @@
 default:
   image: $CI_REGISTRY_IMAGE/build-image:latest
 
+variables:
+  CC: "clang"
+  CXX: "clang++"
 stages:
   - prepare
   - build
