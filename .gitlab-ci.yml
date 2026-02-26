@@ -67,7 +67,7 @@ build:release:
 test:
   stage: test
   rules: !reference [.default_rules, rules]
-  needs: ["build:utests", "build:itests"]
+  needs: ["build:tests"]
   script:
     - mkdir tests/results
     - cmake --preset debug
