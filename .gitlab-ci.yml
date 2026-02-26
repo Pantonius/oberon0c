@@ -40,6 +40,8 @@ build:tests:
   stage: build
   rules: !reference [.default_rules, rules]
   variables:
+    CC: "clang"
+    CXX: "clang++"
     FF_USE_FASTZIP: "1"
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
