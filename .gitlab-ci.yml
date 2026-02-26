@@ -76,14 +76,14 @@ test:
   needs: ["build:tests"]
   script:
     - mkdir tests/results
-    - ctest --test-dir build
+    - ctest --preset test-all
   cache:
     key: test-$CI_COMMIT_SHORT_SHA-cache
     paths:
       - build/debug
   artifacts:
     paths:
-      - build/Testing/Temporary/LastTest.log
+      - build/debug/Testing/Temporary/LastTest.log
     reports:
       junit: tests/results/*.xml
     when: always
