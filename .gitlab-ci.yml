@@ -49,11 +49,14 @@ build:tests:
     - cmake --preset debug
     - cmake --build --preset tests
   cache:
-    key: test-$CI_COMMIT_SHORT_SHA-cache
-    fallback_keys:
-      - test-cache
-    paths:
-      - build/debug
+    - key: test-$CI_COMMIT_SHORT_SHA-cache
+      paths:
+        - build/debug
+      policy: push
+    - key: test-cache
+      paths:
+        - build/debug
+
 
 build:release:
   stage: build
@@ -81,6 +84,7 @@ test:
     key: test-$CI_COMMIT_SHORT_SHA-cache
     paths:
       - build/debug
+    policy: pull
   artifacts:
     paths:
       - build/debug/Testing/Temporary/LastTest.log
