@@ -40,15 +40,15 @@ build:tests:
   stage: build
   rules: !reference [.default_rules, rules]
   variables:
-    CC: "clang"
-    CXX: "clang++"
     FF_USE_FASTZIP: "1"
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
-    - cmake --preset debug -G Unix\ Makefiles
+    - cmake --preset debug
     - cmake --build --preset tests
   cache:
-    key: test-bins-$CI_COMMIT_SHORT_SHA
+    key: test-$CI_COMMIT_SHORT_SHA-cache
+    fallback_keys:
+      - test-cache
     paths:
       - build/debug
 
@@ -56,13 +56,13 @@ build:release:
   stage: build
   rules: !reference [.default_rules, rules]
   script:
-    - cmake --preset release -G Unix\ Makefiles
+    - cmake --preset release
     - cmake --build --preset release
   artifacts:
     paths:
       - build/release/oberon0c
   cache:
-    key: release-$CI_COMMIT_SHORT_SHA
+    key: release-cache
     paths:
       - build/release
 
@@ -73,8 +73,11 @@ test:
   needs: ["build:tests"]
   script:
     - mkdir tests/results
-    - cmake --preset debug
     - ctest --test-dir build
+  cache:
+    key: test-$CI_COMMIT_SHORT_SHA-cache
+    paths:
+      - build/debug
   artifacts:
     paths:
       - build/Testing/Temporary/LastTest.log
