@@ -148,6 +148,61 @@ void CodeGenBuilder::build(ASTContext &ctx) {
   }
   ctx.get_module()->accept(*this);
 }
+
+void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  if_stmt.condition->accept(*this);
+  auto condition = value_;
+
+  auto tailBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "ifTail", currentFunc);
+  auto trueBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
+  auto falseBlock =
+      llvm::BasicBlock::Create(builder_->getContext(), "ifFalse", currentFunc);
+
+  // [
+  return_points_.push(tailBlock);
+  builder_->CreateCondBr(condition, trueBlock, falseBlock);
+
+  builder_->SetInsertPoint(trueBlock);
+  if_stmt.body->accept(*this);
+  builder_->CreateBr(tailBlock);
+
+  builder_->SetInsertPoint(falseBlock);
+  for (auto &elsif : if_stmt.elsifs) {
+    elsif->accept(*this);
+  }
+  if (if_stmt.else_statement_sequence) {
+    if_stmt.else_statement_sequence->accept(*this);
+  }
+  builder_->CreateBr(tailBlock);
+  return_points_.pop();
+  // ]
+
+  builder_->SetInsertPoint(tailBlock);
+}
+void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  elsif.condition->accept(*this);
+  auto condition = value_;
+
+  auto trueBlock = llvm::BasicBlock::Create(builder_->getContext(), "elsifTrue",
+                                            currentFunc);
+  auto falseBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                             "elsifFalse", currentFunc);
+
+  builder_->CreateCondBr(condition, trueBlock, falseBlock);
+
+  builder_->SetInsertPoint(trueBlock);
+  elsif.body->accept(*this);
+  builder_->CreateBr(return_points_.top());
+
+  builder_->SetInsertPoint(falseBlock);
+}
+
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
@@ -378,9 +433,6 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
   value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, lsize);
 }
 
-void CodeGenBuilder::visit(IfStatementNode &if_stmt) {}
-void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {}
-
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
   llvm::AllocaInst *base_ptr;
   try {
@@ -498,7 +550,31 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
 }
 void CodeGenBuilder::visit(IdentNode &ident) {}
 void CodeGenBuilder::visit(FieldNode &field) {}
-void CodeGenBuilder::visit(WhileStatementNode &while_statement) {}
+void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  auto tailBlock = llvm::BasicBlock::Create(builder_->getContext(), "whileTail",
+                                            currentFunc);
+  auto conditionBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                                 "whileCondition", currentFunc);
+  auto bodyBlock = llvm::BasicBlock::Create(builder_->getContext(), "whileBody",
+                                            currentFunc);
+
+  // [
+  builder_->CreateBr(conditionBlock);
+
+  builder_->SetInsertPoint(conditionBlock);
+  while_stmt.condition->accept(*this);
+  auto condition = value_;
+  builder_->CreateCondBr(condition, bodyBlock, tailBlock);
+
+  builder_->SetInsertPoint(bodyBlock);
+  while_stmt.body->accept(*this);
+  builder_->CreateBr(conditionBlock);
+  // ]
+
+  builder_->SetInsertPoint(tailBlock);
+}
 
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
   llvm::Type *llvm_type;

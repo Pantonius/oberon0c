@@ -2,8 +2,6 @@
   pkgs,
   lib,
   oberon0c,
-  writeShellScriptBin,
-  makeWrapper,
 }:
 let
   fs = lib.fileset;
@@ -19,38 +17,38 @@ pkgs.stdenv.mkDerivation rec {
     fileset = sourceFiles;
   };
 
-  inputsFrom = [
-    oberon0c
+  nativeBuildInputs = [
+    pkgs.cmake
   ];
 
   buildInputs = [
-    makeWrapper
+    oberon0c.buildInputs
     pkgs.aflplusplus
   ];
 
-  dontConfigure = true;
+  configurePhase = ''
+    mkdir -p build/afl
+    cmake --preset afl
+  '';
 
   buildPhase = ''
-    cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib .
-    cmake --build . --parallel $NIX_BUILD_CORES
-
-    export AFL_USE_ASAN=1 AFL_SAN_NO_INST=1
-    cmake -DCMAKE_C_COMPILER=afl-clang-lto -DCMAKE_CXX_COMPILER=afl-clang-lto++ -DCMAKE_AR=llvm-ar -DCMAKE_RANLIB=llvm-ranlib -DCMAKE_EXECUTABLE_SUFFIX_CXX=_asan .
-    cmake --build . --parallel $NIX_BUILD_CORES
+    cmake --build --preset afl-asan --parallel $NIX_BUILD_CORES
+    mv build/afl/oberon0c build/afl/oberon0c_asan
+    cmake --build --preset afl --parallel $NIX_BUILD_CORES
   '';
 
   installPhase = ''
     runHook preInstall
 
     mkdir -p $out/bin
-    mv oberon0c $out/bin
-    mv oberon0c_asan $out/bin
+    mv build/afl/oberon0c $out/bin
+    mv build/afl/oberon0c_asan $out/bin
 
     runHook postInstall
   '';
 
   postInstall = ''
-    afl-cmin -i test -o test_unique -- $out/bin/oberon0c @@
+    afl-cmin -i tests/resources -o test_unique -- $out/bin/oberon0c @@
     mv test_unique $out
   '';
 

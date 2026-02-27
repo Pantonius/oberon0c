@@ -19,9 +19,8 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-      in
-      {
-        devShells.default = pkgs.mkShell {
+        stdenv = pkgs.clangStdenv;
+        shell = {
           packages = (
             if system == "aarch64-darwin" then
               [ ]
@@ -38,7 +37,13 @@
             self.packages.${system}.oberon0c_fuzz
           ];
         };
+      in
+      {
+        devShells = {
+          default = pkgs.mkShell.override { stdenv = stdenv; } shell;
+        };
         packages = rec {
+          stdenv = stdenv;
           oberon0c = pkgs.callPackage ./default.nix { inherit pkgs; };
           oberon0c_fuzz = pkgs.callPackage ./afl.nix { inherit pkgs oberon0c; };
           default = oberon0c;

@@ -7,7 +7,7 @@
 # This specific template is located at:
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/C++.gitlab-ci.yml
 
-workflow:
+.default_rules:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^(\[Draft\]|\(Draft\)|Draft:)/
@@ -16,67 +16,78 @@ workflow:
     - if: $CI_COMMIT_REF_PROTECTED == "true"
 
 default:
-  image: alpine
-  before_script:
-    - apk add build-base clang clang-dev llvm llvm-dev llvm-static llvm-test-utils llvm-gtest clang-extra-tools cmake extra-cmake-modules autoconf automake make pkgconf curl-dev boost-dev catch2-3
+  image: $CI_REGISTRY_IMAGE/build-image:latest
 
-build:utests:
+variables:
+  CC: "clang"
+  CXX: "clang++"
+stages:
+  - prepare
+  - build
+  - test
+
+prepare:
+  stage: prepare
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASS" | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/build-image:latest .
+    - docker push $CI_REGISTRY_IMAGE/build-image:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+build:tests:
   stage: build
+  rules: !reference [.default_rules, rules]
   variables:
     FF_USE_FASTZIP: "1"
     ARTIFACT_COMPRESSION_LEVEL: "slowest"
   script:
-    - cmake -B build
-    - cmake --build build -t oberon0c_utests
-  artifacts:
-    paths:
-      - build/oberon0c_utests
-      - build/oberon0c_utests*.cmake 
+    - cmake --preset debug
+    - cmake --build --preset tests
   cache:
-    paths:
-      - build/
-
-build:itests:
-  stage: build
-  variables:
-    FF_USE_FASTZIP: 1
-    ARTIFACT_COMPRESSION_LEVEL: "slowest"
-  script:
-    - cmake -B build
-    - cmake --build build -t oberon0c_itests
-  artifacts:
-    paths:
-      - build/oberon0c_itests
-      - build/oberon0c_itests*.cmake
-    expire_in: 30 days
-  cache:
-    paths:
-      - build/
+    - key: test-$CI_COMMIT_SHORT_SHA-cache
+      paths:
+        - build/debug
+      policy: push
+    - key: test-cache
+      paths:
+        - build/debug
 
 
 build:release:
   stage: build
+  rules: !reference [.default_rules, rules]
   script:
-    - cmake -B build
-    - cmake --build build -t oberon0c
-  cache:
-    paths:
-      - build/
+    - cmake --preset release
+    - cmake --build --preset release
   artifacts:
     paths:
-      - build/oberon0c
+      - build/release/oberon0c
+  cache:
+    key: release-cache
+    paths:
+      - build/release
 
 # run tests using the binary built before
 test:
   stage: test
-  needs: ["build:utests", "build:itests"]
+  rules: !reference [.default_rules, rules]
+  needs: ["build:tests"]
   script:
     - mkdir tests/results
-    - cmake -B build
-    - ctest --test-dir build
+    - ctest --preset test-all
+  cache:
+    key: test-$CI_COMMIT_SHORT_SHA-cache
+    paths:
+      - build/debug
+    policy: pull
   artifacts:
     paths:
-      - build/Testing/Temporary/LastTest.log
+      - build/debug/Testing/Temporary/LastTest.log
     reports:
       junit: tests/results/*.xml
     when: always
