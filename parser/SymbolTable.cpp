@@ -24,8 +24,6 @@ void SymbolTable::insert(const IdentNode &ident, const DeclarationNode *node) {
       table_.back();
 
   if (current_scope.contains(ident.value)) {
-    logger_.error(node->pos(),
-                  "Identifier: \"" + ident.value + "\" already used!");
     return;
   }
 
@@ -43,11 +41,10 @@ SymbolTable::lookup(const IdentNode &ident, bool this_scope) const {
     if (this_scope)
       break;
   }
-
   return {};
 }
 
-const TypeNode *
+TypeNode *
 SymbolTable::lookup_type(const IdentNode &ident,
                          const vector<unique_ptr<SelectorNode>> &selectors) {
 
@@ -55,14 +52,13 @@ SymbolTable::lookup_type(const IdentNode &ident,
 
   // Handle nullptr
   if (!lookup_node) {
-    logger_.error(ident.pos(), ident.value + " is not declared!");
     throw NotDeclaredException(ident);
     return {};
   }
 
   auto decl_node = lookup_node.value();
 
-  const TypeNode *type = decl_node->type;
+  TypeNode *type = decl_node->type;
   const Node *prev_selector = &ident;
   for (unsigned long i = 0; i < selectors.size(); i++) {
     auto curr_selector = selectors.at(i).get();
@@ -74,11 +70,14 @@ SymbolTable::lookup_type(const IdentNode &ident,
     if (auto array_selector =
             dynamic_cast<const ArrayIndexNode *>(curr_selector)) {
       if (auto array_type_node = dynamic_cast<const ArrayTypeNode *>(type)) {
+        auto is_in_bounds =
+            array_type_node->is_in_bounds(array_selector->expression.get());
+        if (is_in_bounds && !is_in_bounds.value()) {
+          throw OutOfRangeException(*array_selector);
+        }
+
         type = array_type_node->type;
       } else {
-
-        logger_.error(prev_selector->pos(),
-                      to_string(prev_selector) + " is not of type ARRAY");
         throw WrongTypeException(*prev_selector, "ARRAY");
 
         return {};
@@ -91,13 +90,10 @@ SymbolTable::lookup_type(const IdentNode &ident,
               record_type_node->find_field(*record_selector->ident);
           type = record_field->type;
         } catch (FieldNotFoundException &e) {
-          logger_.error(prev_selector->pos(), e.what());
           throw;
           return {};
         }
       } else {
-        logger_.error(prev_selector->pos(),
-                      to_string(prev_selector) + " is not of type RECORD");
         throw WrongTypeException(*prev_selector, "RECORD");
         return {};
       }
@@ -107,3 +103,5 @@ SymbolTable::lookup_type(const IdentNode &ident,
   }
   return type;
 }
+
+const char *LookupException::what() const noexcept { return msg_.c_str(); }

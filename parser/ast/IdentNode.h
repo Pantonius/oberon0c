@@ -9,11 +9,11 @@ using std::unique_ptr;
 
 class IdentNode final : public Node {
 public:
-  IdentNode(const FilePos &pos, string ident)
+  IdentNode(const FilePos pos, string ident)
       : Node(NodeType::ident, pos), value(ident) {}
   ~IdentNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const string value;

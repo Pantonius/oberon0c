@@ -20,7 +20,6 @@ public:
 
   void beginScope();
   void endScope();
-  void insert(const DeclarationNode *node);
   void insert(const IdentNode &ident, const DeclarationNode *node);
 
   /**
@@ -35,9 +34,8 @@ public:
   std::optional<const DeclarationNode *> lookup(const IdentNode &ident,
                                                 bool this_scope = false) const;
 
-  const TypeNode *
-  lookup_type(const IdentNode &ident,
-              const vector<unique_ptr<SelectorNode>> &selectors);
+  TypeNode *lookup_type(const IdentNode &ident,
+                        const vector<unique_ptr<SelectorNode>> &selectors);
 
 private:
   Logger &logger_;
@@ -51,11 +49,12 @@ private:
 
 public:
   LookupException(const Node &node)
-      : node_(node), msg_(to_string(&node) + " is not declared") {}
+      : node_(node),
+        msg_(to_string(&node) + " could not be found in symbol table") {}
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 
-  const char *what() const noexcept override { return msg_.c_str(); }
+  const char *what() const noexcept override;
   const Node &get_node() const noexcept { return node_; }
 };
 
@@ -73,6 +72,23 @@ public:
 class NotDeclaredException : public LookupException {
 public:
   NotDeclaredException(const Node &node) : LookupException(node) {}
+};
+
+class OutOfRangeException : public LookupException {
+public:
+  OutOfRangeException(const ArrayIndexNode &node)
+      : LookupException(node, "Index is out of bounds") {}
+};
+
+class WrongNodeTypeException : public LookupException {
+private:
+  const string req_type_;
+
+public:
+  WrongNodeTypeException(const Node &node, const string req_type)
+      : LookupException(node, to_string(&node) + " is not a " + req_type +
+                                  " node type"),
+        req_type_(req_type) {}
 };
 
 class NullIdentException {

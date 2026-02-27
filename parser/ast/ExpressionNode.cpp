@@ -1,5 +1,7 @@
 #include "ExpressionNode.h"
 #include "NodeVisitor.h"
+#include "global.h"
+#include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
 
 ostream &operator<<(ostream &os, const UnaryOpType &op) {
@@ -123,11 +125,18 @@ void RecordFieldNode::print(ostream &stream) const {
   ident->print(stream);
 }
 
+NumberExpressionNode::NumberExpressionNode(const FilePos pos, int number)
+    : LiteralExpressionNode(NodeType::number, pos, number,
+                            ASTContext::INTEGER) {}
+
 void NumberExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }
 void NumberExpressionNode::print(ostream &stream) const { stream << value; }
 
+BooleanExpressionNode::BooleanExpressionNode(const FilePos pos, bool boolean)
+    : LiteralExpressionNode(NodeType::boolean, pos, boolean,
+                            ASTContext::BOOLEAN) {};
 void BooleanExpressionNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }

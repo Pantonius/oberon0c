@@ -18,35 +18,35 @@ using std::unique_ptr;
 using std::variant;
 using std::vector;
 
+class DeclarationNode;
+
 class ExpressionNode : public Node {
 private:
 public:
-  ExpressionNode(const NodeType &type, const FilePos &pos,
-                 const TypeNode *type_node)
+  ExpressionNode(const NodeType &type, const FilePos pos,
+                 TypeNode *const type_node)
       : Node(type, pos), type(type_node) {};
   ~ExpressionNode() = default;
 
-  const TypeNode *type;
+  TypeNode *const type;
 
   [[nodiscard]] virtual bool is_const() const = 0;
-
-  // virtual unique_ptr<ExpressionNode> clone() const = 0;
 };
 
 class SelectorNode : public Node {
 public:
-  SelectorNode(const NodeType &type, const FilePos &pos) : Node(type, pos) {}
+  SelectorNode(const NodeType &type, const FilePos pos) : Node(type, pos) {}
   ~SelectorNode() override = default;
 };
 
 class ArrayIndexNode final : public SelectorNode {
 public:
-  ArrayIndexNode(const FilePos &pos, unique_ptr<ExpressionNode> expression)
+  ArrayIndexNode(const FilePos pos, unique_ptr<ExpressionNode> expression)
       : SelectorNode(NodeType::array_selector, pos),
         expression(std::move(expression)) {}
   ~ArrayIndexNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<ExpressionNode> expression;
@@ -54,11 +54,11 @@ public:
 
 class RecordFieldNode final : public SelectorNode {
 public:
-  RecordFieldNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+  RecordFieldNode(const FilePos pos, unique_ptr<IdentNode> ident)
       : SelectorNode(NodeType::record_selector, pos), ident(std::move(ident)) {}
   ~RecordFieldNode() override = default;
 
-  void accept(NodeVisitor &) final;
+  void accept(NodeVisitor &) override final;
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> ident;
@@ -66,7 +66,9 @@ public:
 
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
+
 enum class UnaryOpType { plus, minus, u_not };
+
 std::ostream &operator<<(std::ostream &, const UnaryOpType &);
 
 const set<TokenType> SIGN_TOKEN_TYPES = {TokenType::op_plus,
@@ -76,14 +78,14 @@ UnaryOpType sign_from_token_type(TokenType tokenType);
 
 class UnaryExpressionNode final : public ExpressionNode {
 public:
-  UnaryExpressionNode(const FilePos &pos, const UnaryOpType op,
+  UnaryExpressionNode(const FilePos pos, const UnaryOpType op,
                       unique_ptr<ExpressionNode> expression,
-                      const TypeNode *type_node)
+                      TypeNode *const type_node)
       : ExpressionNode(NodeType::unary_expression, pos, type_node), op(op),
         expression(std::move(expression)) {}
   ~UnaryExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 
@@ -91,54 +93,54 @@ public:
   const unique_ptr<ExpressionNode> expression;
 };
 
-// TODO: think about merge with IdentNode
+class DeclarationNode;
 class IdentExpressionNode final : public ExpressionNode {
 public:
-  IdentExpressionNode(const FilePos &pos, unique_ptr<IdentNode> ident,
+  IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
-                      const TypeNode *type_node)
+                      const DeclarationNode *decl, TypeNode *type_node,
+                      bool lvalue)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
-        ident(std::move(ident)), selectors(std::move(selectors)) {}
+        ident(std::move(ident)), selectors(std::move(selectors)), decl(decl),
+        is_lvalue(lvalue) {}
   ~IdentExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 
   const unique_ptr<IdentNode> ident;
   const vector<unique_ptr<SelectorNode>> selectors;
+  const DeclarationNode *decl;
+  const bool is_lvalue;
 };
 
 template <typename T> class LiteralExpressionNode : public ExpressionNode {
 public:
-  LiteralExpressionNode(const NodeType &type, const FilePos &pos, T value,
-                        const TypeNode *type_node)
+  LiteralExpressionNode(const NodeType &type, const FilePos pos, T value,
+                        TypeNode *const type_node)
       : ExpressionNode(type, pos, type_node), value(value) {};
   ~LiteralExpressionNode() = default;
 
   const T value;
 };
 
-class NumberExpressionNode final : public LiteralExpressionNode<int64_t> {
+class NumberExpressionNode final : public LiteralExpressionNode<int32_t> {
 public:
-  NumberExpressionNode(const FilePos &pos, int number,
-                       const TypeNode *type_node)
-      : LiteralExpressionNode(NodeType::number, pos, number, type_node) {}
+  NumberExpressionNode(const FilePos pos, int number);
   ~NumberExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final { return true; };
 };
 
 class BooleanExpressionNode final : public LiteralExpressionNode<bool> {
 public:
-  BooleanExpressionNode(const FilePos &pos, bool boolean,
-                        const TypeNode *type_node)
-      : LiteralExpressionNode(NodeType::boolean, pos, boolean, type_node) {};
+  BooleanExpressionNode(const FilePos pos, bool boolean);
   ~BooleanExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final { return true; };
 };
@@ -179,17 +181,17 @@ BinaryOpType mul_operator_from_token_type(TokenType tokenType);
 
 class BinaryExpressionNode final : public ExpressionNode {
 public:
-  BinaryExpressionNode(const FilePos &pos,
+  BinaryExpressionNode(const FilePos pos,
                        unique_ptr<ExpressionNode> left_expression,
                        const BinaryOpType op,
                        unique_ptr<ExpressionNode> right_expression,
-                       const TypeNode *type_node)
+                       TypeNode *const type_node)
       : ExpressionNode(NodeType::binary_expression, pos, type_node),
         left_expression(std::move(left_expression)), op(op),
         right_expression(std::move(right_expression)) {}
   ~BinaryExpressionNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
   bool is_const() const final;
 

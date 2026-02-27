@@ -1,5 +1,6 @@
+
 MODULE Simple;
 
-CONST const = 4;
+CONST const = TRUE;
 
 END Simple.

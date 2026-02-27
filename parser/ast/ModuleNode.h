@@ -14,14 +14,17 @@ private:
   unique_ptr<StatementSequenceNode> statement_sequence_;
 
 public:
-  ModuleNode(const FilePos &pos, unique_ptr<IdentNode> ident)
+  ModuleNode(const FilePos pos, unique_ptr<IdentNode> ident)
       : Node(NodeType::module, pos), ident(std::move(ident)) {}
   ~ModuleNode() override = default;
 
-  void accept(NodeVisitor &visitor) final;
+  void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
   const unique_ptr<IdentNode> ident;
+
+  void set_statements(unique_ptr<StatementSequenceNode>);
+  StatementSequenceNode *get_statements();
 };
 
 #endif // OBERON0C_MODULENODE_H

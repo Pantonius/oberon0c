@@ -51,11 +51,19 @@ compile_commands.json
 *.DS_Store
 
 # Nix
+result
 .direnv
 .ccls-cache
+
+# Clangd
 .cache/clangd/index
-result
-results/
+compile_commands.json
+
+# Afl
 output/default
 test_unique
-compile_commands.json
+core.*
+
+# Misc
+results/
+
