@@ -1,8 +1,9 @@
 {
   pkgs,
+  stdenv,
   makeWrapper,
 }:
-pkgs.stdenv.mkDerivation rec {
+stdenv.mkDerivation rec {
   pname = "oberon0c";
   version = "0.1.0";
 
@@ -11,14 +12,12 @@ pkgs.stdenv.mkDerivation rec {
   nativeBuildInputs = with pkgs; [
     ninja
     cmake
-    clang
     clang-tools
-    libgcc
   ];
 
   buildInputs = with pkgs; [
     boost
-    llvm
+    libllvm
   ];
 
   checkInputs = with pkgs; [

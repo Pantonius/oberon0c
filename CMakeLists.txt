@@ -9,11 +9,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
+  # add_compile_options(-fsanitize=address -g)
+  # add_link_options(-fsanitize=address)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
   # define DEBUG macro
   if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_definitions(-D_DEBUG)
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -ASANOPTIONS=aborton_error=1 -g)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
     add_link_options(-fsanitize=address)
   endif()
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -104,7 +106,7 @@ if (LLVM_FOUND)
   endif ()
   add_definitions(${LLVM_DEFINITIONS})
   include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-  llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
+  llvm_map_components_to_libnames(llvm_libs core support passes mcjit executionengine ${LLVM_TARGETS_TO_BUILD})
   target_link_libraries(${OBERON0_C} PRIVATE ${llvm_libs})
 endif ()
 
@@ -115,7 +117,7 @@ enable_testing()
 
 set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
-set(TEST_SOURCES
+set(UTEST_SOURCES
   tests/parser/parser_tests.cpp
   tests/semantic_checker/symbol_table_tests.cpp
   tests/semantic_checker/ident_use_tests.cpp
@@ -125,11 +127,22 @@ set(TEST_SOURCES
   tests/code_gen/code_gen_tests.cpp
 )
 
+set(ITEST_SOURCES
+  tests/integration_tests/assignment_tests.cpp
+  tests/integration_tests/if_tests.cpp
+  tests/integration_tests/while_tests.cpp
+  tests/integration_tests/ident_expression_tests.cpp
+  tests/integration_tests/setup_mcjit.h
+)
+
 # Configure Unit Tests
 find_package(Catch2 3 REQUIRED)
 # These tests can use the Catch2-provided main
-add_executable(oberon0c_tests ${TEST_SOURCES} ${ALL_SOURCES})
-target_link_libraries(oberon0c_tests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
+add_executable(oberon0c_utests ${UTEST_SOURCES} ${ALL_SOURCES})
+target_link_libraries(oberon0c_utests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
+
+add_executable(oberon0c_itests ${ITEST_SOURCES} ${ALL_SOURCES})
+target_link_libraries(oberon0c_itests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
 
 set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
 if ($ENV{CI})
@@ -139,7 +152,13 @@ endif()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(oberon0c_tests
+catch_discover_tests(oberon0c_utests
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+          REPORTER ${CATCH_REPORTER}
+          OUTPUT_DIR "results"
+          OUTPUT_SUFFIX ".xml")
+
+catch_discover_tests(oberon0c_itests
           WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
           REPORTER ${CATCH_REPORTER}
           OUTPUT_DIR "results"

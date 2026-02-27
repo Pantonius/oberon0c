@@ -11,7 +11,6 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <utility>
 
 using std::streampos;
 using std::string;
