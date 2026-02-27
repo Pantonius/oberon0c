@@ -102,7 +102,11 @@ void ProcedureDeclarationNode::print(ostream &stream) const {
   stream << "END ";
   ident->print(stream);
 }
-void ProcedureDeclarationNode::set_statement_sequence(
+void ProcedureDeclarationNode::set_statements(
     unique_ptr<StatementSequenceNode> stmt_seq) {
   statement_sequence_ = std::move(stmt_seq);
+}
+
+StatementSequenceNode *ProcedureDeclarationNode::get_statements() {
+  return statement_sequence_.get();
 }

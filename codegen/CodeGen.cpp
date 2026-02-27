@@ -142,7 +142,12 @@ void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
   tm->getTargetTriple();
 }
 
-void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
+void CodeGenBuilder::build(ASTContext &ctx) {
+  for (auto &type : ctx.std_types) {
+    type.second->accept(*this);
+  }
+  ctx.get_module()->accept(*this);
+}
 
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   auto currentFunc = builder_->GetInsertBlock()->getParent();
@@ -197,6 +202,7 @@ void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
 
   builder_->SetInsertPoint(falseBlock);
 }
+
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
@@ -236,6 +242,24 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   builder_->CreateRet(builder_->getInt32(0));
 }
 
+void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
+  if (procedure_call.selectors.size() > 0) {
+    logger_.error(procedure_call.pos(),
+                  "Cannot handle procedure calls with selectors as of yet.");
+    exit(EXIT_FAILURE);
+  }
+
+  auto callee = module_.getFunction(procedure_call.ident->value);
+
+  vector<llvm::Value *> actual_values;
+  for (auto &param : procedure_call.actual_parameters) {
+    // TODO: conceptually simply visit as rvalues
+    param->accept(*this);
+    actual_values.push_back(value_);
+  }
+
+  builder_->CreateCall(callee, actual_values);
+}
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &var) {
   llvm::Function *parent_func = builder_->GetInsertBlock()->getParent();
@@ -299,7 +323,12 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     var_decl->accept(*this);
   }
 
-  // TODO: body statements
+  if (proc.get_statements()) {
+    logger_.warning(
+        proc.pos(),
+        "Found procedure declaration without statements in its body.");
+    proc.get_statements()->accept(*this);
+  }
 
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
@@ -403,8 +432,6 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
 
   value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, lsize);
 }
-
-void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
   llvm::AllocaInst *base_ptr;
@@ -604,5 +631,5 @@ TypeNode *CodeGenBuilder::get_elem_ptr(
 
 void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
   auto size = module_.getDataLayout().getTypeAllocSize(llvm_type);
-  builder_->CreateMemSet(ptr, builder_->getInt32(0), size, {});
+  builder_->CreateMemSet(ptr, builder_->getInt8(0), size, {});
 }
