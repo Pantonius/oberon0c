@@ -51,7 +51,6 @@ private:
   map<const DeclarationNode *, llvm::Value *> values_;
   llvm::Value *value_;
   stack<bool> ref_ctx_;
-  map<string, llvm::Function *> functions_;
 
   std::stack<llvm::BasicBlock *> return_points_;
 

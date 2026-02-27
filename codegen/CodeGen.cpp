@@ -153,9 +153,7 @@ llvm::GlobalVariable *CodeGenBuilder::getIntFmt() {
   auto fmtStr =
       llvm::ConstantDataArray::getString(builder_->getContext(), "%d", true);
 
-  llvm::GlobalVariable *fmt = module_.getGlobalVariable("intFmt");
-
-  if (fmt)
+  if (llvm::GlobalVariable *fmt = module_.getGlobalVariable("intFmt"))
     return fmt;
 
   return new llvm::GlobalVariable(module_, fmtStr->getType(), true,
