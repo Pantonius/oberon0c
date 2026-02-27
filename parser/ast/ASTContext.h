@@ -7,6 +7,8 @@
 
 using std::function;
 
+enum class StdProc { WRITE_INT, WRITE_LN };
+
 class ASTContext {
 private:
   vector<unique_ptr<TypeNode>> types_;
@@ -19,10 +21,10 @@ public:
   static StdTypeNode *const BOOLEAN;
   static StdTypeNode *const INTEGER;
 
-  static const std::unordered_map<std::string, ProcedureDeclarationNode *const>
-      std_funcs;
-  static DeclarationNode *const WRITE_INT;
-  static DeclarationNode *const WRITE_LN;
+  static const std::unordered_map<StdProc, ProcedureDeclarationNode *const>
+      std_procs;
+  static ProcedureDeclarationNode *const WRITE_INT;
+  static ProcedureDeclarationNode *const WRITE_LN;
 
   // NOTE for multi-module use this should be a vector
   ModuleNode *get_module();

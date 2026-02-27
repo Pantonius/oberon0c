@@ -142,10 +142,95 @@ void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
   tm->getTargetTriple();
 }
 
+llvm::FunctionCallee CodeGenBuilder::getPrintf() {
+  auto printf_type = llvm::FunctionType::get(
+      llvm::Type::getVoidTy(builder_->getContext()),
+      {llvm::PointerType::get(builder_->getContext(), 0)}, true);
+  return module_.getOrInsertFunction("printf", printf_type);
+}
+
+llvm::GlobalVariable *CodeGenBuilder::getIntFmt() {
+  auto fmtStr =
+      llvm::ConstantDataArray::getString(builder_->getContext(), "%d", true);
+
+  llvm::GlobalVariable *fmt = module_.getGlobalVariable("intFmt");
+
+  if (fmt)
+    return fmt;
+
+  return new llvm::GlobalVariable(module_, fmtStr->getType(), true,
+                                  llvm::GlobalValue::PrivateLinkage, fmtStr,
+                                  "intFmt");
+}
+
+void CodeGenBuilder::generateWriteInt() {
+  auto printf_callee = getPrintf();
+  auto fmt = getIntFmt();
+
+  auto write_int_type =
+      static_cast<ProcedureTypeNode *>(ASTContext::WRITE_INT->type);
+  write_int_type->accept(*this);
+
+  llvm::FunctionType *llvm_func_type =
+      static_cast<llvm::FunctionType *>(getLLVMType(write_int_type));
+  auto callee = module_.getOrInsertFunction(ASTContext::WRITE_INT->ident->value,
+                                            llvm_func_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+
+  const auto entry =
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
+
+  auto val = builder_->CreateAlloca(builder_->getInt32Ty(), nullptr, "val");
+
+  auto arg_val = func->arg_begin();
+  builder_->CreateStore(arg_val, val);
+
+  auto load_val = builder_->CreateLoad(builder_->getInt32Ty(), val);
+
+  builder_->CreateCall(printf_callee, {fmt, load_val});
+
+  builder_->CreateRetVoid();
+  llvm::verifyFunction(*func, &llvm::errs());
+}
+
+void CodeGenBuilder::generateWriteLn() {
+  auto printf_callee = getPrintf();
+
+  auto write_ln_type =
+      static_cast<ProcedureTypeNode *>(ASTContext::WRITE_LN->type);
+  write_ln_type->accept(*this);
+
+  llvm::FunctionType *llvm_func_type =
+      static_cast<llvm::FunctionType *>(getLLVMType(write_ln_type));
+  auto callee = module_.getOrInsertFunction(ASTContext::WRITE_LN->ident->value,
+                                            llvm_func_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+
+  const auto entry =
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
+
+  llvm::Constant *nl_val =
+      llvm::ConstantDataArray::getString(builder_->getContext(), "\n", true);
+
+  auto nl = builder_->CreateAlloca(builder_->getInt32Ty(), nullptr, "nl");
+  builder_->CreateStore(nl_val, nl);
+
+  builder_->CreateCall(printf_callee, {nl});
+
+  builder_->CreateRetVoid();
+  llvm::verifyFunction(*func, &llvm::errs());
+}
+
 void CodeGenBuilder::build(ASTContext &ctx) {
   for (auto &type : ctx.std_types) {
     type.second->accept(*this);
   }
+
+  generateWriteInt();
+  generateWriteLn();
+
   ctx.get_module()->accept(*this);
 }
 
@@ -253,7 +338,6 @@ void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
 
   vector<llvm::Value *> actual_values;
   for (auto &param : procedure_call.actual_parameters) {
-    // TODO: conceptually simply visit as rvalues
     param->accept(*this);
     actual_values.push_back(value_);
   }

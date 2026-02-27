@@ -19,6 +19,33 @@ const std::unordered_map<std::string, StdTypeNode *const>
 StdTypeNode *const ASTContext::BOOLEAN = ASTContext::std_types.at("BOOLEAN");
 StdTypeNode *const ASTContext::INTEGER = ASTContext::std_types.at("INTEGER");
 
+// const FilePos pos, unique_ptr<IdentNode> proc_name,
+//                            ProcedureTypeNode *const type_node
+const std::unordered_map<StdProc, ProcedureDeclarationNode *const>
+    ASTContext::std_procs = {
+        {StdProc::WRITE_INT,
+         new ProcedureDeclarationNode(
+             EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "WriteInt"),
+             new ProcedureTypeNode(
+                 EMPTY_POS,
+                 [] {
+                   vector<unique_ptr<ParamDeclarationNode>> params;
+                   params.push_back(std::make_unique<ParamDeclarationNode>(
+                       EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "val"),
+                       false, ASTContext::INTEGER));
+                   return params;
+                 }()))},
+        {StdProc::WRITE_LN,
+         new ProcedureDeclarationNode(
+             EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "WriteLn"),
+             new ProcedureTypeNode(EMPTY_POS, {}))},
+};
+
+ProcedureDeclarationNode *const ASTContext::WRITE_INT =
+    ASTContext::std_procs.at(StdProc::WRITE_INT);
+ProcedureDeclarationNode *const ASTContext::WRITE_LN =
+    ASTContext::std_procs.at(StdProc::WRITE_LN);
+
 ModuleNode *ASTContext::get_module() { return module_.get(); }
 
 void ASTContext::set_module(unique_ptr<ModuleNode> module) {

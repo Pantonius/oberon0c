@@ -86,6 +86,11 @@ private:
   TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,
                          const vector<unique_ptr<SelectorNode>> &selectors);
   void init_values(llvm::Value *, llvm::Type *);
+
+  llvm::FunctionCallee getPrintf();
+  llvm::GlobalVariable *getIntFmt();
+  void generateWriteInt();
+  void generateWriteLn();
 };
 
 class CodeGen final {
