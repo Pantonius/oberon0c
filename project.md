@@ -39,7 +39,7 @@ expression = SimpleExpression [("=" | "#" | "<" | "<=" | ">" | ">=") SimpleExpre
 ### Pattern Matching
 In accordance with the Oberon-7 specification, we introduce the `CASE` statement.
 ```
-CasteStatement = "CASE" expression "OF" case { "|" case } "END"
+CaseStatement = "CASE" expression "OF" case { "|" case } "END"
 case = pattern ":" StatementSequence
 ```
 Patterns are either a wildcard (just some identifier that will be bound to the actual value) or an expression:
