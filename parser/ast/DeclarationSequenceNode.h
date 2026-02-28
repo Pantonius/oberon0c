@@ -125,7 +125,8 @@ public:
 
   // ProcedureHeading
 
-  void set_statement_sequence(unique_ptr<StatementSequenceNode>);
+  void set_statements(unique_ptr<StatementSequenceNode>);
+  StatementSequenceNode *get_statements();
 };
 
 #endif // OBERON0C_DECLARATIONSEQUENCENODE_H

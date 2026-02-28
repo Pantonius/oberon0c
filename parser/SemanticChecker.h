@@ -47,6 +47,9 @@ public:
   void onProcedureEnd(const FilePos, const ProcedureDeclarationNode *,
                       const IdentNode &);
 
+  const ProcedureTypeNode *
+  onProcedureCallStart(const FilePos, const IdentNode &,
+                       const vector<unique_ptr<SelectorNode>> &);
   unique_ptr<ProcedureCallNode>
   onProcedureCall(const FilePos, unique_ptr<IdentNode>,
                   vector<unique_ptr<SelectorNode>>,
@@ -63,6 +66,10 @@ public:
   unique_ptr<ExpressionNode>
   onIdentExpression(const FilePos, unique_ptr<IdentNode>,
                     vector<unique_ptr<SelectorNode>>);
+
+  unique_ptr<IdentExpressionNode>
+  onIdentExpressionReference(const FilePos, unique_ptr<IdentNode>,
+                             vector<unique_ptr<SelectorNode>>);
 
   unique_ptr<AssignmentNode> onAssign(const FilePos, unique_ptr<IdentNode>,
                                       vector<unique_ptr<SelectorNode>>,

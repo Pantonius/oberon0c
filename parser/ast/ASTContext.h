@@ -4,9 +4,10 @@
 #include "ModuleNode.h"
 #include "functional"
 #include "parser/ast/TypeNode.h"
-#include <unordered_set>
 
 using std::function;
+
+enum class StdProc { WRITE_INT, WRITE_LN };
 
 class ASTContext {
 private:
@@ -19,6 +20,11 @@ public:
   static const std::unordered_map<std::string, StdTypeNode *const> std_types;
   static StdTypeNode *const BOOLEAN;
   static StdTypeNode *const INTEGER;
+
+  static const std::unordered_map<StdProc, ProcedureDeclarationNode *const>
+      std_procs;
+  static ProcedureDeclarationNode *const WRITE_INT;
+  static ProcedureDeclarationNode *const WRITE_LN;
 
   // NOTE for multi-module use this should be a vector
   ModuleNode *get_module();

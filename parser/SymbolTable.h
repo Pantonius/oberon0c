@@ -2,6 +2,7 @@
 #define OBERON0C_SYMBOLTABLE_H
 
 #include "global.h"
+#include "parser/ast/ASTContext.h"
 #include "parser/ast/DeclarationSequenceNode.h"
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/IdentNode.h"
@@ -15,7 +16,12 @@
 
 class SymbolTable {
 public:
-  explicit SymbolTable(Logger &logger) : logger_(logger), table_() {};
+  explicit SymbolTable(Logger &logger) : logger_(logger), table_() {
+    // open universe
+    beginScope();
+    insert(*ASTContext::WRITE_INT->ident, ASTContext::WRITE_INT);
+    insert(*ASTContext::WRITE_LN->ident, ASTContext::WRITE_LN);
+  };
   ~SymbolTable() = default;
 
   void beginScope();

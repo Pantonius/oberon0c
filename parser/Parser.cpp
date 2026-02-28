@@ -393,16 +393,33 @@ Parser::procedure_call(unique_ptr<IdentNode> ident) {
 
   auto selectors = Parser::selectors();
 
+  // // sema_.onProcedureCallStart(std::move(ident), std::move(selectors));
+  auto procedure_type = sema_.onProcedureCallStart(pos, *ident, selectors);
+
   vector<unique_ptr<ExpressionNode>> actual_parameters;
   if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
     // actual parameters
+
+    size_t i = 0;
     do {
-      actual_parameters.push_back(expression());
+      if (procedure_type->formal_parameters.at(i)->by_reference) {
+        const FilePos param_pos = scanner_.peek()->start();
+        auto ident = Parser::ident();
+        auto selectors = Parser::selectors();
+
+        actual_parameters.push_back(sema_.onIdentExpressionReference(
+            param_pos, std::move(ident), std::move(selectors)));
+      } else {
+        actual_parameters.push_back(expression());
+      }
+      // onProcedureCallArgument(std::move(expr));
+      i++;
     } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
 
     expect_token_type(TokenType::rparen);
   }
 
+  // return sema_.onProcedureCallEnd(std::move(actual_parameters))
   return sema_.onProcedureCall(pos, std::move(ident), std::move(selectors),
                                std::move(actual_parameters));
 }
@@ -586,7 +603,7 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 
   unique_ptr<StatementSequenceNode> statement_sequence;
   if (peek_check_token_type(TokenType::kw_begin, ADVANCE_ON_TRUE)) {
-    procedure_declaration->set_statement_sequence(Parser::statement_sequence());
+    procedure_declaration->set_statements(Parser::statement_sequence());
   }
 
   // END ident;
