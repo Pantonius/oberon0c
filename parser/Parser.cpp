@@ -138,10 +138,9 @@ SumTypeNode *Parser::sum_type() {
   expect_token_type(TokenType::kw_sum);
 
   // TODO beginScope
-  std::vector<unique_ptr<SumVariantNode>> variants;
+  std::vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>> variants;
   do {
     // SumTypeVariant
-    const FilePos variant_pos = scanner_.peek()->start();
     auto ident = Parser::ident();
 
     std::vector<TypeNode *> arg_types;
@@ -152,19 +151,12 @@ SumTypeNode *Parser::sum_type() {
 
       expect_token_type(TokenType::rparen);
     }
-    // TODO auto variant = sema_.onSumVariant(std::move(ident), arg_types);
-    // TODO variants.push_back(variant);
 
-    variants.push_back(std::make_unique<SumVariantNode>(
-        variant_pos, std::move(ident), arg_types));
+    variants.emplace_back(std::move(ident), arg_types);
   } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
   expect_token_type(TokenType::kw_end);
 
-  // TODO endScope
-
-  // TODO return sema_.onSumType(pos, std::move(variants));
-
-  return nullptr;
+  return sema_.onSumType(pos, std::move(variants));
 }
 
 bool Parser::peek_sum_type() {

@@ -181,6 +181,33 @@ RecordTypeNode *SemanticChecker::onRecordType(
   return ptr;
 }
 
+SumTypeNode *SemanticChecker::onSumType(
+    const FilePos pos,
+    vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>>
+        proto_variants) {
+  auto sum_type = std::make_unique<SumTypeNode>(pos);
+
+  symbol_table_.beginScope();
+
+  vector<unique_ptr<SumVariantNode>> vars;
+  for (auto &proto_variant : proto_variants) {
+    auto variant_pos = proto_variant.first->pos();
+    auto variant = std::make_unique<SumVariantNode>(
+        variant_pos, std::move(proto_variant.first),
+        std::move(proto_variant.second), sum_type.get());
+
+    expect_unique_within_scope(variant->ident.get(), variant.get());
+  }
+
+  sum_type->setVariants(std::move(vars));
+
+  symbol_table_.endScope();
+
+  auto ptr = context_.add_type(std::move(sum_type));
+
+  return ptr;
+}
+
 unique_ptr<ExpressionNode>
 SemanticChecker::onIdentExpression(const FilePos pos,
                                    unique_ptr<IdentNode> ident,

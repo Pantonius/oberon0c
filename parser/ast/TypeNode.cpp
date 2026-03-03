@@ -87,22 +87,9 @@ void SumTypeNode::print(ostream &stream) const {
   stream << " END";
 }
 
-void SumVariantNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void SumVariantNode::print(ostream &stream) const {
-  ident->print(stream);
-
-  auto at_size = arg_types.size();
-  if (at_size > 0) {
-    stream << "(";
-    arg_types[0]->print(stream);
-
-    for (size_t i = 1; i < at_size; i++) {
-      stream << ", ";
-      arg_types[i]->print(stream);
-    }
-  }
-
-  stream << " )";
+void SumTypeNode::setVariants(
+    std::vector<unique_ptr<SumVariantNode>> new_variants) {
+  variants = std::move(new_variants);
 }
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }

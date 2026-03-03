@@ -62,9 +62,18 @@ public:
   void print(std::ostream &stream) const override final;
 };
 
-class ProtoParam {
+class SumVariantNode final : public DeclarationNode {
 public:
-  // TODO
+  SumVariantNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                 std::vector<TypeNode *> arg_types, TypeNode *type)
+      : DeclarationNode(NodeType::sum_variant, pos, std::move(ident), type),
+        arg_types(arg_types) {}
+  ~SumVariantNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const std::vector<TypeNode *> arg_types;
 };
 
 class ParamDeclarationNode final : public DeclarationNode {

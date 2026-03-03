@@ -33,6 +33,9 @@ public:
   RecordTypeNode *
   onRecordType(const FilePos,
                vector<std::pair<vector<unique_ptr<IdentNode>>, TypeNode *>>);
+  SumTypeNode *
+  onSumType(const FilePos,
+            vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>>);
 
   vector<unique_ptr<VarDeclarationNode>>
   onVars(const FilePos, vector<unique_ptr<IdentNode>>, TypeNode *);

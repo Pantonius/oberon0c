@@ -70,6 +70,12 @@ RecordTypeNode *ASTContext::add_type(unique_ptr<RecordTypeNode> type) {
 
   return ptr;
 }
+SumTypeNode *ASTContext::add_type(unique_ptr<SumTypeNode> type) {
+  auto ptr = type.get();
+  types_.push_back(std::move(type));
+
+  return ptr;
+}
 ProcedureTypeNode *ASTContext::add_type(unique_ptr<ProcedureTypeNode> type) {
   auto ptr = type.get();
   types_.push_back(std::move(type));
