@@ -115,6 +115,34 @@ public:
   const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
 };
 
+class SumVariantNode final : public Node {
+public:
+  SumVariantNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                 std::vector<TypeNode *> arg_types)
+      : Node(NodeType::sum_variant, pos), ident(std::move(ident)),
+        arg_types(arg_types) {}
+  ~SumVariantNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const unique_ptr<IdentNode> ident;
+  const std::vector<TypeNode *> arg_types;
+};
+
+class SumTypeNode final : public TypeNode {
+public:
+  SumTypeNode(const FilePos pos,
+              std::vector<unique_ptr<SumVariantNode>> variants)
+      : TypeNode(NodeType::sum_type, pos), variants(std::move(variants)) {}
+  ~SumTypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const std::vector<unique_ptr<SumVariantNode>> variants;
+};
+
 class FieldNotFoundException : public std::exception {
 private:
   const IdentNode &ident_;

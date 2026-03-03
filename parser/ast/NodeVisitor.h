@@ -27,6 +27,8 @@ public:
   virtual void visit(NumberExpressionNode &) = 0;
   virtual void visit(BooleanExpressionNode &) = 0;
   virtual void visit(RecordTypeNode &) = 0;
+  virtual void visit(SumTypeNode &) = 0;
+  virtual void visit(SumVariantNode &) = 0;
   virtual void visit(RepeatStatementNode &) = 0;
   virtual void visit(SelectorNode &) = 0;
   virtual void visit(StatementSequenceNode &) = 0;

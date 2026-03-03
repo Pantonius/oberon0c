@@ -70,5 +70,40 @@ size_t RecordTypeNode::find_field_index(const IdentNode &ident) const {
   throw FieldNotFoundException(ident);
 }
 
+void SumTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void SumTypeNode::print(ostream &stream) const {
+  stream << "SUM ";
+
+  auto v_size = variants.size();
+  if (v_size > 0) {
+    variants[0]->print(stream);
+
+    for (size_t i = 1; i < v_size; i++) {
+      stream << "; ";
+      variants[i]->print(stream);
+    }
+  }
+
+  stream << " END";
+}
+
+void SumVariantNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void SumVariantNode::print(ostream &stream) const {
+  ident->print(stream);
+
+  auto at_size = arg_types.size();
+  if (at_size > 0) {
+    stream << "(";
+    arg_types[0]->print(stream);
+
+    for (size_t i = 1; i < at_size; i++) {
+      stream << ", ";
+      arg_types[i]->print(stream);
+    }
+  }
+
+  stream << " )";
+}
+
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
