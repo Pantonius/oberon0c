@@ -83,6 +83,8 @@ TypeNode *Parser::type() {
     return array_type();
   } else if (peek_record_type()) {
     return record_type();
+  } else if (peek_sum_type()) {
+    return sum_type();
   } else {
     logger_.error(pos, "Expected type found " + to_string(node_type));
     exit(EXIT_FAILURE);
@@ -128,6 +130,45 @@ RecordTypeNode *Parser::record_type() {
 
 bool Parser::peek_record_type() {
   return peek_check_token_type(TokenType::kw_record);
+}
+
+SumTypeNode *Parser::sum_type() {
+  const FilePos pos = scanner_.peek()->start();
+
+  expect_token_type(TokenType::kw_sum);
+
+  // TODO beginScope
+  std::vector<unique_ptr<SumVariantNode>> variants;
+  do {
+    // SumTypeVariant
+    const FilePos variant_pos = scanner_.peek()->start();
+    auto ident = Parser::ident();
+
+    std::vector<TypeNode *> arg_types;
+    if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+      do {
+        arg_types.push_back(type());
+      } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
+
+      expect_token_type(TokenType::rparen);
+    }
+    // TODO auto variant = sema_.onSumVariant(std::move(ident), arg_types);
+    // TODO variants.push_back(variant);
+
+    variants.push_back(std::make_unique<SumVariantNode>(
+        variant_pos, std::move(ident), arg_types));
+  } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
+  expect_token_type(TokenType::kw_end);
+
+  // TODO endScope
+
+  // TODO return sema_.onSumType(pos, std::move(variants));
+
+  return nullptr;
+}
+
+bool Parser::peek_sum_type() {
+  return peek_check_token_type(TokenType::kw_sum);
 }
 
 // number = integer | real

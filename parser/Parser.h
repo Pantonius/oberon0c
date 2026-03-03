@@ -42,6 +42,7 @@ private:
   void module();
   unique_ptr<ProcedureCallNode> procedure();
   RecordTypeNode *record_type();
+  SumTypeNode *sum_type();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
   unique_ptr<StatementNode> statement();
@@ -86,6 +87,7 @@ private:
   bool peek_sign();
   bool peek_simple_expr();
   bool peek_string();
+  bool peek_sum_type();
   bool peek_term();
   bool peek_const_declaration();
   bool peek_type_declaration();
