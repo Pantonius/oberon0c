@@ -79,6 +79,7 @@ enum class TokenType : char {
   kw_with,
   kw_array,
   kw_record,
+  kw_sum,
   kw_const,
   kw_type,
   kw_var,
