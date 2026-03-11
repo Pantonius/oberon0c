@@ -51,7 +51,6 @@ private:
   map<const DeclarationNode *, llvm::Value *> values_;
   llvm::Value *value_;
   stack<bool> ref_ctx_;
-  map<string, llvm::Function *> functions_;
 
   std::stack<llvm::BasicBlock *> return_points_;
 
@@ -86,6 +85,11 @@ private:
   TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,
                          const vector<unique_ptr<SelectorNode>> &selectors);
   void init_values(llvm::Value *, llvm::Type *);
+
+  llvm::FunctionCallee getPrintf();
+  llvm::GlobalVariable *getIntFmt();
+  void generateWriteInt();
+  void generateWriteLn();
 };
 
 class CodeGen final {

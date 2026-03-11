@@ -142,7 +142,95 @@ void CodeGen::test_unique_ptr(std::unique_ptr<llvm::TargetMachine> tm) {
   tm->getTargetTriple();
 }
 
-void CodeGenBuilder::build(ASTContext &ctx) { ctx.get_module()->accept(*this); }
+llvm::FunctionCallee CodeGenBuilder::getPrintf() {
+  auto printf_type = llvm::FunctionType::get(
+      llvm::Type::getVoidTy(builder_->getContext()),
+      {llvm::PointerType::get(builder_->getContext(), 0)}, true);
+  return module_.getOrInsertFunction("printf", printf_type);
+}
+
+llvm::GlobalVariable *CodeGenBuilder::getIntFmt() {
+  auto fmtStr =
+      llvm::ConstantDataArray::getString(builder_->getContext(), "%d", true);
+
+  if (llvm::GlobalVariable *fmt = module_.getGlobalVariable("intFmt"))
+    return fmt;
+
+  return new llvm::GlobalVariable(module_, fmtStr->getType(), true,
+                                  llvm::GlobalValue::PrivateLinkage, fmtStr,
+                                  "intFmt");
+}
+
+void CodeGenBuilder::generateWriteInt() {
+  auto printf_callee = getPrintf();
+  auto fmt = getIntFmt();
+
+  auto write_int_type =
+      static_cast<ProcedureTypeNode *>(ASTContext::WRITE_INT->type);
+  write_int_type->accept(*this);
+
+  llvm::FunctionType *llvm_func_type =
+      static_cast<llvm::FunctionType *>(getLLVMType(write_int_type));
+  auto callee = module_.getOrInsertFunction(ASTContext::WRITE_INT->ident->value,
+                                            llvm_func_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+
+  const auto entry =
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
+
+  auto val = builder_->CreateAlloca(builder_->getInt32Ty(), nullptr, "val");
+
+  auto arg_val = func->arg_begin();
+  builder_->CreateStore(arg_val, val);
+
+  auto load_val = builder_->CreateLoad(builder_->getInt32Ty(), val);
+
+  builder_->CreateCall(printf_callee, {fmt, load_val});
+
+  builder_->CreateRetVoid();
+  llvm::verifyFunction(*func, &llvm::errs());
+}
+
+void CodeGenBuilder::generateWriteLn() {
+  auto printf_callee = getPrintf();
+
+  auto write_ln_type =
+      static_cast<ProcedureTypeNode *>(ASTContext::WRITE_LN->type);
+  write_ln_type->accept(*this);
+
+  llvm::FunctionType *llvm_func_type =
+      static_cast<llvm::FunctionType *>(getLLVMType(write_ln_type));
+  auto callee = module_.getOrInsertFunction(ASTContext::WRITE_LN->ident->value,
+                                            llvm_func_type);
+  const auto func = cast<llvm::Function>(callee.getCallee());
+
+  const auto entry =
+      llvm::BasicBlock::Create(builder_->getContext(), "entry", func);
+  builder_->SetInsertPoint(entry);
+
+  llvm::Constant *nl_val =
+      llvm::ConstantDataArray::getString(builder_->getContext(), "\n", true);
+
+  auto nl = builder_->CreateAlloca(builder_->getInt32Ty(), nullptr, "nl");
+  builder_->CreateStore(nl_val, nl);
+
+  builder_->CreateCall(printf_callee, {nl});
+
+  builder_->CreateRetVoid();
+  llvm::verifyFunction(*func, &llvm::errs());
+}
+
+void CodeGenBuilder::build(ASTContext &ctx) {
+  for (auto &type : ctx.std_types) {
+    type.second->accept(*this);
+  }
+
+  generateWriteInt();
+  generateWriteLn();
+
+  ctx.get_module()->accept(*this);
+}
 
 void CodeGenBuilder::visit(IfStatementNode &if_stmt) {
   auto currentFunc = builder_->GetInsertBlock()->getParent();
@@ -197,6 +285,7 @@ void CodeGenBuilder::visit(ElsIfStatementNode &elsif) {
 
   builder_->SetInsertPoint(falseBlock);
 }
+
 void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
@@ -236,6 +325,23 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   builder_->CreateRet(builder_->getInt32(0));
 }
 
+void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {
+  if (procedure_call.selectors.size() > 0) {
+    logger_.error(procedure_call.pos(),
+                  "Cannot handle procedure calls with selectors as of yet.");
+    exit(EXIT_FAILURE);
+  }
+
+  auto callee = module_.getFunction(procedure_call.ident->value);
+
+  vector<llvm::Value *> actual_values;
+  for (auto &param : procedure_call.actual_parameters) {
+    param->accept(*this);
+    actual_values.push_back(value_);
+  }
+
+  builder_->CreateCall(callee, actual_values);
+}
 void CodeGenBuilder::visit(ConstDeclarationNode &) {}
 void CodeGenBuilder::visit(VarDeclarationNode &var) {
   llvm::Function *parent_func = builder_->GetInsertBlock()->getParent();
@@ -299,7 +405,12 @@ void CodeGenBuilder::visit(ProcedureDeclarationNode &proc) {
     var_decl->accept(*this);
   }
 
-  // TODO: body statements
+  if (proc.get_statements()) {
+    logger_.warning(
+        proc.pos(),
+        "Found procedure declaration without statements in its body.");
+    proc.get_statements()->accept(*this);
+  }
 
   builder_->CreateRetVoid();
   llvm::verifyFunction(*func, &llvm::errs());
@@ -403,8 +514,6 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
 
   value_ = builder_->CreateMemCpy(lvalue, {}, rvalue, {}, lsize);
 }
-
-void CodeGenBuilder::visit(ProcedureCallNode &procedure_call) {}
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
   llvm::AllocaInst *base_ptr;
@@ -604,5 +713,5 @@ TypeNode *CodeGenBuilder::get_elem_ptr(
 
 void CodeGenBuilder::init_values(llvm::Value *ptr, llvm::Type *llvm_type) {
   auto size = module_.getDataLayout().getTypeAllocSize(llvm_type);
-  builder_->CreateMemSet(ptr, builder_->getInt32(0), size, {});
+  builder_->CreateMemSet(ptr, builder_->getInt8(0), size, {});
 }
