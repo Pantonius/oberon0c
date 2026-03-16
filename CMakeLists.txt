@@ -9,8 +9,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 else ()
   # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
   add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
-  # add_compile_options(-fsanitize=address -g)
-  # add_link_options(-fsanitize=address)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
   # define DEBUG macro
   if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -128,6 +126,8 @@ set(UTEST_SOURCES
 )
 
 set(ITEST_SOURCES
+  tests/integration_tests/sort0_test.cpp
+  tests/integration_tests/procedure_decl_tests.cpp
   tests/integration_tests/assignment_tests.cpp
   tests/integration_tests/if_tests.cpp
   tests/integration_tests/while_tests.cpp

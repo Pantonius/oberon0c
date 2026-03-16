@@ -290,6 +290,9 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
   for (auto &type : *module_node.get_types()) {
+    // Insert llvm-type into types_
+    type->accept(*this);
+
     // NOTE TypeDeclarations are simply new key:value pairs in types_
     // differentiation of semantically different types is gone now;
     // the parser / sema checker did that
@@ -516,20 +519,25 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
 }
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
-  llvm::AllocaInst *base_ptr;
+  llvm::Value *base_ptr;
   try {
-    base_ptr = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
+    base_ptr = values_.at(ident_expr.decl);
   } catch (std::out_of_range &e) {
     logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
   }
 
-  auto elem_type =
-      get_elem_ptr(ident_expr.decl, base_ptr, ident_expr.selectors);
+  if (base_ptr->getType()->isPointerTy()) {
 
-  if (elem_type->isPrimitiveType() && !ident_expr.is_lvalue) {
-    value_ = builder_->CreateLoad(getLLVMType(elem_type), value_);
+    auto elem_type =
+        get_elem_ptr(ident_expr.decl, base_ptr, ident_expr.selectors);
+
+    if (elem_type->isPrimitiveType() && !ident_expr.is_lvalue) {
+      value_ = builder_->CreateLoad(getLLVMType(elem_type), value_);
+    }
     return;
   }
+
+  value_ = base_ptr;
 }
 
 void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
@@ -675,6 +683,12 @@ TypeNode *CodeGenBuilder::get_elem_ptr(
     const vector<unique_ptr<SelectorNode>> &selectors) {
 
   TypeNode *curr_type = ref->type;
+
+  // Check if base_ptr is a pointer
+  if (!base_ptr->getType()->isPointerTy()) {
+    // TODO: Throw exception
+    return nullptr;
+  }
 
   std::vector<llvm::Value *> idxs;
 

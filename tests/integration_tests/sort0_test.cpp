@@ -3,9 +3,10 @@
 #include "parser/Parser.h"
 #include "scanner/Scanner.h"
 #include "util/Logger.h"
+#include <algorithm>
 #include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cstdio>
+#include <iterator>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -14,14 +15,13 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
-#include <memory>
 
-TEST_CASE("Test Assignments"
+TEST_CASE("Test Program"
           "[full]") {
 
-  SECTION("File Assignment.Mod") {
+  SECTION("File Sort0.Mod") {
     Logger logger(LogLevel::DEBUG, std::cout, std::cerr);
-    const path path = "./integration_tests/resources/Assignment.Mod";
+    const path path = "./integration_tests/resources/Sort0.Mod";
     Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
@@ -43,29 +43,16 @@ TEST_CASE("Test Assignments"
 
     exec_engine->runFunction(main, {});
 
-    auto i_addr = exec_engine->getGlobalValueAddress("i");
-    auto i = (int *)i_addr;
+    auto a_addr = exec_engine->getGlobalValueAddress("a");
+    auto a = (int (*)[20])a_addr;
 
-    REQUIRE(*i == 1);
+    int a_exp[20];
 
-    struct R {
-      bool f0;
-      int f1;
-      bool operator==(const R &) const = default;
-    };
+    for (int i = 0; i < 20; i++) {
+      a_exp[i] = i + 1;
+    }
 
-    R r = {
-        true,
-        5,
-    };
-
-    auto r0_addr = exec_engine->getGlobalValueAddress("r0");
-    auto r0 = (R *)r0_addr;
-
-    auto r1_addr = exec_engine->getGlobalValueAddress("r1");
-    auto r1 = (R *)r1_addr;
-
-    REQUIRE(*r0 == *r1);
-    REQUIRE(*r0 == r);
+    REQUIRE((*a)[5] == 6);
+    REQUIRE(std::ranges::equal(*a, a_exp));
   }
 }
