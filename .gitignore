@@ -31,6 +31,7 @@
 /cmake-build-debug/
 /CMakeFiles/
 build
+compile_commands.json
 
 # Visual Studio
 /.vs/
@@ -50,8 +51,19 @@ build
 *.DS_Store
 
 # Nix
+result
 .direnv
 .ccls-cache
+
+# Clangd
 .cache/clangd/index
-result
+compile_commands.json
+
+# Afl
+output/default
+test_unique
+core.*
+
+# Misc
 results/
+

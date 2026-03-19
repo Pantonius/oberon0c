@@ -7,6 +7,7 @@
 #include "Scanner.h"
 
 #include <cctype>
+#include <cstdlib>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -20,6 +21,7 @@
 #include "IdentToken.h"
 #include "LiteralToken.h"
 #include "UndefinedToken.h"
+#include "global.h"
 
 using std::make_unique;
 using std::string;
@@ -104,6 +106,11 @@ unique_ptr<const Token> Scanner::next() {
   }
   auto token = std::move(tokens_.front());
   tokens_.pop();
+
+  // logger_.debug("Last token: " + to_string(token->type()) + " at " +
+  //               to_string(token->start().fileName) + ":" +
+  //               to_string(token->start().lineNo) + ":" +
+  //               to_string(token->start().charNo));
   return token;
 }
 
@@ -426,6 +433,10 @@ unique_ptr<const Token> Scanner::scanString() {
   auto pos = current();
   read();
   while (ch_ != '"') {
+    // if (eof_) {
+    //   logger_.error(pos, "Missing closing \" for string");
+    //   exit(1);
+    // }
     ss << ch_;
     if (ch_ == '\\') {
       read();

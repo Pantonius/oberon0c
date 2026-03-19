@@ -1,57 +1,42 @@
-/*
- * Base class of all AST nodes used by the Oberon-0 compiler.
- *
- * Created by Michael Grossniklaus on 2/2/18.
- */
+#ifndef OBERON0C_NODE_H
+#define OBERON0C_NODE_H
 
-#ifndef OBERON0C_AST_H
-#define OBERON0C_AST_H
-
-#include "../../util/Logger.h"
-#include <list>
+#include "scanner/Token.h"
 #include <ostream>
-#include <string>
 
 enum class NodeType : char {
-  // TODO sort these for more readability
-  module,
-  import_list,
-  import,
-  declaration_sequence,
+  array_type,
+  assignment,
+  binary_expression,
+  boolean,
   const_declaration,
-  type_declaration,
-  var_declaration,
-  procedure_declaration,
-  procedure_heading,
+  declaration_sequence,
+  elsif_statement,
+  fp_section,
+  field,
+  ident,
+  ident_expression,
+  ident_type,
+  if_statement,
+  module,
+  number,
+  param_declaration,
   procedure_body,
   procedure_call,
-  function_call,
-  actual_parameters,
-  expression,
-  simple_expr,
-  term,
-  designator,
-  set,
-  element,
-  statement,
-  if_statement,
-  case_statement,
-  with_statement,
-  while_statement,
+  procedure_declaration,
+  procedure_heading,
+  procedure_type,
+  record_type,
   repeat_statement,
-  loop_statement,
-  exit_statement,
-  return_statement,
+  array_selector,
+  record_selector,
+  statement,
   statement_sequence,
-  factor,
-  assignment,
-  clause,
-  case_label_list,
-  case_labels,
-  qual_ident,
-  formal_parameters,
-  fp_section,
-  formal_type
+  std_type,
+  type_declaration,
+  unary_expression,
+  var_declaration,
+  while_statement,
 };
 
 class NodeVisitor;
@@ -63,17 +48,19 @@ private:
   FilePos pos_;
 
 public:
-  explicit Node(const NodeType nodeType, FilePos pos)
+  Node(const NodeType nodeType, FilePos pos)
       : nodeType_(nodeType), pos_(std::move(pos)) {};
   virtual ~Node();
+
+  bool operator==(const Node &) const = default;
 
   [[nodiscard]] NodeType getNodeType() const;
   [[nodiscard]] FilePos pos() const;
 
-  virtual void accept(NodeVisitor &visitor) = 0;
+  virtual void accept(NodeVisitor &) = 0;
 
-  virtual void print(std::ostream &stream) const = 0;
-  friend std::ostream &operator<<(std::ostream &stream, const Node &node);
+  virtual void print(std::ostream &) const = 0;
+  friend std::ostream &operator<<(std::ostream &, const Node &);
 };
 
-#endif // OBERON0C_AST_H
+#endif // OBERON0C_NODE_H

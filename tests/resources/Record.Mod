@@ -1,0 +1,14 @@
+MODULE Record;
+
+CONST Dim = 10 * 2;
+x = 5;
+
+TYPE INTARRAY = ARRAY Dim OF INTEGER;
+ARRAYRECORD = RECORD x, y: INTARRAY END;
+
+VAR a: INTARRAY;
+b: ARRAYRECORD;
+
+BEGIN
+  b.x[2] := 4;
+END Record.

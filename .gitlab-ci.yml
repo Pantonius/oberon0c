@@ -1,0 +1,93 @@
+# This file is a template, and might need editing before it works on your project.
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/development/cicd/templates/
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/C++.gitlab-ci.yml
+
+.default_rules:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TITLE =~ /^(\[Draft\]|\(Draft\)|Draft:)/
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
+
+default:
+  image: $CI_REGISTRY_IMAGE/build-image:latest
+
+variables:
+  CC: "clang"
+  CXX: "clang++"
+stages:
+  - prepare
+  - build
+  - test
+
+prepare:
+  stage: prepare
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASS" | docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password-stdin
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/build-image:latest .
+    - docker push $CI_REGISTRY_IMAGE/build-image:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+build:tests:
+  stage: build
+  rules: !reference [.default_rules, rules]
+  variables:
+    FF_USE_FASTZIP: "1"
+    ARTIFACT_COMPRESSION_LEVEL: "slowest"
+  script:
+    - cmake --preset debug
+    - cmake --build --preset tests
+  cache:
+    - key: test-$CI_COMMIT_SHORT_SHA-cache
+      paths:
+        - build/debug
+      policy: push
+    - key: test-cache
+      paths:
+        - build/debug
+
+
+build:release:
+  stage: build
+  rules: !reference [.default_rules, rules]
+  script:
+    - cmake --preset release
+    - cmake --build --preset release
+  artifacts:
+    paths:
+      - build/release/oberon0c
+  cache:
+    key: release-cache
+    paths:
+      - build/release
+
+# run tests using the binary built before
+test:
+  stage: test
+  rules: !reference [.default_rules, rules]
+  needs: ["build:tests"]
+  script:
+    - mkdir tests/results
+    - ctest --preset test-all
+  cache:
+    key: test-$CI_COMMIT_SHORT_SHA-cache
+    paths:
+      - build/debug
+    policy: pull
+  artifacts:
+    paths:
+      - build/debug/Testing/Temporary/LastTest.log
+    reports:
+      junit: tests/results/*.xml
+    when: always

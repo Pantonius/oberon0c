@@ -4,31 +4,39 @@ set(OBERON0_C "oberon0c")
 project(${OBERON0_C} VERSION 0.0.1)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # warning level 4
-    add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
+  # warning level 4
+  add_compile_options(/Wall /W4 /external:anglebrackets /external:W0)
 else ()
-    # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
-    add_compile_options(-W -Wall -Wextra -Werror -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
-    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-Wweak-vtables)
-        if (WIN32)
-            add_compile_options(-fms-extensions)
-        endif ()
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # using GCC
+  # lots of warnings and all warnings as errors -Wglobal-constructors -Wexit-time-destructors
+  add_compile_options(-W -Wall -Wextra -Wpedantic -Wno-error=deprecated -Wunreachable-code -Winvalid-pch -Wcast-align -Wformat=2 -Wformat-nonliteral -Wmissing-declarations -Wmissing-noreturn -Wmissing-format-attribute -Wmissing-include-dirs -Wredundant-decls -Wswitch-default -Wsign-conversion)
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Woverloaded-virtual>)
+  # define DEBUG macro
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    add_definitions(-D_DEBUG)
+    add_compile_options(-fsanitize=address -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=address)
+  endif()
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wweak-vtables)
+    if (WIN32)
+      add_compile_options(-fms-extensions)
     endif ()
+  elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # using GCC
+  endif ()
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
-# define DEBUG macro
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    add_definitions(-D_DEBUG)
-endif ()
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
+
 
 # add the cmake folder of the project for extension modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -51,83 +59,108 @@ set(SCANNER_SOURCES
 
 set(PARSER_SOURCES
         parser/Parser.cpp parser/Parser.h
+        parser/ast/ASTContext.h parser/ast/ASTContext.cpp
+        parser/ast/DeclarationSequenceNode.h parser/ast/DeclarationSequenceNode.cpp
+        parser/ast/ExpressionNode.h parser/ast/ExpressionNode.cpp
+        parser/ast/IdentNode.h parser/ast/IdentNode.cpp
+        parser/ast/ModuleNode.h parser/ast/ModuleNode.cpp
         parser/ast/Node.cpp parser/ast/Node.h
-        parser/ast/ActualParametersNode.h
-        parser/ast/AssignmentNode.h
-        parser/ast/CaseLabelListNode.h
-        parser/ast/CaseLabelsNode.h
-        parser/ast/CaseStatementNode.h
-        parser/ast/ClauseNode.h
-        parser/ast/ConstDeclarationNode.h
-        parser/ast/DeclarationSequenceNode.h
-        parser/ast/DesignatorNode.h
-        parser/ast/ElementNode.h
-        parser/ast/ExitStatementNode.h
-        parser/ast/ExpressionNode.h
-        parser/ast/FPSectionNode.h
-        parser/ast/FactorNode.h
-        parser/ast/FormalParametersNode.h
-        parser/ast/FormalTypeNode.h
-        parser/ast/FunctionCallNode.h
-        parser/ast/IfStatementNode.h
-        parser/ast/ImportListNode.h
-        parser/ast/ImportNode.h
-        parser/ast/LoopStatementNode.h
-        parser/ast/ModuleNode.h
-        parser/ast/Node.cpp
-        parser/ast/Node.h
-        parser/ast/NodeVisitor.cpp
-        parser/ast/NodeVisitor.h
-        parser/ast/ProcedureBodyNode.h
-        parser/ast/ProcedureCallNode.h
-        parser/ast/ProcedureDeclarationNode.h
-        parser/ast/ProcedureHeadingNode.h
-        parser/ast/QualIdentNode.h
-        parser/ast/RelationNode.h
-        parser/ast/RepeatStatementNode.h
-        parser/ast/ReturnStatementNode.h
-        parser/ast/SetNode.h
-        parser/ast/SimpleExprNode.h
-        parser/ast/StatementNode.h
-        parser/ast/StatementSequenceNode.h
-        parser/ast/TermNode.h
-        parser/ast/TypeDeclarationNode.h
-        parser/ast/VarDeclarationNode.h
-        parser/ast/WhileStatementNode.h
-        parser/ast/WithStatementNode.h
-        parser/ast/ast.h
-        parser/ast/NodeVisitor.cpp parser/ast/NodeVisitor.h)
+        parser/ast/NodeVisitor.h parser/ast/NodeVisitor.cpp
+        parser/ast/StatementNode.h parser/ast/StatementNode.cpp
+        parser/ast/StatementSequenceNode.h parser/ast/StatementSequenceNode.cpp
+        parser/ast/TypeNode.h parser/ast/TypeNode.cpp
+        parser/SymbolTable.h parser/SymbolTable.cpp
+        parser/SemanticChecker.h parser/SemanticChecker.cpp
+      )
 
-set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES})
+set(CODEGEN_SOURCES
+  codegen/CodeGen.h codegen/CodeGen.cpp
+)
+
+set(ALL_SOURCES global.h ${UTIL_SOURCES} ${SCANNER_SOURCES} ${PARSER_SOURCES} ${CODEGEN_SOURCES})
 
 add_executable(${OBERON0_C} main.cpp ${ALL_SOURCES})
 
 find_package(Boost REQUIRED COMPONENTS program_options)
 if (Boost_FOUND)
-    message(STATUS "Found Boost: ${Boost_VERSION}")
-    target_link_libraries(${OBERON0_C} PRIVATE Boost::headers Boost::program_options)
+  message(STATUS "Found Boost: ${Boost_VERSION}")
+  target_link_libraries(${OBERON0_C} PRIVATE Boost::headers Boost::program_options)
 endif ()
 
 find_package(LLVM REQUIRED CONFIG)
 if (LLVM_FOUND)
-    if (${LLVM_VERSION} LESS 16.0.0)
-        message(STATUS "Warning: found legacy LLVM: ${LLVM_VERSION}")
-        add_definitions(-D_LLVM_LEGACY)
-    else ()
-        message(STATUS "Found LLVM: ${LLVM_VERSION}")
-        if (${LLVM_VERSION} MATCHES "16.*.*")
-            add_definitions(-D_LLVM_16)
-        elseif (${LLVM_VERSION} MATCHES "17.*.*")
-            add_definitions(-D_LLVM_17)
-        elseif (${LLVM_VERSION} MATCHES "18.*.*")
-            add_definitions(-D_LLVM_18)
-        endif()
-    endif ()
-    add_definitions(${LLVM_DEFINITIONS})
-    include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
-    llvm_map_components_to_libnames(llvm_libs core support passes ${LLVM_TARGETS_TO_BUILD})
-    target_link_libraries(${OBERON0_C} PRIVATE ${llvm_libs})
+  if (${LLVM_VERSION} LESS 16.0.0)
+    message(STATUS "Warning: found legacy LLVM: ${LLVM_VERSION}")
+    add_definitions(-D_LLVM_LEGACY)
+  else ()
+    message(STATUS "Found LLVM: ${LLVM_VERSION}")
+    if (${LLVM_VERSION} MATCHES "16.*.*")
+      add_definitions(-D_LLVM_16)
+    elseif (${LLVM_VERSION} MATCHES "17.*.*")
+      add_definitions(-D_LLVM_17)
+    elseif (${LLVM_VERSION} MATCHES "18.*.*")
+      add_definitions(-D_LLVM_18)
+    endif()
+  endif ()
+  add_definitions(${LLVM_DEFINITIONS})
+  include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+  llvm_map_components_to_libnames(llvm_libs core support passes mcjit executionengine ${LLVM_TARGETS_TO_BUILD})
+  target_link_libraries(${OBERON0_C} PRIVATE ${llvm_libs})
 endif ()
 
 configure_file(config.h.in config.h @ONLY)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+enable_testing()
+
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+
+set(UTEST_SOURCES
+  tests/parser/parser_tests.cpp
+  tests/semantic_checker/symbol_table_tests.cpp
+  tests/semantic_checker/ident_use_tests.cpp
+  tests/semantic_checker/const_decl.cpp
+  tests/semantic_checker/expression.cpp
+  tests/semantic_checker/type.cpp
+  tests/code_gen/code_gen_tests.cpp
+)
+
+set(ITEST_SOURCES
+  tests/integration_tests/sort0_test.cpp
+  tests/integration_tests/procedure_decl_tests.cpp
+  tests/integration_tests/assignment_tests.cpp
+  tests/integration_tests/if_tests.cpp
+  tests/integration_tests/while_tests.cpp
+  tests/integration_tests/ident_expression_tests.cpp
+  tests/integration_tests/procedure_call_tests.cpp
+  tests/integration_tests/setup_mcjit.h
+)
+
+# Configure Unit Tests
+find_package(Catch2 3 REQUIRED)
+# These tests can use the Catch2-provided main
+add_executable(oberon0c_utests ${UTEST_SOURCES} ${ALL_SOURCES})
+target_link_libraries(oberon0c_utests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
+
+add_executable(oberon0c_itests ${ITEST_SOURCES} ${ALL_SOURCES})
+target_link_libraries(oberon0c_itests PRIVATE Catch2::Catch2WithMain ${llvm_libs})
+
+set(CATCH_REPORTER "console::out=-::colour-mode=ansi")
+if ($ENV{CI})
+  message(STATUS "Detected CI environment")
+  set(CATCH_REPORTER "JUnit")
+endif()
+
+include(CTest)
+include(Catch)
+catch_discover_tests(oberon0c_utests
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+          REPORTER ${CATCH_REPORTER}
+          OUTPUT_DIR "results"
+          OUTPUT_SUFFIX ".xml")
+
+catch_discover_tests(oberon0c_itests
+          WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests
+          REPORTER ${CATCH_REPORTER}
+          OUTPUT_DIR "results"
+          OUTPUT_SUFFIX ".xml")
