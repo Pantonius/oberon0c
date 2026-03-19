@@ -5,7 +5,6 @@
 #include "util/Logger.h"
 #include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <cstdio>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -14,14 +13,13 @@
 #include <llvm/IR/Module.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
-#include <memory>
 
-TEST_CASE("Test Assignments"
+TEST_CASE("testProcedureDeclaration"
           "[full]") {
 
-  SECTION("File Assignment.Mod") {
+  SECTION("File Sort0.Mod") {
     Logger logger(LogLevel::DEBUG, std::cout, std::cerr);
-    const path path = "./integration_tests/resources/Assignment.Mod";
+    const path path = "./integration_tests/resources/ProcedureDeclaration.Mod";
     Scanner scanner(path, logger);
 
     Parser parser(scanner, logger);
@@ -33,39 +31,19 @@ TEST_CASE("Test Assignments"
     CodeGenBuilder builder(logger, *module);
     builder.build(*ast);
 
-    llvm::Function *main = module->getFunction("main");
+    llvm::Function *q_sort = module->getFunction("QSort");
 
-    if (!main) {
-      FAIL("No main function found in module");
+    if (!q_sort) {
+      FAIL("No function 'QSort' found in module");
     }
 
+    llvm::Function *main = module->getFunction("main");
+
+    if (!q_sort) {
+      FAIL("No main function found in module");
+    }
     auto exec_engine = create_jit(std::move(module));
 
     exec_engine->runFunction(main, {});
-
-    auto i_addr = exec_engine->getGlobalValueAddress("i");
-    auto i = (int *)i_addr;
-
-    REQUIRE(*i == 1);
-
-    struct R {
-      bool f0;
-      int f1;
-      bool operator==(const R &) const = default;
-    };
-
-    R r = {
-        true,
-        5,
-    };
-
-    auto r0_addr = exec_engine->getGlobalValueAddress("r0");
-    auto r0 = (R *)r0_addr;
-
-    auto r1_addr = exec_engine->getGlobalValueAddress("r1");
-    auto r1 = (R *)r1_addr;
-
-    REQUIRE(*r0 == *r1);
-    REQUIRE(*r0 == r);
   }
 }
