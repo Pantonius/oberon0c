@@ -21,14 +21,16 @@ TEST_CASE("Sema Ident Expression", "[sema][expression][ident]") {
 
   SECTION("Undeclared ident") {
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "undeclared"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "undeclared"), {},
+        {});
 
     REQUIRE(expr->type == nullptr);
   }
 
   SECTION("No selectors") {
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "no_selectors"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "no_selectors"), {},
+        {});
 
     REQUIRE(expr->getNodeType() == NodeType::ident_expression);
     auto ident_expr = dynamic_cast<const IdentExpressionNode *>(expr.get());

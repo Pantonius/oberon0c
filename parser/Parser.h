@@ -46,6 +46,7 @@ private:
   vector<unique_ptr<ExpressionNode>> variant_actual_parameters();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
+  vector<unique_ptr<SelectorNode>> selectors(unique_ptr<SelectorNode>);
   unique_ptr<RecordFieldNode> record_selector();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();

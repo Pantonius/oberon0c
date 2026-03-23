@@ -29,15 +29,13 @@ public:
   virtual void visit(RecordTypeNode &) = 0;
   virtual void visit(SumTypeNode &) = 0;
   virtual void visit(VariantDeclarationNode &) = 0;
-  virtual void visit(VariantExpressionNode &) = 0;
-  virtual void visit(VariantArgTypeNode &) = 0;
   virtual void visit(RepeatStatementNode &) = 0;
   virtual void visit(SelectorNode &) = 0;
   virtual void visit(StatementSequenceNode &) = 0;
   virtual void visit(IdentNode &) = 0;
   virtual void visit(IdentTypeNode &) = 0;
   virtual void visit(StdTypeNode &) = 0;
-  virtual void visit(FieldNode &) = 0;
+  virtual void visit(RecordFieldNode &) = 0;
   virtual void visit(WhileStatementNode &) = 0;
 };
 

@@ -45,7 +45,7 @@ TEST_CASE("Sema Array Type", "[sema][type][array]") {
         sema.onVars(EMPTY_POS, std::move(var_idents), ASTContext::INTEGER);
 
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "nonConst"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "nonConst"), {}, {});
 
     REQUIRE_THROWS_AS(
         sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER),

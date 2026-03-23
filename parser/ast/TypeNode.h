@@ -84,20 +84,6 @@ public:
   std::optional<bool> is_in_bounds(const ExpressionNode *expr) const;
 };
 
-class FieldNode final : public Node {
-public:
-  FieldNode(const FilePos pos, unique_ptr<IdentNode> ident,
-            const TypeNode *type)
-      : Node(NodeType::field, pos), ident(std::move(ident)), type(type) {}
-  ~FieldNode() override = default;
-
-  void accept(NodeVisitor &visitor) override final;
-  void print(std::ostream &stream) const final;
-
-  const unique_ptr<IdentNode> ident;
-  const TypeNode *type;
-};
-
 class RecordTypeNode final : public TypeNode {
 public:
   RecordTypeNode(const FilePos pos,
@@ -159,18 +145,6 @@ public:
   void print(std::ostream &stream) const final;
 
   vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
-};
-
-class VariantArgTypeNode final : public TypeNode {
-public:
-  VariantArgTypeNode(const FilePos pos, vector<TypeNode *> arg_types = {})
-      : TypeNode(NodeType::variant_arg_type, pos), arg_types(arg_types) {}
-  ~VariantArgTypeNode() override = default;
-
-  void accept(NodeVisitor &visitor) override final;
-  void print(std::ostream &stream) const final;
-
-  vector<TypeNode *> arg_types;
 };
 
 #endif // OBERON0C_TYPENODE_H

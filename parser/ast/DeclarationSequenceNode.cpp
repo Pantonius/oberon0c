@@ -83,19 +83,6 @@ void VariantDeclarationNode::accept(NodeVisitor &visitor) {
 }
 void VariantDeclarationNode::print(ostream &stream) const {
   ident->print(stream);
-
-  auto at_size = variant_arg_type->arg_types.size();
-  if (at_size > 0) {
-    stream << "(";
-    variant_arg_type->arg_types[0]->print(stream);
-
-    for (size_t i = 1; i < at_size; i++) {
-      stream << ", ";
-      variant_arg_type->arg_types[i]->print(stream);
-    }
-  }
-
-  stream << " )";
 }
 
 void ProcedureDeclarationNode::accept(NodeVisitor &visitor) {

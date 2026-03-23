@@ -58,11 +58,6 @@ public:
                   vector<unique_ptr<SelectorNode>>,
                   vector<unique_ptr<ExpressionNode>>);
 
-  unique_ptr<VariantExpressionNode>
-  onVariantExpression(const FilePos, unique_ptr<IdentNode>,
-                      vector<unique_ptr<SelectorNode>>,
-                      std::vector<unique_ptr<ExpressionNode>>);
-
   unique_ptr<ExpressionNode> onUnaryExpression(const FilePos,
                                                unique_ptr<ExpressionNode>,
                                                const UnaryOpType);
@@ -73,7 +68,8 @@ public:
                                                 unique_ptr<ExpressionNode>);
   unique_ptr<ExpressionNode>
   onIdentExpression(const FilePos, unique_ptr<IdentNode>,
-                    vector<unique_ptr<SelectorNode>>);
+                    vector<unique_ptr<SelectorNode>>,
+                    vector<unique_ptr<ExpressionNode>>);
 
   unique_ptr<IdentExpressionNode>
   onIdentExpressionReference(const FilePos, unique_ptr<IdentNode>,

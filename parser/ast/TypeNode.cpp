@@ -26,13 +26,6 @@ ArrayTypeNode::is_in_bounds(const ExpressionNode *expr) const {
   return {};
 }
 
-void FieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void FieldNode::print(ostream &stream) const {
-  ident->print(stream);
-  stream << " : ";
-  type->print(stream);
-}
-
 void RecordTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void RecordTypeNode::print(ostream &stream) const {
   stream << "RECORD ";
@@ -104,6 +97,3 @@ SumTypeNode::find_variant(const IdentNode &ident) const {
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
-
-void VariantArgTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void VariantArgTypeNode::print(ostream &stream) const { stream << "VARIANT"; }

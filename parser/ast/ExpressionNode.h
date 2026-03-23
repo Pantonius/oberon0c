@@ -63,29 +63,6 @@ public:
   const unique_ptr<IdentNode> ident;
 };
 
-class VariantExpressionNode final : public ExpressionNode {
-public:
-  VariantExpressionNode(const FilePos pos, unique_ptr<IdentNode> sum_ident,
-                        unique_ptr<RecordFieldNode>
-                            variant_selector, // TODO possibly adapt selector
-                                              // node name for dual use
-                        vector<unique_ptr<ExpressionNode>> actual_parameters,
-                        TypeNode *type)
-      : ExpressionNode(NodeType::variant_expression, pos, type),
-        sum_ident(std::move(sum_ident)),
-        variant_selector(std::move(variant_selector)),
-        actual_parameters(std::move(actual_parameters)) {}
-  ~VariantExpressionNode() override = default;
-
-  void accept(NodeVisitor &) override final;
-  void print(std::ostream &) const final;
-  bool is_const() const final;
-
-  const unique_ptr<IdentNode> sum_ident;
-  const unique_ptr<RecordFieldNode> variant_selector;
-  const vector<unique_ptr<ExpressionNode>> actual_parameters;
-};
-
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {
     TokenType::op_plus, TokenType::op_minus, TokenType::op_not};
 
@@ -120,6 +97,15 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
+                      vector<unique_ptr<ExpressionNode>> actual_parameters,
+                      const DeclarationNode *decl, TypeNode *type_node,
+                      bool lvalue)
+      : ExpressionNode(NodeType::ident_expression, pos, type_node),
+        ident(std::move(ident)), selectors(std::move(selectors)),
+        actual_parameters(std::move(actual_parameters)), decl(decl),
+        is_lvalue(lvalue) {}
+  IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                      vector<unique_ptr<SelectorNode>> selectors,
                       const DeclarationNode *decl, TypeNode *type_node,
                       bool lvalue)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
@@ -133,6 +119,7 @@ public:
 
   const unique_ptr<IdentNode> ident;
   const vector<unique_ptr<SelectorNode>> selectors;
+  const vector<unique_ptr<ExpressionNode>> actual_parameters;
   const DeclarationNode *decl;
   const bool is_lvalue;
 };

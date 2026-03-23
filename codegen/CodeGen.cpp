@@ -632,10 +632,8 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
 }
 void CodeGenBuilder::visit(SumTypeNode &) {};
 void CodeGenBuilder::visit(VariantDeclarationNode &) {};
-void CodeGenBuilder::visit(VariantExpressionNode &) {};
-void CodeGenBuilder::visit(VariantArgTypeNode &) {};
 void CodeGenBuilder::visit(IdentNode &ident) {}
-void CodeGenBuilder::visit(FieldNode &field) {}
+void CodeGenBuilder::visit(RecordFieldNode &field) {}
 void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
   auto currentFunc = builder_->GetInsertBlock()->getParent();
 

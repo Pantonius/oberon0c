@@ -35,7 +35,6 @@ public:
   RecordTypeNode *add_type(unique_ptr<RecordTypeNode>);
   SumTypeNode *add_type(unique_ptr<SumTypeNode>);
   ProcedureTypeNode *add_type(unique_ptr<ProcedureTypeNode>);
-  VariantArgTypeNode *add_type(unique_ptr<VariantArgTypeNode>);
 };
 
 #endif

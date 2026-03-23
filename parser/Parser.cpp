@@ -137,7 +137,6 @@ SumTypeNode *Parser::sum_type() {
 
   expect_token_type(TokenType::kw_sum);
 
-  // TODO beginScope
   std::vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>> variants;
   do {
     // SumTypeVariant
@@ -377,16 +376,18 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
 
   if (peek_ident()) {
     auto ident = Parser::ident();
+
     auto selectors = Parser::selectors();
+    vector<unique_ptr<ExpressionNode>> params;
 
     if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-      auto params = Parser::variant_actual_parameters();
+      params = Parser::variant_actual_parameters();
 
-      return sema_.onVariantExpression(pos, std::move(ident),
-                                       std::move(selectors), std::move(params));
+      expect_token_type(TokenType::rparen);
     }
 
-    return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors));
+    return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors),
+                                   std::move(params));
   } else if (peek_number()) {
     auto number = Parser::number();
     return make_unique<NumberExpressionNode>(pos, number);
@@ -674,8 +675,14 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 }
 
 /* selector = {"." ident | "[" expression "]"} */
-vector<unique_ptr<SelectorNode>> Parser::selectors() {
+vector<unique_ptr<SelectorNode>>
+Parser::selectors(unique_ptr<SelectorNode> selector) {
   vector<unique_ptr<SelectorNode>> selectors;
+
+  if (selector) {
+    selectors.push_back(std::move(selector));
+  }
+
   while (auto token = peek_check_token_type_within(
              {TokenType::period, TokenType::lbrack}, ADVANCE_ON_TRUE)) {
     const FilePos pos = scanner_.peek()->start();
@@ -699,6 +706,10 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   }
 
   return selectors;
+}
+
+vector<unique_ptr<SelectorNode>> Parser::selectors() {
+  return Parser::selectors(nullptr);
 }
 
 unique_ptr<RecordFieldNode> Parser::record_selector() {

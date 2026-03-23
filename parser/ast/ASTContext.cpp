@@ -82,10 +82,3 @@ ProcedureTypeNode *ASTContext::add_type(unique_ptr<ProcedureTypeNode> type) {
 
   return ptr;
 }
-
-VariantArgTypeNode *ASTContext::add_type(unique_ptr<VariantArgTypeNode> type) {
-  auto ptr = type.get();
-  types_.push_back(std::move(type));
-
-  return ptr;
-}

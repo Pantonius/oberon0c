@@ -96,13 +96,13 @@ SymbolTable::lookup_type(const IdentNode &ident,
         try {
           auto sum_variant =
               sum_type_node->find_variant(*record_selector->ident);
-          return sum_variant->variant_arg_type;
+          return sum_variant->type;
         } catch (FieldNotFoundException &e) {
           throw;
           return {};
         }
       } else {
-        throw WrongTypeException(*prev_selector, "RECORD");
+        throw WrongTypeException(*prev_selector, "RECORD or SUM");
         return {};
       }
     } else {
@@ -112,9 +112,8 @@ SymbolTable::lookup_type(const IdentNode &ident,
   return type;
 }
 
-const VariantArgTypeNode *
-SymbolTable::lookup_variant(const IdentNode &ident,
-                            const SelectorNode &selector) {
+ProcedureTypeNode *SymbolTable::lookup_variant_proc_type(
+    const IdentNode &ident, const unique_ptr<SelectorNode> &selector) {
 
   auto lookup_node = this->lookup(ident);
 
@@ -127,25 +126,22 @@ SymbolTable::lookup_variant(const IdentNode &ident,
   auto decl_node = lookup_node.value();
 
   TypeNode *type = decl_node->type;
-  if (auto variant_selector =
-          dynamic_cast<const RecordFieldNode *>(&selector)) {
+  if (auto record_selector =
+          dynamic_cast<const RecordFieldNode *>(selector.get())) {
     if (auto sum_type_node = dynamic_cast<const SumTypeNode *>(type)) {
       try {
-        auto sum_variant =
-            sum_type_node->find_variant(*variant_selector->ident);
-        return sum_variant->variant_arg_type;
+        auto sum_variant = sum_type_node->find_variant(*record_selector->ident);
+        return sum_variant->parameter_types;
       } catch (FieldNotFoundException &e) {
         throw;
         return {};
       }
     } else {
-      throw WrongTypeException(*decl_node, "SumTypeNode");
+      throw WrongTypeException(ident, "SUM");
       return {};
     }
   } else {
-
-    throw WrongNodeTypeException(selector, "RecordFieldNode");
-    return {};
+    assert((void("Encountered unhandled SelectorNode type"), false));
   }
 }
 

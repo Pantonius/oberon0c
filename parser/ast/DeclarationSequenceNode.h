@@ -64,16 +64,19 @@ public:
 
 class VariantDeclarationNode final : public DeclarationNode {
 public:
+  // NOTE type_node is constructed ONLY by the semantic checker and in such a
+  // way that the parameter names are integers 0..n
   VariantDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
-                         VariantArgTypeNode *variant_arg_type, TypeNode *type)
+                         ProcedureTypeNode *const parameter_types,
+                         TypeNode *const type)
       : DeclarationNode(NodeType::sum_variant, pos, std::move(ident), type),
-        variant_arg_type(variant_arg_type) {}
+        parameter_types(parameter_types) {}
   ~VariantDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
-  VariantArgTypeNode *variant_arg_type;
+  ProcedureTypeNode *const parameter_types;
 };
 
 class ParamDeclarationNode final : public DeclarationNode {
