@@ -62,18 +62,18 @@ public:
   void print(std::ostream &stream) const override final;
 };
 
-class SumVariantNode final : public DeclarationNode {
+class VariantDeclarationNode final : public DeclarationNode {
 public:
-  SumVariantNode(const FilePos pos, unique_ptr<IdentNode> ident,
-                 std::vector<TypeNode *> arg_types, TypeNode *type)
+  VariantDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                         VariantArgTypeNode *variant_arg_type, TypeNode *type)
       : DeclarationNode(NodeType::sum_variant, pos, std::move(ident), type),
-        arg_types(arg_types) {}
-  ~SumVariantNode() override = default;
+        variant_arg_type(variant_arg_type) {}
+  ~VariantDeclarationNode() override = default;
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
-  const std::vector<TypeNode *> arg_types;
+  VariantArgTypeNode *variant_arg_type;
 };
 
 class ParamDeclarationNode final : public DeclarationNode {

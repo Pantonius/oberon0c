@@ -75,7 +75,9 @@ private:
   void visit(RepeatStatementNode &) override final;
   void visit(SelectorNode &) override final;
   void visit(SumTypeNode &) override final;
-  void visit(SumVariantNode &) override final;
+  void visit(VariantDeclarationNode &) override final;
+  void visit(VariantExpressionNode &) override final;
+  void visit(VariantArgTypeNode &) override final;
   void visit(StatementSequenceNode &) override final;
   void visit(IdentNode &) override final;
   void visit(IdentTypeNode &) override final;

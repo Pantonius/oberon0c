@@ -78,18 +78,20 @@ void TypeDeclarationNode::print(ostream &stream) const {
   type->print(stream);
 }
 
-void SumVariantNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void SumVariantNode::print(ostream &stream) const {
+void VariantDeclarationNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void VariantDeclarationNode::print(ostream &stream) const {
   ident->print(stream);
 
-  auto at_size = arg_types.size();
+  auto at_size = variant_arg_type->arg_types.size();
   if (at_size > 0) {
     stream << "(";
-    arg_types[0]->print(stream);
+    variant_arg_type->arg_types[0]->print(stream);
 
     for (size_t i = 1; i < at_size; i++) {
       stream << ", ";
-      arg_types[i]->print(stream);
+      variant_arg_type->arg_types[i]->print(stream);
     }
   }
 

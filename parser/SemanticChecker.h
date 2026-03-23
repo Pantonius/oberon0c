@@ -1,12 +1,12 @@
 #include "SymbolTable.h"
 #include "ast/ASTContext.h"
+#include "ast/DeclarationSequenceNode.h"
+#include "ast/ExpressionNode.h"
+#include "ast/IdentNode.h"
 #include "ast/ModuleNode.h"
+#include "ast/StatementNode.h"
 #include "ast/TypeNode.h"
 #include "global.h"
-#include "parser/ast/DeclarationSequenceNode.h"
-#include "parser/ast/ExpressionNode.h"
-#include "parser/ast/IdentNode.h"
-#include "parser/ast/StatementNode.h"
 #include "util/Logger.h"
 #include <memory>
 
@@ -57,6 +57,11 @@ public:
   onProcedureCall(const FilePos, unique_ptr<IdentNode>,
                   vector<unique_ptr<SelectorNode>>,
                   vector<unique_ptr<ExpressionNode>>);
+
+  unique_ptr<VariantExpressionNode>
+  onVariantExpression(const FilePos, unique_ptr<IdentNode>,
+                      vector<unique_ptr<SelectorNode>>,
+                      std::vector<unique_ptr<ExpressionNode>>);
 
   unique_ptr<ExpressionNode> onUnaryExpression(const FilePos,
                                                unique_ptr<ExpressionNode>,

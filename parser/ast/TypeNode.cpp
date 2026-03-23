@@ -88,9 +88,22 @@ void SumTypeNode::print(ostream &stream) const {
 }
 
 void SumTypeNode::setVariants(
-    std::vector<unique_ptr<SumVariantNode>> new_variants) {
+    std::vector<unique_ptr<VariantDeclarationNode>> new_variants) {
   variants = std::move(new_variants);
+}
+const VariantDeclarationNode *
+SumTypeNode::find_variant(const IdentNode &ident) const {
+  for (auto &variant : variants) {
+    if (ident.value == variant->ident->value) {
+      return variant.get();
+    }
+  }
+
+  throw FieldNotFoundException(ident);
 }
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
+
+void VariantArgTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void VariantArgTypeNode::print(ostream &stream) const { stream << "VARIANT"; }

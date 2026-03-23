@@ -38,6 +38,8 @@ enum class NodeType : char {
   type_declaration,
   unary_expression,
   var_declaration,
+  variant_expression,
+  variant_arg_type,
   while_statement,
 };
 

@@ -21,7 +21,6 @@ using std::vector;
 class DeclarationNode;
 
 class ExpressionNode : public Node {
-private:
 public:
   ExpressionNode(const NodeType &type, const FilePos pos,
                  TypeNode *const type_node)
@@ -62,6 +61,29 @@ public:
   void print(std::ostream &) const final;
 
   const unique_ptr<IdentNode> ident;
+};
+
+class VariantExpressionNode final : public ExpressionNode {
+public:
+  VariantExpressionNode(const FilePos pos, unique_ptr<IdentNode> sum_ident,
+                        unique_ptr<RecordFieldNode>
+                            variant_selector, // TODO possibly adapt selector
+                                              // node name for dual use
+                        vector<unique_ptr<ExpressionNode>> actual_parameters,
+                        TypeNode *type)
+      : ExpressionNode(NodeType::variant_expression, pos, type),
+        sum_ident(std::move(sum_ident)),
+        variant_selector(std::move(variant_selector)),
+        actual_parameters(std::move(actual_parameters)) {}
+  ~VariantExpressionNode() override = default;
+
+  void accept(NodeVisitor &) override final;
+  void print(std::ostream &) const final;
+  bool is_const() const final;
+
+  const unique_ptr<IdentNode> sum_ident;
+  const unique_ptr<RecordFieldNode> variant_selector;
+  const vector<unique_ptr<ExpressionNode>> actual_parameters;
 };
 
 const set<TokenType> UNARY_OP_TOKEN_TYPES = {

@@ -43,8 +43,10 @@ private:
   unique_ptr<ProcedureCallNode> procedure();
   RecordTypeNode *record_type();
   SumTypeNode *sum_type();
+  vector<unique_ptr<ExpressionNode>> variant_actual_parameters();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
+  unique_ptr<RecordFieldNode> record_selector();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();

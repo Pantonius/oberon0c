@@ -43,6 +43,9 @@ public:
   TypeNode *lookup_type(const IdentNode &ident,
                         const vector<unique_ptr<SelectorNode>> &selectors);
 
+  const VariantArgTypeNode *lookup_variant(const IdentNode &,
+                                           const SelectorNode &);
+
 private:
   Logger &logger_;
   std::vector<std::unordered_map<std::string, const DeclarationNode *>> table_;

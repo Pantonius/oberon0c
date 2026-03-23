@@ -115,7 +115,7 @@ public:
   const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
 };
 
-class SumVariantNode;
+class VariantDeclarationNode;
 class SumTypeNode final : public TypeNode {
 public:
   SumTypeNode(const FilePos pos) : TypeNode(NodeType::sum_type, pos) {}
@@ -124,11 +124,12 @@ public:
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
 
-  std::vector<unique_ptr<SumVariantNode>> variants;
+  std::vector<unique_ptr<VariantDeclarationNode>> variants;
 
   // NOTE setter such that the variants can be added after the SumType has been
   // initialized
-  void setVariants(std::vector<unique_ptr<SumVariantNode>>);
+  void setVariants(std::vector<unique_ptr<VariantDeclarationNode>>);
+  const VariantDeclarationNode *find_variant(const IdentNode &ident) const;
 };
 
 class FieldNotFoundException : public std::exception {
@@ -158,6 +159,18 @@ public:
   void print(std::ostream &stream) const final;
 
   vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
+};
+
+class VariantArgTypeNode final : public TypeNode {
+public:
+  VariantArgTypeNode(const FilePos pos, vector<TypeNode *> arg_types = {})
+      : TypeNode(NodeType::variant_arg_type, pos), arg_types(arg_types) {}
+  ~VariantArgTypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  vector<TypeNode *> arg_types;
 };
 
 #endif // OBERON0C_TYPENODE_H

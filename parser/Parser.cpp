@@ -163,6 +163,19 @@ bool Parser::peek_sum_type() {
   return peek_check_token_type(TokenType::kw_sum);
 }
 
+vector<unique_ptr<ExpressionNode>> Parser::variant_actual_parameters() {
+  std::vector<unique_ptr<ExpressionNode>> actual_parameters;
+  if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+    do {
+      actual_parameters.push_back(expression());
+    } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
+
+    expect_token_type(TokenType::rparen);
+  }
+
+  return actual_parameters;
+}
+
 // number = integer | real
 // integer = digit {digit} | digit {hexDigit} "H"
 // real = digit {digit} "." {digit} [ScaleFactor]
@@ -356,7 +369,8 @@ BinaryOpType Parser::mul_operator() {
   expect_token_type_within(MUL_OPERATOR_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return mul_operator_from_token_type(last_token_->type());
 }
-// factor = ident selector | number | "(" expression ")" | "~" factor
+// factor = ident selector [ "(" expression { ";" expression } ")" ] | number |
+// "(" expression ")" | "~" factor
 std::unique_ptr<ExpressionNode> Parser::factor() {
   const FilePos pos = scanner_.peek()->start();
   const TokenType &token_type = scanner_.peek()->type();
@@ -364,6 +378,13 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
   if (peek_ident()) {
     auto ident = Parser::ident();
     auto selectors = Parser::selectors();
+
+    if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+      auto params = Parser::variant_actual_parameters();
+
+      return sema_.onVariantExpression(pos, std::move(ident),
+                                       std::move(selectors), std::move(params));
+    }
 
     return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors));
   } else if (peek_number()) {
@@ -661,8 +682,7 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
 
     switch (*token) {
     case TokenType::period: {
-      auto ident = Parser::ident();
-      selectors.push_back(make_unique<RecordFieldNode>(pos, std::move(ident)));
+      selectors.push_back(record_selector());
       break;
     }
     case TokenType::lbrack: {
@@ -679,6 +699,12 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   }
 
   return selectors;
+}
+
+unique_ptr<RecordFieldNode> Parser::record_selector() {
+  const FilePos pos = scanner_.peek()->start();
+  auto ident = Parser::ident();
+  return make_unique<RecordFieldNode>(pos, std::move(ident));
 }
 
 /* boolean = "TRUE" | "FALSE" */

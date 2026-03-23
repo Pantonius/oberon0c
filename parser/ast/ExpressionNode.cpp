@@ -125,6 +125,21 @@ void RecordFieldNode::print(ostream &stream) const {
   ident->print(stream);
 }
 
+void VariantExpressionNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void VariantExpressionNode::print(ostream &stream) const {
+  stream << sum_ident->value << "."
+         << variant_selector->ident->value; // TODO add acutal_params
+}
+bool VariantExpressionNode::is_const() const {
+  for (auto &param : actual_parameters) {
+    if (!param->is_const())
+      return false;
+  }
+  return true;
+}
+
 NumberExpressionNode::NumberExpressionNode(const FilePos pos, int number)
     : LiteralExpressionNode(NodeType::number, pos, number,
                             ASTContext::INTEGER) {}

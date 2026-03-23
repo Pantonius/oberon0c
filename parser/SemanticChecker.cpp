@@ -189,12 +189,15 @@ SumTypeNode *SemanticChecker::onSumType(
 
   symbol_table_.beginScope();
 
-  vector<unique_ptr<SumVariantNode>> vars;
+  vector<unique_ptr<VariantDeclarationNode>> vars;
   for (auto &proto_variant : proto_variants) {
     auto variant_pos = proto_variant.first->pos();
-    auto variant = std::make_unique<SumVariantNode>(
-        variant_pos, std::move(proto_variant.first),
-        std::move(proto_variant.second), sum_type.get());
+
+    auto arg_type = context_.add_type(std::make_unique<VariantArgTypeNode>(
+        variant_pos, proto_variant.second));
+
+    auto variant = std::make_unique<VariantDeclarationNode>(
+        variant_pos, std::move(proto_variant.first), arg_type, sum_type.get());
 
     expect_unique_within_scope(variant->ident.get(), variant.get());
   }
@@ -206,6 +209,35 @@ SumTypeNode *SemanticChecker::onSumType(
   auto ptr = context_.add_type(std::move(sum_type));
 
   return ptr;
+}
+
+unique_ptr<VariantExpressionNode> SemanticChecker::onVariantExpression(
+    const FilePos pos, unique_ptr<IdentNode> sum_ident,
+    vector<unique_ptr<SelectorNode>> selectors,
+    std::vector<unique_ptr<ExpressionNode>> actual_params) {
+  auto sum_type = symbol_table_.lookup_type(*sum_ident, {});
+
+  auto variant_arg_type = symbol_table_.lookup_variant(*sum_ident, *selector);
+
+  if (variant_arg_type->arg_types.size() != actual_params.size()) {
+    logger_.error(pos, "Number of given parameters does not match declared "
+                       "variant parameters.");
+    exit(EXIT_FAILURE);
+  }
+
+  for (size_t i = 0; i < actual_params.size(); i++) {
+    if (actual_params.at(i)->type != variant_arg_type->arg_types.at(i)) {
+      logger_.error(actual_params.at(i)->pos(),
+                    "Given type " + to_string(actual_params.at(i)->type) +
+                        " does not match expected type " +
+                        to_string(variant_arg_type->arg_types.at(i)));
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  return std::make_unique<VariantExpressionNode>(
+      pos, std::move(sum_ident), std::move(selector), std::move(actual_params),
+      sum_type);
 }
 
 unique_ptr<ExpressionNode>
