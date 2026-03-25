@@ -84,20 +84,6 @@ public:
   std::optional<bool> is_in_bounds(const ExpressionNode *expr) const;
 };
 
-class FieldNode final : public Node {
-public:
-  FieldNode(const FilePos pos, unique_ptr<IdentNode> ident,
-            const TypeNode *type)
-      : Node(NodeType::field, pos), ident(std::move(ident)), type(type) {}
-  ~FieldNode() override = default;
-
-  void accept(NodeVisitor &visitor) override final;
-  void print(std::ostream &stream) const final;
-
-  const unique_ptr<IdentNode> ident;
-  const TypeNode *type;
-};
-
 class RecordTypeNode final : public TypeNode {
 public:
   RecordTypeNode(const FilePos pos,
@@ -113,6 +99,23 @@ public:
   size_t find_field_index(const IdentNode &ident) const;
 
   const std::vector<unique_ptr<VarDeclarationNode>> field_lists;
+};
+
+class VariantDeclarationNode;
+class SumTypeNode final : public TypeNode {
+public:
+  SumTypeNode(const FilePos pos) : TypeNode(NodeType::sum_type, pos) {}
+  ~SumTypeNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  std::vector<unique_ptr<VariantDeclarationNode>> variants;
+
+  // NOTE setter such that the variants can be added after the SumType has been
+  // initialized
+  void setVariants(std::vector<unique_ptr<VariantDeclarationNode>>);
+  const VariantDeclarationNode *find_variant(const IdentNode &ident) const;
 };
 
 class FieldNotFoundException : public std::exception {

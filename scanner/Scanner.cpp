@@ -78,6 +78,7 @@ void Scanner::init() {
                {"TYPE", TokenType::kw_type},
                {"ARRAY", TokenType::kw_array},
                {"RECORD", TokenType::kw_record},
+               {"SUM", TokenType::kw_sum},
                {"OF", TokenType::kw_of},
                {"POINTER", TokenType::kw_pointer},
                {"NIL", TokenType::kw_nil},

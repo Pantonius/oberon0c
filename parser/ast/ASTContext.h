@@ -33,6 +33,7 @@ public:
   IdentTypeNode *add_type(unique_ptr<IdentTypeNode>);
   ArrayTypeNode *add_type(unique_ptr<ArrayTypeNode>);
   RecordTypeNode *add_type(unique_ptr<RecordTypeNode>);
+  SumTypeNode *add_type(unique_ptr<SumTypeNode>);
   ProcedureTypeNode *add_type(unique_ptr<ProcedureTypeNode>);
 };
 

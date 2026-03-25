@@ -74,11 +74,13 @@ private:
   void visit(RecordTypeNode &) override final;
   void visit(RepeatStatementNode &) override final;
   void visit(SelectorNode &) override final;
+  void visit(SumTypeNode &) override final;
+  void visit(VariantDeclarationNode &) override final;
   void visit(StatementSequenceNode &) override final;
   void visit(IdentNode &) override final;
   void visit(IdentTypeNode &) override final;
   void visit(StdTypeNode &) override final;
-  void visit(FieldNode &) override final;
+  void visit(RecordFieldNode &) override final;
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);

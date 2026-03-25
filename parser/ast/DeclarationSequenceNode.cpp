@@ -78,6 +78,13 @@ void TypeDeclarationNode::print(ostream &stream) const {
   type->print(stream);
 }
 
+void VariantDeclarationNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void VariantDeclarationNode::print(ostream &stream) const {
+  ident->print(stream);
+}
+
 void ProcedureDeclarationNode::accept(NodeVisitor &visitor) {
   visitor.visit(*this);
 }

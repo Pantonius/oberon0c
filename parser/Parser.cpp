@@ -83,6 +83,8 @@ TypeNode *Parser::type() {
     return array_type();
   } else if (peek_record_type()) {
     return record_type();
+  } else if (peek_sum_type()) {
+    return sum_type();
   } else {
     logger_.error(pos, "Expected type found " + to_string(node_type));
     exit(EXIT_FAILURE);
@@ -128,6 +130,49 @@ RecordTypeNode *Parser::record_type() {
 
 bool Parser::peek_record_type() {
   return peek_check_token_type(TokenType::kw_record);
+}
+
+SumTypeNode *Parser::sum_type() {
+  const FilePos pos = scanner_.peek()->start();
+
+  expect_token_type(TokenType::kw_sum);
+
+  std::vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>> variants;
+  do {
+    // SumTypeVariant
+    auto ident = Parser::ident();
+
+    std::vector<TypeNode *> arg_types;
+    if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+      do {
+        arg_types.push_back(type());
+      } while (peek_check_token_type(TokenType::comma, ADVANCE_ON_TRUE));
+
+      expect_token_type(TokenType::rparen);
+    }
+
+    variants.emplace_back(std::move(ident), arg_types);
+  } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
+  expect_token_type(TokenType::kw_end);
+
+  return sema_.onSumType(pos, std::move(variants));
+}
+
+bool Parser::peek_sum_type() {
+  return peek_check_token_type(TokenType::kw_sum);
+}
+
+vector<unique_ptr<ExpressionNode>> Parser::variant_actual_parameters() {
+  std::vector<unique_ptr<ExpressionNode>> actual_parameters;
+  if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+    do {
+      actual_parameters.push_back(expression());
+    } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
+
+    expect_token_type(TokenType::rparen);
+  }
+
+  return actual_parameters;
 }
 
 // number = integer | real
@@ -323,16 +368,21 @@ BinaryOpType Parser::mul_operator() {
   expect_token_type_within(MUL_OPERATOR_TOKEN_TYPES, ADVANCE_ON_TRUE);
   return mul_operator_from_token_type(last_token_->type());
 }
-// factor = ident selector | number | "(" expression ")" | "~" factor
+// factor = ident selector [ "(" expression { ";" expression } ")" ] | number |
+// "(" expression ")" | "~" factor
 std::unique_ptr<ExpressionNode> Parser::factor() {
   const FilePos pos = scanner_.peek()->start();
   const TokenType &token_type = scanner_.peek()->type();
 
   if (peek_ident()) {
     auto ident = Parser::ident();
-    auto selectors = Parser::selectors();
 
-    return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors));
+    auto selectors = Parser::selectors();
+    vector<unique_ptr<ExpressionNode>> params =
+        Parser::variant_actual_parameters();
+
+    return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors),
+                                   std::move(params));
   } else if (peek_number()) {
     auto number = Parser::number();
     return make_unique<NumberExpressionNode>(pos, number);
@@ -620,16 +670,21 @@ std::unique_ptr<ProcedureDeclarationNode> Parser::procedure_declaration() {
 }
 
 /* selector = {"." ident | "[" expression "]"} */
-vector<unique_ptr<SelectorNode>> Parser::selectors() {
+vector<unique_ptr<SelectorNode>>
+Parser::selectors(unique_ptr<SelectorNode> selector) {
   vector<unique_ptr<SelectorNode>> selectors;
+
+  if (selector) {
+    selectors.push_back(std::move(selector));
+  }
+
   while (auto token = peek_check_token_type_within(
              {TokenType::period, TokenType::lbrack}, ADVANCE_ON_TRUE)) {
     const FilePos pos = scanner_.peek()->start();
 
     switch (*token) {
     case TokenType::period: {
-      auto ident = Parser::ident();
-      selectors.push_back(make_unique<RecordFieldNode>(pos, std::move(ident)));
+      selectors.push_back(record_selector());
       break;
     }
     case TokenType::lbrack: {
@@ -646,6 +701,16 @@ vector<unique_ptr<SelectorNode>> Parser::selectors() {
   }
 
   return selectors;
+}
+
+vector<unique_ptr<SelectorNode>> Parser::selectors() {
+  return Parser::selectors(nullptr);
+}
+
+unique_ptr<RecordFieldNode> Parser::record_selector() {
+  const FilePos pos = scanner_.peek()->start();
+  auto ident = Parser::ident();
+  return make_unique<RecordFieldNode>(pos, std::move(ident));
 }
 
 /* boolean = "TRUE" | "FALSE" */

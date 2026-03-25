@@ -42,6 +42,9 @@ public:
 
   TypeNode *lookup_type(const IdentNode &ident,
                         const vector<unique_ptr<SelectorNode>> &selectors);
+  ProcedureTypeNode *
+  lookup_variant_proc_type(const IdentNode &ident,
+                           const unique_ptr<SelectorNode> &selector);
 
 private:
   Logger &logger_;

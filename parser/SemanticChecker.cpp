@@ -14,6 +14,9 @@
 #include <utility>
 #include <vector>
 
+using FormalParameterType =
+    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>;
+
 void SemanticChecker::onModuleStart(const FilePos pos,
                                     unique_ptr<IdentNode> ident) {
   auto module = make_unique<ModuleNode>(pos, std::move(ident));
@@ -181,10 +184,52 @@ RecordTypeNode *SemanticChecker::onRecordType(
   return ptr;
 }
 
-unique_ptr<ExpressionNode>
-SemanticChecker::onIdentExpression(const FilePos pos,
-                                   unique_ptr<IdentNode> ident,
-                                   vector<unique_ptr<SelectorNode>> selectors) {
+SumTypeNode *SemanticChecker::onSumType(
+    const FilePos pos,
+    vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>>
+        proto_variants) {
+  auto sum_type = std::make_unique<SumTypeNode>(pos);
+
+  symbol_table_.beginScope();
+
+  vector<unique_ptr<VariantDeclarationNode>> variants;
+  for (auto &proto_variant : proto_variants) {
+    auto variant_pos = proto_variant.first->pos();
+
+    FormalParameterType params;
+    for (size_t i = 0; i < proto_variant.second.size(); i++) {
+      auto type = proto_variant.second.at(i);
+      auto ident = std::make_unique<IdentNode>(type->pos(), to_string(i));
+
+      vector<unique_ptr<IdentNode>> vec;
+      vec.push_back(std::move(ident));
+
+      params.emplace_back(std::move(vec), false, type);
+    }
+    auto procedure_type = onProcedureType(variant_pos, std::move(params));
+
+    auto variant = std::make_unique<VariantDeclarationNode>(
+        variant_pos, std::move(proto_variant.first), procedure_type,
+        sum_type.get());
+
+    expect_unique_within_scope(variant->ident.get(), variant.get());
+
+    variants.push_back(std::move(variant));
+  }
+
+  sum_type->setVariants(std::move(variants));
+
+  symbol_table_.endScope();
+
+  auto ptr = context_.add_type(std::move(sum_type));
+
+  return ptr;
+}
+
+unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
+    const FilePos pos, unique_ptr<IdentNode> ident,
+    vector<unique_ptr<SelectorNode>> selectors,
+    vector<unique_ptr<ExpressionNode>> actual_params) {
 
   // get ident type for more detailed error messages
   TypeNode *type = nullptr;
@@ -198,20 +243,69 @@ SemanticChecker::onIdentExpression(const FilePos pos,
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), decl, type, false);
+        pos, std::move(ident), std::move(selectors), std::move(actual_params),
+        decl, type, false);
   }
 
-  // lookup ident declaration
-  auto node_lookup = symbol_table_.lookup(*ident);
-  if (!node_lookup) {
-    logger_.error(pos, "Undeclared identifier.");
-    exit(EXIT_FAILURE);
-  }
+  // TODO is this redundant?
+  // // lookup ident declaration
+  // auto node_lookup = symbol_table_.lookup(*ident);
+  // if (!node_lookup) {
+  //   logger_.error(pos, "Undeclared identifier.");
+  //   exit(EXIT_FAILURE);
+  // }
 
-  auto node = node_lookup.value();
+  if (decl->getNodeType() == NodeType::type_declaration) {
+    if (decl->type->getNodeType() != NodeType::sum_type) {
+      logger_.error(decl->pos(), "Expected sum type.");
+      exit(EXIT_FAILURE);
+    }
 
-  if (node->getNodeType() == NodeType::const_declaration) {
-    auto const_decl = dynamic_cast<const ConstDeclarationNode *>(node);
+    if (selectors.size() == 0) {
+      logger_.error(pos,
+                    "Unqualified variant expressions are not supported yet.");
+      exit(EXIT_FAILURE);
+    }
+
+    if (selectors.size() != 1) {
+      logger_.error(pos, "Malformed variant selector.");
+      exit(EXIT_FAILURE);
+    }
+
+    auto variant_proc_type =
+        symbol_table_.lookup_variant_proc_type(*ident, selectors.at(0));
+
+    // parameter count check
+    if (variant_proc_type->formal_parameters.size() != actual_params.size()) {
+      logger_.error(pos, "Number of given parameters does not match declared "
+                         "variant parameters.");
+      exit(EXIT_FAILURE);
+    }
+
+    // parameter type check
+    for (size_t i = 0; i < actual_params.size(); i++) {
+      if (actual_params.at(i)->type !=
+          variant_proc_type->formal_parameters.at(i)->type) {
+        logger_.error(
+            actual_params.at(i)->pos(),
+            "Given type " + to_string(actual_params.at(i)->type) +
+                " does not match expected type " +
+                to_string(variant_proc_type->formal_parameters.at(i)->type));
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    return std::make_unique<IdentExpressionNode>(
+        pos, std::move(ident), std::move(selectors), std::move(actual_params),
+        decl, type, false);
+  } else if (decl->getNodeType() == NodeType::const_declaration) {
+    if (actual_params.size() > 0) {
+      logger_.error(actual_params.at(0)->pos(),
+                    "Constant expressions should not have parameters.");
+      exit(EXIT_FAILURE);
+    }
+
+    auto const_decl = dynamic_cast<const ConstDeclarationNode *>(decl);
 
     auto expr = const_decl->expression.get();
     switch (expr->getNodeType()) {
@@ -225,8 +319,15 @@ SemanticChecker::onIdentExpression(const FilePos pos,
       logger_.error(pos, "Constant of invalid node type.");
       exit(EXIT_FAILURE);
     }
-  } else if (node->getNodeType() == NodeType::var_declaration ||
-             node->getNodeType() == NodeType::param_declaration) {
+  } else if (decl->getNodeType() == NodeType::var_declaration ||
+             decl->getNodeType() == NodeType::param_declaration) {
+
+    if (actual_params.size() > 0) {
+      logger_.error(
+          actual_params.at(0)->pos(),
+          "Variable and parameter expressions should not have parameters.");
+      exit(EXIT_FAILURE);
+    }
 
     return std::make_unique<IdentExpressionNode>(
         pos, std::move(ident), std::move(selectors), decl, type, false);
@@ -276,8 +377,6 @@ unique_ptr<IdentExpressionNode> SemanticChecker::onIdentExpressionReference(
   }
 }
 
-using FormalParameterType =
-    vector<std::tuple<vector<unique_ptr<IdentNode>>, bool, TypeNode *>>;
 ProcedureTypeNode *
 SemanticChecker::onProcedureType(const FilePos pos,
                                  FormalParameterType formal_parameters) {

@@ -42,8 +42,12 @@ private:
   void module();
   unique_ptr<ProcedureCallNode> procedure();
   RecordTypeNode *record_type();
+  SumTypeNode *sum_type();
+  vector<unique_ptr<ExpressionNode>> variant_actual_parameters();
   unique_ptr<RepeatStatementNode> repeat_statement();
   vector<unique_ptr<SelectorNode>> selectors();
+  vector<unique_ptr<SelectorNode>> selectors(unique_ptr<SelectorNode>);
+  unique_ptr<RecordFieldNode> record_selector();
   unique_ptr<StatementNode> statement();
   unique_ptr<StatementSequenceNode> statement_sequence();
   unique_ptr<TypeDeclarationNode> type_declaration();
@@ -86,6 +90,7 @@ private:
   bool peek_sign();
   bool peek_simple_expr();
   bool peek_string();
+  bool peek_sum_type();
   bool peek_term();
   bool peek_const_declaration();
   bool peek_type_declaration();

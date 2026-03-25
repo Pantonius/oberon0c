@@ -26,13 +26,6 @@ ArrayTypeNode::is_in_bounds(const ExpressionNode *expr) const {
   return {};
 }
 
-void FieldNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void FieldNode::print(ostream &stream) const {
-  ident->print(stream);
-  stream << " : ";
-  type->print(stream);
-}
-
 void RecordTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void RecordTypeNode::print(ostream &stream) const {
   stream << "RECORD ";
@@ -64,6 +57,38 @@ size_t RecordTypeNode::find_field_index(const IdentNode &ident) const {
   for (size_t i = 0; i < field_lists.size(); i++) {
     if (ident.value == field_lists.at(i)->ident->value) {
       return i;
+    }
+  }
+
+  throw FieldNotFoundException(ident);
+}
+
+void SumTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void SumTypeNode::print(ostream &stream) const {
+  stream << "SUM ";
+
+  auto v_size = variants.size();
+  if (v_size > 0) {
+    variants[0]->print(stream);
+
+    for (size_t i = 1; i < v_size; i++) {
+      stream << "; ";
+      variants[i]->print(stream);
+    }
+  }
+
+  stream << " END";
+}
+
+void SumTypeNode::setVariants(
+    std::vector<unique_ptr<VariantDeclarationNode>> new_variants) {
+  variants = std::move(new_variants);
+}
+const VariantDeclarationNode *
+SumTypeNode::find_variant(const IdentNode &ident) const {
+  for (auto &variant : variants) {
+    if (ident.value == variant->ident->value) {
+      return variant.get();
     }
   }
 

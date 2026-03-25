@@ -21,7 +21,6 @@ using std::vector;
 class DeclarationNode;
 
 class ExpressionNode : public Node {
-private:
 public:
   ExpressionNode(const NodeType &type, const FilePos pos,
                  TypeNode *const type_node)
@@ -98,6 +97,15 @@ class IdentExpressionNode final : public ExpressionNode {
 public:
   IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
                       vector<unique_ptr<SelectorNode>> selectors,
+                      vector<unique_ptr<ExpressionNode>> actual_parameters,
+                      const DeclarationNode *decl, TypeNode *type_node,
+                      bool lvalue)
+      : ExpressionNode(NodeType::ident_expression, pos, type_node),
+        ident(std::move(ident)), selectors(std::move(selectors)),
+        actual_parameters(std::move(actual_parameters)), decl(decl),
+        is_lvalue(lvalue) {}
+  IdentExpressionNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                      vector<unique_ptr<SelectorNode>> selectors,
                       const DeclarationNode *decl, TypeNode *type_node,
                       bool lvalue)
       : ExpressionNode(NodeType::ident_expression, pos, type_node),
@@ -111,6 +119,7 @@ public:
 
   const unique_ptr<IdentNode> ident;
   const vector<unique_ptr<SelectorNode>> selectors;
+  const vector<unique_ptr<ExpressionNode>> actual_parameters;
   const DeclarationNode *decl;
   const bool is_lvalue;
 };

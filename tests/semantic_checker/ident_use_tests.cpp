@@ -93,7 +93,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
         EMPTY_POS, make_unique<NumberExpressionNode>(EMPTY_POS, 3)));
 
     auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
-                                         std::move(selectors));
+                                         std::move(selectors), {});
 
     REQUIRE(logger.getErrorCount() == 0);
   }
@@ -109,7 +109,7 @@ TEST_CASE("Semantic Checker", "[sema]") {
         EMPTY_POS, make_unique<NumberExpressionNode>(EMPTY_POS, 6)));
 
     auto assign = sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
-                                         std::move(selectors));
+                                         std::move(selectors), {});
 
     REQUIRE(logger.getErrorCount() == 1);
   }
@@ -122,12 +122,13 @@ TEST_CASE("Semantic Checker", "[sema]") {
     selectors.emplace_back(std::make_unique<RecordFieldNode>(
         EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "field1")));
     selectors.emplace_back(sema.onArrayIndex(
-        EMPTY_POS, sema.onIdentExpression(
-                       EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "i"), {})));
+        EMPTY_POS,
+        sema.onIdentExpression(
+            EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "i"), {}, {})));
 
     auto array_ident_expr = dynamic_cast<IdentExpressionNode *>(
         sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
-                               std::move(selectors))
+                               std::move(selectors), {})
             .release());
 
     REQUIRE(logger.getErrorCount() == 0);
@@ -148,14 +149,14 @@ TEST_CASE("Semantic Checker", "[sema]") {
         EMPTY_POS,
         sema.onBinaryExpression(
             EMPTY_POS,
-            sema.onIdentExpression(EMPTY_POS,
-                                   make_unique<IdentNode>(EMPTY_POS, "i"), {}),
+            sema.onIdentExpression(
+                EMPTY_POS, make_unique<IdentNode>(EMPTY_POS, "i"), {}, {}),
             BinaryOpType::minus,
             make_unique<NumberExpressionNode>(EMPTY_POS, 2))));
 
     auto array_ident_expr = dynamic_cast<IdentExpressionNode *>(
         sema.onIdentExpression(EMPTY_POS, std::move(rec_ident),
-                               std::move(selectors))
+                               std::move(selectors), {})
             .release());
 
     REQUIRE(logger.getErrorCount() == 0);

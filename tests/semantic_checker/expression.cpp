@@ -21,18 +21,60 @@ TEST_CASE("Sema Ident Expression", "[sema][expression][ident]") {
 
   SECTION("Undeclared ident") {
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "undeclared"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "undeclared"), {},
+        {});
 
     REQUIRE(expr->type == nullptr);
   }
 
   SECTION("No selectors") {
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "no_selectors"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "no_selectors"), {},
+        {});
 
     REQUIRE(expr->getNodeType() == NodeType::ident_expression);
     auto ident_expr = dynamic_cast<const IdentExpressionNode *>(expr.get());
     REQUIRE(ident_expr->selectors.size() == 0);
+  }
+}
+
+TEST_CASE("Sema Variant Expression", "[sema][expression][variant]") {
+  Logger logger;
+  SemanticChecker sema(logger);
+
+  auto module_ident = make_unique<IdentNode>(EMPTY_POS, "Module");
+
+  sema.onModuleStart(EMPTY_POS, std::move(module_ident));
+
+  vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>> variants;
+  vector<TypeNode *> variant_a_types;
+  variant_a_types.push_back(ASTContext::INTEGER);
+
+  variants.emplace_back(std::make_unique<IdentNode>(EMPTY_POS, "A"),
+                        variant_a_types);
+
+  auto sum_type = sema.onSumType(EMPTY_POS, std::move(variants));
+  REQUIRE(sum_type);
+
+  auto type_decl = sema.onTypeDeclaration(
+      EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "SomeSum"), sum_type);
+  sema.get_context()->get_module()->add_type(std::move(type_decl));
+
+  SECTION("Valid Variant Expression") {
+    vector<unique_ptr<SelectorNode>> selectors;
+    selectors.push_back(std::make_unique<RecordFieldNode>(
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "A")));
+
+    vector<unique_ptr<ExpressionNode>> expressions;
+    expressions.push_back(
+        std::make_unique<NumberExpressionNode>(EMPTY_POS, 42));
+
+    auto expr = sema.onIdentExpression(
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "SomeSum"),
+        std::move(selectors), std::move(expressions));
+
+    REQUIRE(expr->getNodeType() == NodeType::ident_expression);
+    REQUIRE(expr->type == sum_type);
   }
 }
 

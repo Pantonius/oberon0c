@@ -5,7 +5,6 @@
 #include "parser/ast/IdentNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cassert>
-#include <cstdlib>
 #include <exception>
 #include <optional>
 #include <ranges>
@@ -93,8 +92,17 @@ SymbolTable::lookup_type(const IdentNode &ident,
           throw;
           return {};
         }
+      } else if (auto sum_type_node = dynamic_cast<const SumTypeNode *>(type)) {
+        try {
+          auto sum_variant =
+              sum_type_node->find_variant(*record_selector->ident);
+          return sum_variant->type;
+        } catch (FieldNotFoundException &e) {
+          throw;
+          return {};
+        }
       } else {
-        throw WrongTypeException(*prev_selector, "RECORD");
+        throw WrongTypeException(*prev_selector, "RECORD or SUM");
         return {};
       }
     } else {
@@ -102,6 +110,39 @@ SymbolTable::lookup_type(const IdentNode &ident,
     }
   }
   return type;
+}
+
+ProcedureTypeNode *SymbolTable::lookup_variant_proc_type(
+    const IdentNode &ident, const unique_ptr<SelectorNode> &selector) {
+
+  auto lookup_node = this->lookup(ident);
+
+  // Handle nullptr
+  if (!lookup_node) {
+    throw NotDeclaredException(ident);
+    return {};
+  }
+
+  auto decl_node = lookup_node.value();
+
+  TypeNode *type = decl_node->type;
+  if (auto record_selector =
+          dynamic_cast<const RecordFieldNode *>(selector.get())) {
+    if (auto sum_type_node = dynamic_cast<const SumTypeNode *>(type)) {
+      try {
+        auto sum_variant = sum_type_node->find_variant(*record_selector->ident);
+        return sum_variant->parameter_types;
+      } catch (FieldNotFoundException &e) {
+        throw;
+        return {};
+      }
+    } else {
+      throw WrongTypeException(ident, "SUM");
+      return {};
+    }
+  } else {
+    assert((void("Encountered unhandled SelectorNode type"), false));
+  }
 }
 
 const char *LookupException::what() const noexcept { return msg_.c_str(); }

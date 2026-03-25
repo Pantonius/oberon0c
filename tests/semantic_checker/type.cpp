@@ -45,7 +45,7 @@ TEST_CASE("Sema Array Type", "[sema][type][array]") {
         sema.onVars(EMPTY_POS, std::move(var_idents), ASTContext::INTEGER);
 
     auto expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "nonConst"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "nonConst"), {}, {});
 
     REQUIRE_THROWS_AS(
         sema.onArrayType(EMPTY_POS, std::move(expr), ASTContext::INTEGER),
@@ -147,5 +147,38 @@ TEST_CASE("Procedure Type", "[sema][type][procedure]") {
     // TODO: reconsider
     REQUIRE(procedure->formal_parameters.at(0)->ident->value == "param1");
     REQUIRE(procedure->formal_parameters.at(0)->type == nullptr);
+  }
+}
+
+TEST_CASE("Sum Type", "[sema][type][sum]") {
+  Logger logger;
+  SemanticChecker sema(logger);
+
+  auto module_ident = make_unique<IdentNode>(EMPTY_POS, "Module");
+
+  sema.onModuleStart(EMPTY_POS, std::move(module_ident));
+
+  SECTION("Sum Type Variant Types") {
+    vector<std::pair<unique_ptr<IdentNode>, vector<TypeNode *>>> variants;
+
+    vector<TypeNode *> variant_a_param_types;
+    variant_a_param_types.push_back(ASTContext::INTEGER);
+    variant_a_param_types.push_back(ASTContext::BOOLEAN);
+    variants.emplace_back(std::make_unique<IdentNode>(EMPTY_POS, "A"),
+                          variant_a_param_types);
+
+    auto sum = sema.onSumType(EMPTY_POS, std::move(variants));
+    REQUIRE(sum->variants.size() == 1);
+    REQUIRE(sum->variants.at(0)->ident->value == "A");
+
+    auto sum_variant_a_proc_type = (dynamic_cast<const ProcedureTypeNode *>(
+        sum->variants.at(0)->parameter_types));
+    REQUIRE(sum_variant_a_proc_type);
+    REQUIRE(sum_variant_a_proc_type->formal_parameters.at(0)->type ==
+            ASTContext::INTEGER);
+    REQUIRE(sum_variant_a_proc_type->formal_parameters.at(1)->type ==
+            ASTContext::BOOLEAN);
+
+    REQUIRE(sum->variants.at(0)->type == sum);
   }
 }

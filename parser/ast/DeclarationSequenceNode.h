@@ -62,9 +62,22 @@ public:
   void print(std::ostream &stream) const override final;
 };
 
-class ProtoParam {
+class VariantDeclarationNode final : public DeclarationNode {
 public:
-  // TODO
+  // NOTE type_node is constructed ONLY by the semantic checker and in such a
+  // way that the parameter names are integers 0..n
+  VariantDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
+                         ProcedureTypeNode *const parameter_types,
+                         TypeNode *const type)
+      : DeclarationNode(NodeType::variant_declaration, pos, std::move(ident),
+                        type),
+        parameter_types(parameter_types) {}
+  ~VariantDeclarationNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  ProcedureTypeNode *const parameter_types;
 };
 
 class ParamDeclarationNode final : public DeclarationNode {

@@ -37,7 +37,7 @@ TEST_CASE("Sema Const Declaration", "[sema][const_decl]") {
     auto var_decl =
         sema.onVars(EMPTY_POS, std::move(var_idents), ASTContext::INTEGER);
     auto ident_expr = sema.onIdentExpression(
-        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "non"), {});
+        EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "non"), {}, {});
 
     REQUIRE_THROWS_AS(
         sema.onConst(EMPTY_POS,
