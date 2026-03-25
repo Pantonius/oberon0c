@@ -378,13 +378,8 @@ std::unique_ptr<ExpressionNode> Parser::factor() {
     auto ident = Parser::ident();
 
     auto selectors = Parser::selectors();
-    vector<unique_ptr<ExpressionNode>> params;
-
-    if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
-      params = Parser::variant_actual_parameters();
-
-      expect_token_type(TokenType::rparen);
-    }
+    vector<unique_ptr<ExpressionNode>> params =
+        Parser::variant_actual_parameters();
 
     return sema_.onIdentExpression(pos, std::move(ident), std::move(selectors),
                                    std::move(params));

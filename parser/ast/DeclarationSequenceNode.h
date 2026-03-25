@@ -69,7 +69,8 @@ public:
   VariantDeclarationNode(const FilePos pos, unique_ptr<IdentNode> ident,
                          ProcedureTypeNode *const parameter_types,
                          TypeNode *const type)
-      : DeclarationNode(NodeType::sum_variant, pos, std::move(ident), type),
+      : DeclarationNode(NodeType::variant_declaration, pos, std::move(ident),
+                        type),
         parameter_types(parameter_types) {}
   ~VariantDeclarationNode() override = default;
 

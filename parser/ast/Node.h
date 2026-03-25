@@ -34,12 +34,10 @@ enum class NodeType : char {
   statement_sequence,
   std_type,
   sum_type,
-  sum_variant,
+  variant_declaration,
   type_declaration,
   unary_expression,
   var_declaration,
-  variant_expression,
-  variant_arg_type,
   while_statement,
 };
 

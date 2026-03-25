@@ -1,8 +1,9 @@
 MODULE SumType;
 
 TYPE MaybeInt = SUM None; Some(INTEGER) END;
-VAR i : MaybeInt;
+VAR i,j : MaybeInt;
 
 BEGIN
-  i := MaybeInt.None()
+  i := MaybeInt.None;
+  j := MaybeInt.Some(43)
 END SumType.
