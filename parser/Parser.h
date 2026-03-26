@@ -53,6 +53,7 @@ private:
   unique_ptr<TypeDeclarationNode> type_declaration();
   TypeNode *type();
   unique_ptr<WhileStatementNode> while_statement();
+  unique_ptr<CaseStatementNode> case_statement();
   std::vector<unique_ptr<IdentNode>> ident_list();
   vector<unique_ptr<VarDeclarationNode>> var_declarations();
   BinaryOpType add_operator();

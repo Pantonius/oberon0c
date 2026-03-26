@@ -594,6 +594,8 @@ std::unique_ptr<WhileStatementNode> Parser::while_statement() {
 }
 
 // RepeatStatement = "REPEAT" StatementSequence "UNTIL" expression
+// NOTE not in use
+// TODO
 std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
   const FilePos pos = scanner_.peek()->start();
 
@@ -605,6 +607,42 @@ std::unique_ptr<RepeatStatementNode> Parser::repeat_statement() {
 
   return make_unique<RepeatStatementNode>(pos, std::move(condition),
                                           std::move(body));
+}
+
+unique_ptr<CaseStatementNode> Parser::case_statement() {
+  const FilePos pos = scanner_.peek()->start();
+
+  expect_token_type(TokenType::kw_case);
+  auto value = expression();
+
+  expect_token_type(TokenType::kw_of);
+
+  // pattern = ident | expression
+  vector<std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>>
+      cases;
+  do {
+    const FilePos pattern_pos = scanner_.peek()->start();
+
+    // case = pattern ":" StatementSequence
+    unique_ptr<PatternNode> pattern;
+    if (peek_ident()) {
+      pattern = make_unique<IdentPatternNode>(pattern_pos, Parser::ident());
+    } else {
+      pattern =
+          make_unique<ExpressionPatternNode>(pattern_pos, Parser::expression());
+    }
+
+    expect_token_type(TokenType::colon);
+
+    auto statements = statement_sequence();
+
+    cases.emplace_back(std::move(pattern), std::move(statements));
+  } while (peek_check_token_type(TokenType::pipe, ADVANCE_ON_TRUE));
+
+  expect_token_type(TokenType::kw_end);
+
+  return make_unique<CaseStatementNode>(pos, std::move(value),
+                                        std::move(cases));
 }
 
 // ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ";"

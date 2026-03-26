@@ -118,4 +118,54 @@ public:
   const unique_ptr<StatementSequenceNode> body;
 };
 
+class PatternNode : public Node {
+public:
+  PatternNode(const NodeType &type, const FilePos pos) : Node(type, pos) {}
+  ~PatternNode() override = default;
+};
+
+class IdentPatternNode final : public PatternNode {
+public:
+  IdentPatternNode(const FilePos pos, unique_ptr<IdentNode> ident)
+      : PatternNode(NodeType::ident_pattern, pos), ident(std::move(ident)) {}
+  ~IdentPatternNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const unique_ptr<IdentNode> ident;
+};
+
+class ExpressionPatternNode final : public PatternNode {
+public:
+  ExpressionPatternNode(const FilePos pos, unique_ptr<ExpressionNode> expr)
+      : PatternNode(NodeType::expression_pattern, pos),
+        expression(std::move(expr)) {}
+  ~ExpressionPatternNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const unique_ptr<ExpressionNode> expression;
+};
+
+class CaseStatementNode final : public StatementNode {
+public:
+  CaseStatementNode(const FilePos pos, unique_ptr<ExpressionNode> value,
+                    vector<std::pair<unique_ptr<PatternNode>,
+                                     unique_ptr<StatementSequenceNode>>>
+                        cases)
+      : StatementNode(NodeType::case_statement, pos), value(std::move(value)),
+        cases(std::move(cases)) {}
+  ~CaseStatementNode() override = default;
+
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+
+  const unique_ptr<ExpressionNode> value;
+  const vector<
+      std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>>
+      cases;
+};
+
 #endif // OBERON0C_STATEMENTNODE_H
