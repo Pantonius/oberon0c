@@ -529,6 +529,8 @@ std::unique_ptr<StatementNode> Parser::statement() {
     return if_statement();
   } else if (peek_check_token_type(TokenType::kw_while)) {
     return while_statement();
+  } else if (peek_check_token_type(TokenType::kw_case)) {
+    return case_statement();
   }
 
   const FilePos pos = scanner_.peek()->start();

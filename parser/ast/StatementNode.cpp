@@ -74,3 +74,26 @@ void RepeatStatementNode::print(ostream &stream) const {
   stream << "\nUNTIL ";
   condition->print(stream);
 }
+
+void IdentPatternNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void IdentPatternNode::print(ostream &stream) const { stream << ident->value; }
+
+void ExpressionPatternNode::accept(NodeVisitor &visitor) {
+  visitor.visit(*this);
+}
+void ExpressionPatternNode::print(ostream &stream) const {
+  stream << expression;
+}
+
+void CaseStatementNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void CaseStatementNode::print(ostream &stream) const {
+  stream << "CASE " << value << " OF\n";
+
+  if (cases.size() > 0) {
+    stream << cases.at(0).first << " : " << cases.at(0).second;
+
+    for (size_t i = 1; i < cases.size(); i++) {
+      stream << "| " << cases.at(0).first << " : " << cases.at(0).second;
+    }
+  }
+}

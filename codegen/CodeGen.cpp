@@ -660,6 +660,10 @@ void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
   builder_->SetInsertPoint(tailBlock);
 }
 
+void CodeGenBuilder::visit(ExpressionPatternNode &expr_pattern) {}
+void CodeGenBuilder::visit(IdentPatternNode &ident_pattern) {}
+void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {}
+
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
   llvm::Type *llvm_type;
   try {
