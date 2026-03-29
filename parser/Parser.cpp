@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include "global.h"
 #include "parser/ast/ExpressionNode.h"
+#include "parser/ast/StatementNode.h"
 #include "scanner/IdentToken.h"
 #include "scanner/LiteralToken.h"
 #include "scanner/Token.h"
@@ -619,32 +620,70 @@ unique_ptr<CaseStatementNode> Parser::case_statement() {
 
   expect_token_type(TokenType::kw_of);
 
-  // pattern = ident | expression
-  vector<std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>>
-      cases;
-  do {
-    const FilePos pattern_pos = scanner_.peek()->start();
+  auto case_stmt = sema_.onCaseStatementStart(pos, std::move(value));
 
-    // case = pattern ":" StatementSequence
-    unique_ptr<PatternNode> pattern;
-    if (peek_ident()) {
-      pattern = make_unique<IdentPatternNode>(pattern_pos, Parser::ident());
-    } else {
-      pattern =
-          make_unique<ExpressionPatternNode>(pattern_pos, Parser::expression());
-    }
+  // pattern = ident | expression
+  do {
+    sema_.onCaseStatementCaseStart();
+    auto pattern = Parser::pattern(case_stmt->value->type);
 
     expect_token_type(TokenType::colon);
 
     auto statements = statement_sequence();
 
-    cases.emplace_back(std::move(pattern), std::move(statements));
+    sema_.onCaseStatementCaseEnd(*case_stmt, std::move(pattern),
+                                 std::move(statements));
   } while (peek_check_token_type(TokenType::pipe, ADVANCE_ON_TRUE));
 
   expect_token_type(TokenType::kw_end);
+  sema_.onCaseStatementEnd(*case_stmt);
 
-  return make_unique<CaseStatementNode>(pos, std::move(value),
-                                        std::move(cases));
+  return case_stmt;
+}
+
+unique_ptr<PatternNode> Parser::pattern(TypeNode *value_type) {
+  const FilePos pos = scanner_.peek()->start();
+
+  // case = pattern ":" StatementSequence
+  if (peek_ident()) {
+    auto ident = Parser::ident();
+
+    if (peek_check_token_type(TokenType::period, ADVANCE_ON_TRUE)) {
+      auto variant = Parser::record_selector();
+
+      vector<unique_ptr<PatternNode>> pats;
+
+      if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
+        auto sum_type = dynamic_cast<const SumTypeNode *>(value_type);
+        auto variant_decl = sum_type->find_variant(*variant->ident);
+
+        size_t i = 0;
+        do {
+          pats.push_back(Parser::pattern(
+              variant_decl->parameter_types->formal_parameters.at(i)->type));
+          i++;
+        } while (peek_check_token_type(TokenType::semicolon, ADVANCE_ON_TRUE));
+
+        expect_token_type(TokenType::rparen);
+      }
+
+      // VariantPattern
+      return sema_.onVariantPattern(pos, std::move(ident), std::move(variant),
+                                    std::move(pats), value_type);
+    } else {
+      // IdentPattern
+      return sema_.onIdentPattern(pos, std::move(ident), value_type);
+    }
+  } else if (peek_number()) {
+    // TODO sema_.onNumberPattern(pos Parser::number());
+    return make_unique<NumberPatternNode>(pos, Parser::number());
+  } else if (peek_boolean()) {
+    // TODO sema_.onBooleanPattern(pos Parser::boolean());
+    return make_unique<BooleanPatternNode>(pos, Parser::boolean());
+  }
+
+  logger_.error(pos, "Invalid pattern.");
+  exit(EXIT_FAILURE);
 }
 
 // ProcedureDeclaration = ProcedureHeading ";" ProcedureBody ";"

@@ -3,8 +3,10 @@
 
 #include "scanner/Token.h"
 #include <ostream>
+#include <valarray>
 
 enum class NodeType : char {
+  array_selector,
   array_type,
   assignment,
   binary_expression,
@@ -13,14 +15,14 @@ enum class NodeType : char {
   const_declaration,
   declaration_sequence,
   elsif_statement,
-  expression_pattern,
-  fp_section,
   field,
+  fp_section,
   ident,
   ident_expression,
   ident_pattern,
   ident_type,
   if_statement,
+  literal_pattern,
   module,
   number,
   param_declaration,
@@ -29,20 +31,21 @@ enum class NodeType : char {
   procedure_declaration,
   procedure_heading,
   procedure_type,
+  record_selector,
   record_type,
   repeat_statement,
-  array_selector,
-  record_selector,
   statement,
   statement_sequence,
   std_type,
   sum_type,
-  variant_declaration,
   type_declaration,
   unary_expression,
   var_declaration,
+  variant_declaration,
+  variant_pattern,
   while_statement,
 };
+std::ostream &operator<<(std::ostream &stream, const NodeType &type);
 
 class NodeVisitor;
 

@@ -58,6 +58,23 @@ public:
                   vector<unique_ptr<SelectorNode>>,
                   vector<unique_ptr<ExpressionNode>>);
 
+  unique_ptr<IdentPatternNode>
+  onIdentPattern(const FilePos, unique_ptr<IdentNode>, TypeNode *);
+
+  unique_ptr<VariantPatternNode>
+  onVariantPattern(const FilePos, unique_ptr<IdentNode>,
+                   unique_ptr<RecordFieldNode>, vector<unique_ptr<PatternNode>>,
+                   TypeNode *);
+
+  unique_ptr<CaseStatementNode>
+  onCaseStatementStart(const FilePos, unique_ptr<ExpressionNode>);
+
+  void onCaseStatementCaseStart();
+  void onCaseStatementCaseEnd(CaseStatementNode &, unique_ptr<PatternNode>,
+                              unique_ptr<StatementSequenceNode>);
+
+  void onCaseStatementEnd(CaseStatementNode &);
+
   unique_ptr<ExpressionNode> onUnaryExpression(const FilePos,
                                                unique_ptr<ExpressionNode>,
                                                const UnaryOpType);

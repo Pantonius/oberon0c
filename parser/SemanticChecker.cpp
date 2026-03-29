@@ -247,14 +247,6 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
         decl, type, false);
   }
 
-  // TODO is this redundant?
-  // // lookup ident declaration
-  // auto node_lookup = symbol_table_.lookup(*ident);
-  // if (!node_lookup) {
-  //   logger_.error(pos, "Undeclared identifier.");
-  //   exit(EXIT_FAILURE);
-  // }
-
   if (decl->getNodeType() == NodeType::type_declaration) {
     if (decl->type->getNodeType() != NodeType::sum_type) {
       logger_.error(decl->pos(), "Expected sum type.");
@@ -503,7 +495,7 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
     if (proc_type->formal_parameters[i]->by_reference) {
       if (actual_params[i]->getNodeType() != NodeType::ident_expression) {
         logger_.error(actual_params[i]->pos(),
-                      "Passed parameter is not a variable.");
+                      "Passed parameter is not declared.");
         exit(EXIT_FAILURE);
       }
 
@@ -523,6 +515,105 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
   return std::make_unique<ProcedureCallNode>(
       pos, std::move(ident), std::move(selectors), std::move(actual_params),
       proc_decl);
+}
+
+unique_ptr<IdentPatternNode>
+SemanticChecker::onIdentPattern(const FilePos pos, unique_ptr<IdentNode> ident,
+                                TypeNode *value_type) {
+  auto var_decl =
+      make_unique<VarDeclarationNode>(pos, std::move(ident), value_type);
+  expect_unique(var_decl->ident.get(), var_decl.get());
+
+  return make_unique<IdentPatternNode>(pos, std::move(var_decl), value_type);
+}
+
+unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
+    const FilePos pos, unique_ptr<IdentNode> sum_ident,
+    unique_ptr<RecordFieldNode> variant,
+    vector<unique_ptr<PatternNode>> param_pats, TypeNode *value_type) {
+
+  TypeNode *type = nullptr;
+  const DeclarationNode *decl;
+  try {
+    type = symbol_table_.lookup_type(*sum_ident, *variant);
+    decl = symbol_table_.lookup(*sum_ident).value();
+    if (!decl) {
+      logger_.error(sum_ident->pos(),
+                    to_string(*sum_ident) + " is not declared.");
+    }
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    exit(EXIT_FAILURE);
+  }
+
+  if (decl->type->getNodeType() != NodeType::sum_type) {
+    logger_.error(pos, sum_ident->value + "." + variant->ident->value +
+                           " is not a sum type variant: " +
+                           to_string(decl->getNodeType()));
+    exit(EXIT_FAILURE);
+  }
+
+  auto sum_type = dynamic_cast<const SumTypeNode *>(decl->type);
+  auto variant_decl = sum_type->find_variant(*variant->ident);
+
+  if (variant_decl->parameter_types->formal_parameters.size() !=
+      param_pats.size()) {
+    logger_.error(
+        pos,
+        "Variant pattern has " + to_string(param_pats.size()) +
+            " patterns for actual " +
+            to_string(variant_decl->parameter_types->formal_parameters.size()) +
+            " parameters.");
+    exit(EXIT_FAILURE);
+  }
+
+  for (size_t i = 0; i < param_pats.size(); i++) {
+    if (variant_decl->parameter_types->formal_parameters.at(i)->type !=
+        param_pats.at(i)->type) {
+      logger_.error(param_pats.at(i)->pos(),
+                    "Pattern for parameter at index " + to_string(i) +
+                        " does not match declared type.");
+      exit(EXIT_FAILURE);
+    }
+
+    if (variant_decl->type != value_type) {
+      logger_.error(pos,
+                    "Pattern does not match the type of the case expression.");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  return make_unique<VariantPatternNode>(pos, std::move(sum_ident),
+                                         std::move(variant),
+                                         std::move(param_pats), type);
+}
+
+unique_ptr<CaseStatementNode>
+SemanticChecker::onCaseStatementStart(const FilePos pos,
+                                      unique_ptr<ExpressionNode> expr) {
+  return make_unique<CaseStatementNode>(pos, std::move(expr));
+}
+
+void SemanticChecker::onCaseStatementCaseStart() { symbol_table_.beginScope(); }
+void SemanticChecker::onCaseStatementCaseEnd(
+    CaseStatementNode &case_stmt, unique_ptr<PatternNode> pattern,
+    unique_ptr<StatementSequenceNode> stmts) {
+  symbol_table_.endScope();
+
+  case_stmt.add_case(std::move(pattern), std::move(stmts));
+}
+
+void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
+  if (case_stmt.get_cases()->size() == 0) {
+    logger_.error(case_stmt.pos(),
+                  "No cases specified in the case expression.");
+    exit(EXIT_FAILURE);
+  }
+
+  for (auto &m_case : *case_stmt.get_cases()) {
+    // TODO uniqueness check of cases
+    // TODO exhaustiveness check
+  }
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(

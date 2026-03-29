@@ -58,17 +58,18 @@ private:
   void visit(AssignmentNode &) override final;
   void visit(BinaryExpressionNode &) override final;
   void visit(BooleanExpressionNode &) override final;
+  void visit(BooleanPatternNode &) override final;
   void visit(CaseStatementNode &) override final;
   void visit(ConstDeclarationNode &) override final;
   void visit(ElsIfStatementNode &) override final;
-  void visit(ExpressionPatternNode &) override final;
   void visit(IdentExpressionNode &) override final;
-  void visit(IdentPatternNode &) override final;
   void visit(IdentNode &) override final;
+  void visit(IdentPatternNode &) override final;
   void visit(IdentTypeNode &) override final;
   void visit(IfStatementNode &) override final;
   void visit(ModuleNode &) override final;
   void visit(NumberExpressionNode &) override final;
+  void visit(NumberPatternNode &) override final;
   void visit(ParamDeclarationNode &) override final;
   void visit(ProcedureCallNode &) override final;
   void visit(ProcedureDeclarationNode &) override final;
@@ -84,6 +85,7 @@ private:
   void visit(UnaryExpressionNode &) override final;
   void visit(VarDeclarationNode &) override final;
   void visit(VariantDeclarationNode &) override final;
+  void visit(VariantPatternNode &) override final;
   void visit(WhileStatementNode &) override final;
 
   llvm::Type *getLLVMType(TypeNode *);

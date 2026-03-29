@@ -69,7 +69,7 @@ void SumTypeNode::print(ostream &stream) const {
 
   auto v_size = variants.size();
   if (v_size > 0) {
-    variants[0]->print(stream);
+    variants.at(0)->print(stream);
 
     for (size_t i = 1; i < v_size; i++) {
       stream << "; ";
@@ -96,4 +96,16 @@ SumTypeNode::find_variant(const IdentNode &ident) const {
 }
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
+void ProcedureTypeNode::print(ostream &stream) const {
+  stream << "PROCEDURE ";
+
+  auto v_size = formal_parameters.size();
+  if (v_size > 0) {
+    formal_parameters.at(0)->print(stream);
+
+    for (size_t i = 1; i < v_size; i++) {
+      stream << "; ";
+      formal_parameters.at(i)->print(stream);
+    }
+  }
+}

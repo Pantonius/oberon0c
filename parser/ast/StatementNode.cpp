@@ -1,6 +1,8 @@
 #include "StatementNode.h"
 #include "NodeVisitor.h"
+#include "parser/ast/ASTContext.h"
 #include "util/Logger.h"
+#include <utility>
 
 void AssignmentNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void AssignmentNode::print(ostream &stream) const {
@@ -76,24 +78,50 @@ void RepeatStatementNode::print(ostream &stream) const {
 }
 
 void IdentPatternNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void IdentPatternNode::print(ostream &stream) const { stream << ident->value; }
+void IdentPatternNode::print(ostream &stream) const { stream << var; }
 
-void ExpressionPatternNode::accept(NodeVisitor &visitor) {
-  visitor.visit(*this);
-}
-void ExpressionPatternNode::print(ostream &stream) const {
-  stream << expression;
+NumberPatternNode::NumberPatternNode(const FilePos pos, int32_t number)
+    : LiteralPatternNode(pos, number, ASTContext::INTEGER) {}
+void NumberPatternNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void NumberPatternNode::print(ostream &stream) const { stream << value; }
+
+BooleanPatternNode::BooleanPatternNode(const FilePos pos, bool boolean)
+    : LiteralPatternNode(pos, boolean, ASTContext::BOOLEAN) {}
+void BooleanPatternNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void BooleanPatternNode::print(ostream &stream) const { stream << value; }
+
+void VariantPatternNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void VariantPatternNode::print(ostream &stream) const {
+  stream << sum_ident->value << "." << variant->ident->value;
+
+  if (param_patterns.size() > 0) {
+    stream << param_patterns.at(0);
+
+    for (size_t i = 1; i < param_patterns.size(); i++) {
+      stream << "; " << param_patterns.at(i);
+    }
+  }
 }
 
 void CaseStatementNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
 void CaseStatementNode::print(ostream &stream) const {
   stream << "CASE " << value << " OF\n";
 
-  if (cases.size() > 0) {
-    stream << cases.at(0).first << " : " << cases.at(0).second;
+  if (cases_.size() > 0) {
+    stream << cases_.at(0).first << " : " << cases_.at(0).second;
 
-    for (size_t i = 1; i < cases.size(); i++) {
-      stream << "| " << cases.at(0).first << " : " << cases.at(0).second;
+    for (size_t i = 1; i < cases_.size(); i++) {
+      stream << "| " << cases_.at(0).first << " : " << cases_.at(0).second;
     }
   }
+}
+
+void CaseStatementNode::add_case(unique_ptr<PatternNode> pattern,
+                                 unique_ptr<StatementSequenceNode> stmts) {
+  cases_.emplace_back(std::move(pattern), std::move(stmts));
+}
+
+vector<std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>> *
+CaseStatementNode::get_cases() {
+  return &cases_;
 }
