@@ -675,11 +675,9 @@ unique_ptr<PatternNode> Parser::pattern(TypeNode *value_type) {
       return sema_.onIdentPattern(pos, std::move(ident), value_type);
     }
   } else if (peek_number()) {
-    // TODO sema_.onNumberPattern(pos Parser::number());
-    return make_unique<NumberPatternNode>(pos, Parser::number());
+    return sema_.onNumberPattern(pos, Parser::number(), value_type);
   } else if (peek_boolean()) {
-    // TODO sema_.onBooleanPattern(pos Parser::boolean());
-    return make_unique<BooleanPatternNode>(pos, Parser::boolean());
+    return sema_.onBooleanPattern(pos, Parser::boolean(), value_type);
   }
 
   logger_.error(pos, "Invalid pattern.");

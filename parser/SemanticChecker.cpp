@@ -527,6 +527,29 @@ SemanticChecker::onIdentPattern(const FilePos pos, unique_ptr<IdentNode> ident,
   return make_unique<IdentPatternNode>(pos, std::move(var_decl), value_type);
 }
 
+unique_ptr<NumberPatternNode>
+SemanticChecker::onNumberPattern(const FilePos pos, int32_t number,
+                                 TypeNode *type) {
+  if (type != ASTContext::INTEGER) {
+    logger_.error(pos, "Expected pattern of type " + to_string(type) +
+                           " but got INTEGER.");
+    exit(EXIT_FAILURE);
+  }
+
+  return std::make_unique<NumberPatternNode>(pos, number);
+}
+unique_ptr<BooleanPatternNode>
+SemanticChecker::onBooleanPattern(const FilePos pos, bool boolean,
+                                  TypeNode *type) {
+  if (type != ASTContext::BOOLEAN) {
+    logger_.error(pos, "Expected pattern of type " + to_string(type) +
+                           " but got BOOLEAN.");
+    exit(EXIT_FAILURE);
+  }
+
+  return std::make_unique<BooleanPatternNode>(pos, boolean);
+}
+
 unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
     const FilePos pos, unique_ptr<IdentNode> sum_ident,
     unique_ptr<RecordFieldNode> variant,
@@ -556,6 +579,12 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
   auto sum_type = dynamic_cast<const SumTypeNode *>(decl->type);
   auto variant_decl = sum_type->find_variant(*variant->ident);
 
+  if (variant_decl->type != value_type) {
+    logger_.error(pos,
+                  "Pattern does not match the type of the case expression.");
+    exit(EXIT_FAILURE);
+  }
+
   if (variant_decl->parameter_types->formal_parameters.size() !=
       param_pats.size()) {
     logger_.error(
@@ -573,12 +602,6 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
       logger_.error(param_pats.at(i)->pos(),
                     "Pattern for parameter at index " + to_string(i) +
                         " does not match declared type.");
-      exit(EXIT_FAILURE);
-    }
-
-    if (variant_decl->type != value_type) {
-      logger_.error(pos,
-                    "Pattern does not match the type of the case expression.");
       exit(EXIT_FAILURE);
     }
   }
@@ -610,10 +633,8 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     exit(EXIT_FAILURE);
   }
 
-  for (auto &m_case : *case_stmt.get_cases()) {
-    // TODO uniqueness check of cases
-    // TODO exhaustiveness check
-  }
+  // TODO uniqueness check of cases
+  // TODO exhaustiveness check
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(

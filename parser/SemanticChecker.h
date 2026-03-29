@@ -58,6 +58,11 @@ public:
                   vector<unique_ptr<SelectorNode>>,
                   vector<unique_ptr<ExpressionNode>>);
 
+  unique_ptr<NumberPatternNode> onNumberPattern(const FilePos, int32_t,
+                                                TypeNode *);
+  unique_ptr<BooleanPatternNode> onBooleanPattern(const FilePos, bool,
+                                                  TypeNode *);
+
   unique_ptr<IdentPatternNode>
   onIdentPattern(const FilePos, unique_ptr<IdentNode>, TypeNode *);
 
