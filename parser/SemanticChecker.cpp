@@ -784,7 +784,8 @@ vector<u_int> SemanticChecker::boolean_pattern_exhaustiveness(
           false_case = int(i);
           reachable_cases.push_back(i);
         } else {
-          logger_.warning(pattern->pos(), "Duplicate TRUE case (unreachable).");
+          logger_.warning(pattern->pos(),
+                          "Duplicate FALSE case (unreachable).");
         }
       }
     } else {
