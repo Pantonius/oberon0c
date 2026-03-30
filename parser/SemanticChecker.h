@@ -8,6 +8,7 @@
 #include "ast/TypeNode.h"
 #include "global.h"
 #include "util/Logger.h"
+#include <map>
 #include <memory>
 
 using std::unique_ptr;
@@ -120,8 +121,13 @@ private:
   SymbolTable symbol_table_;
   ASTContext context_;
 
-  void check_rec_exhaustiveness(size_t, CaseStatementNode &, const string &,
-                                vector<size_t>);
+  void number_pattern_exhaustiveness(const FilePos,
+                                     std::map<size_t, const PatternNode *>);
+
+  void boolean_pattern_exhaustiveness(const FilePos,
+                                      std::map<size_t, const PatternNode *>);
+  void variant_pattern_exhaustiveness(const FilePos, const SumTypeNode *,
+                                      std::map<size_t, const PatternNode *>);
 };
 
 class NonConstException : public std::exception {
