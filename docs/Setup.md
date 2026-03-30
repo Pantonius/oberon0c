@@ -38,7 +38,7 @@ For the most part the setup should be the same as before.
 3. Navigate to the build directory and run CMake to configure the project and generate a native build system.
    ```
    > cd build
-   > cmake . -G Ninja
+   > cmake .. -G Ninja
    ```
 4. Call the build system to compile and link the project.
    ```
