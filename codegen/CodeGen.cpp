@@ -29,6 +29,7 @@
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
 #include <memory>
+#include <stdexcept>
 
 std::unique_ptr<llvm::TargetMachine> CodeGen::init() {
   // initialize LLVM
@@ -290,9 +291,7 @@ void CodeGenBuilder::visit(ModuleNode &module_node) {
   module_.setModuleIdentifier(module_node.ident->value);
 
   for (auto &type : *module_node.get_types()) {
-    // NOTE TypeDeclarations are simply new key:value pairs in types_
-    // differentiation of semantically different types is gone now;
-    // the parser / sema checker did that
+    type->accept(*this);
     getLLVMType(type->type);
   }
 
@@ -466,6 +465,41 @@ void CodeGenBuilder::visit(RecordTypeNode &record_type) {
   types_[&record_type] = struct_type;
 }
 
+void CodeGenBuilder::visit(SumTypeNode &sum_type) {
+  // variant payload array
+  size_t max_size;
+
+  for (auto &variant : sum_type.variants) {
+    vector<llvm::Type *> param_types;
+    for (auto &param : variant->parameter_types->formal_parameters) {
+      param->type->accept(*this);
+      param_types.push_back(getLLVMType(param->type));
+    }
+    // NOTE had to be a llvm::StrucType instead of just visiting the
+    // ProcedureTypeNode (yielding a FunctionType), because FunctionType is not
+    // sized
+    auto variant_type =
+        llvm::StructType::get(builder_->getContext(), param_types);
+    auto variant_size = module_.getDataLayout().getTypeAllocSize(variant_type);
+
+    types_[variant->parameter_types] = variant_type;
+
+    if (max_size < variant_size) {
+      max_size = variant_size;
+    }
+  }
+
+  // sum type consists of tag (Int32) and variant payload array (max size of all
+  // variants)
+  auto llvm_type = llvm::StructType::get(
+      builder_->getContext(),
+      {builder_->getInt32Ty(),
+       llvm::ArrayType::get(builder_->getInt8Ty(), max_size)});
+  module_.getDataLayout().getTypeAllocSize(getLLVMType(ASTContext::INTEGER));
+
+  types_[&sum_type] = llvm_type;
+};
+
 void CodeGenBuilder::visit(ProcedureTypeNode &proc_type) {
   vector<llvm::Type *> param_types;
   for (auto &param : proc_type.formal_parameters) {
@@ -516,19 +550,68 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
 }
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
-  llvm::AllocaInst *base_ptr;
-  try {
-    base_ptr = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
-  } catch (std::out_of_range &e) {
-    logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
-  }
+  if (ident_expr.type->getNodeType() == NodeType::sum_type &&
+      !ident_expr.is_lvalue) {
+    auto sum_type = dynamic_cast<const SumTypeNode *>(ident_expr.type);
+    auto record_field =
+        dynamic_cast<const RecordFieldNode *>(ident_expr.selectors.at(0).get());
+    auto variant = sum_type->find_variant(*record_field->ident);
+    auto variant_tag = sum_type->find_variant_index(*record_field->ident);
 
-  auto elem_type =
-      get_elem_ptr(ident_expr.decl, base_ptr, ident_expr.selectors);
+    // initialize sum type value
+    try {
+      auto llvm_sum_type = getLLVMType(variant->type);
+      llvm::AllocaInst *dst = builder_->CreateAlloca(llvm_sum_type);
 
-  if (elem_type->isPrimitiveType() && !ident_expr.is_lvalue) {
-    value_ = builder_->CreateLoad(getLLVMType(elem_type), value_);
-    return;
+      llvm::Value *llvm_sum = llvm::UndefValue::get(llvm_sum_type);
+      // find variant tag and put it into the tag position
+      llvm_sum = builder_->CreateInsertValue(
+          llvm_sum, llvm::ConstantInt::get(builder_->getInt32Ty(), variant_tag),
+          {0});
+
+      // build llvm_variant
+      try {
+        llvm::Value *llvm_variant =
+            llvm::UndefValue::get(getLLVMType(variant->parameter_types));
+
+        for (u_int i = 0;
+             i < variant->parameter_types->formal_parameters.size(); i++) {
+          // visit parameter
+          variant->parameter_types->formal_parameters.at(i)->accept(*this);
+          auto field_value = value_;
+
+          llvm_variant =
+              builder_->CreateInsertValue(llvm_variant, field_value, {i});
+        }
+
+        // insert variant into payload position
+        llvm_sum = builder_->CreateInsertValue(llvm_sum, llvm_variant, {1});
+
+        value_ = builder_->CreateStore(llvm_sum, dst);
+        value_ = dst;
+      } catch (std::out_of_range &e) {
+        logger_.debug("Unknown type: " + to_string(variant->parameter_types));
+        exit(EXIT_FAILURE);
+      }
+    } catch (std::out_of_range &e) {
+      logger_.debug("Unknown type: " + to_string(variant->type));
+      exit(EXIT_FAILURE);
+    }
+  } else {
+    llvm::AllocaInst *base_ptr;
+    try {
+      base_ptr = static_cast<llvm::AllocaInst *>(values_.at(ident_expr.decl));
+    } catch (std::out_of_range &e) {
+      logger_.debug("Unknown variable: " + to_string(*ident_expr.ident));
+    }
+
+    auto elem_type =
+        get_elem_ptr(ident_expr.decl, base_ptr, ident_expr.selectors);
+
+    if (elem_type->isPrimitiveType() && !ident_expr.is_lvalue) {
+      value_ = builder_->CreateLoad(getLLVMType(elem_type), value_);
+      return;
+    }
   }
 }
 
@@ -638,7 +721,6 @@ void CodeGenBuilder::visit(StatementSequenceNode &stmts) {
     stmt->accept(*this);
   }
 }
-void CodeGenBuilder::visit(SumTypeNode &) {};
 void CodeGenBuilder::visit(VariantDeclarationNode &) {};
 void CodeGenBuilder::visit(IdentNode &ident) {}
 void CodeGenBuilder::visit(RecordFieldNode &field) {}
@@ -828,6 +910,9 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
 }
 
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
+  // NOTE TypeDeclarations are simply new key:value pairs in types_
+  // differentiation of semantically different types is gone now;
+  // the parser / sema checker did that
   llvm::Type *llvm_type;
   try {
     llvm_type = types_.at(type);

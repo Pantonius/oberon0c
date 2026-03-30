@@ -92,6 +92,15 @@ SumTypeNode::find_variant(const IdentNode &ident) const {
     throw FieldNotFoundException(ident);
   }
 }
+size_t SumTypeNode::find_variant_index(const IdentNode &ident) const {
+  for (size_t i = 0; i < variants.size(); i++) {
+    if (variants.at(i)->ident->value == ident.value) {
+      return i;
+    }
+  }
+
+  throw FieldNotFoundException(ident);
+}
 
 std::optional<const VariantDeclarationNode *>
 SumTypeNode::find_variant(const string &name) const {
