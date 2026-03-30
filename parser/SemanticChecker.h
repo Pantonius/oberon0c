@@ -119,6 +119,9 @@ private:
   Logger &logger_;
   SymbolTable symbol_table_;
   ASTContext context_;
+
+  void check_rec_exhaustiveness(size_t, CaseStatementNode &, const string &,
+                                vector<size_t>);
 };
 
 class NonConstException : public std::exception {

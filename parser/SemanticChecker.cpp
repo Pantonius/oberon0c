@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -626,6 +627,148 @@ void SemanticChecker::onCaseStatementCaseEnd(
   case_stmt.add_case(std::move(pattern), std::move(stmts));
 }
 
+// TODO prettify
+void SemanticChecker::check_rec_exhaustiveness(size_t index,
+                                               CaseStatementNode &case_stmt,
+                                               const string &variant,
+                                               vector<size_t> case_indices) {
+  if (case_indices.size() == 0)
+    return;
+
+  auto cases = case_stmt.get_cases();
+  auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
+
+  auto maybe_variant_proc_type = sum_type->find_variant(variant);
+  if (!maybe_variant_proc_type) {
+    logger_.debug("1: " + variant);
+    throw;
+  }
+  auto variant_proc_type = maybe_variant_proc_type.value();
+
+  if (variant_proc_type->parameter_types->formal_parameters.size() <= index) {
+    return;
+  }
+
+  auto curr_type =
+      variant_proc_type->parameter_types->formal_parameters.at(index)->type;
+
+  if (curr_type->getNodeType() == NodeType::sum_type) {
+    auto curr_sum_type = dynamic_cast<const SumTypeNode *>(curr_type);
+
+    std::unordered_map<string, vector<size_t>> variant_map;
+    vector<size_t> wildcards;
+
+    for (auto &variant : curr_sum_type->variants) {
+      variant_map[variant->ident->value] = {};
+    }
+
+    for (auto i : case_indices) {
+      if (wildcards.size() > 0) {
+        logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+      }
+
+      auto parent_pattern =
+          dynamic_cast<const VariantPatternNode *>(cases->at(i).first.get());
+      auto curr_param_pattern = parent_pattern->param_patterns.at(index).get();
+
+      if (curr_param_pattern->getNodeType() == NodeType::ident_pattern) {
+        wildcards.push_back(i);
+      } else { // NOTE assumed to be variant_pattern (which should be the case,
+               // because its type would indicate so)
+        auto variant_pattern =
+            dynamic_cast<const VariantPatternNode *>(curr_param_pattern);
+
+        variant_map[variant_pattern->variant->ident->value].push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      for (auto v : variant_map) {
+        auto maybe_v_variant = curr_sum_type->find_variant(v.first);
+        if (!maybe_v_variant) {
+          logger_.debug("2: " + variant + " of " + to_string(curr_sum_type));
+          throw;
+        }
+        auto v_variant = maybe_v_variant.value();
+
+        if (v.second.size() == 0) {
+          logger_.warning(case_stmt.pos(),
+                          "Non-exhausitve case-statement: Missing cases for " +
+                              v.first + " variant.");
+        } else if (v_variant->parameter_types->formal_parameters.size() > 0) {
+          check_rec_exhaustiveness(index + 1, case_stmt, variant, v.second);
+        } else if (v.second.size() > 1) {
+          for (size_t i = 1; i < v.second.size(); i++) {
+            logger_.warning(cases->at(v.second.at(i)).first->pos(),
+                            "Unreachable case.");
+          }
+        }
+      }
+    }
+  } else if (curr_type == ASTContext::INTEGER) {
+    vector<size_t> literal_cases;
+    vector<size_t> wildcards;
+
+    for (auto i : case_indices) {
+      if (wildcards.size() > 0) {
+        logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+      }
+      auto variant_pattern =
+          dynamic_cast<const VariantPatternNode *>(cases->at(i).first.get());
+
+      if (variant_pattern->param_patterns.at(index)->getNodeType() ==
+          NodeType::literal_pattern) {
+        literal_cases.push_back(i);
+      } else {
+        wildcards.push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      logger_.warning(case_stmt.pos(), "Non-exhausitve case-statement: Missing "
+                                       "a case with an identifier pattern.");
+    }
+  } else if (curr_type == ASTContext::BOOLEAN) {
+    vector<size_t> true_cases;
+    vector<size_t> false_cases;
+    vector<size_t> wildcards;
+
+    for (auto i : case_indices) {
+      if (wildcards.size() > 0 ||
+          (true_cases.size() > 0 && false_cases.size() > 0)) {
+        logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+      }
+      auto variant_pattern =
+          dynamic_cast<const VariantPatternNode *>(cases->at(i).first.get());
+
+      if (variant_pattern->param_patterns.at(i)->getNodeType() ==
+          NodeType::literal_pattern) {
+        auto bool_pattern =
+            dynamic_cast<const BooleanPatternNode *>(cases->at(i).first.get());
+
+        if (bool_pattern->value) {
+          true_cases.push_back(i);
+        } else {
+          false_cases.push_back(i);
+        }
+      } else {
+        wildcards.push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      if (true_cases.size() == 0) {
+        logger_.warning(case_stmt.pos(),
+                        "Non-exhausitve case-statement: Missing TRUE case.");
+      }
+      if (false_cases.size() == 0) {
+        logger_.warning(case_stmt.pos(),
+                        "Non-exhausitve case-statement: Missing FALSE case.");
+      }
+    }
+  }
+}
+
 void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
   if (case_stmt.get_cases()->size() == 0) {
     logger_.error(case_stmt.pos(),
@@ -633,8 +776,107 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     exit(EXIT_FAILURE);
   }
 
+  auto cases = case_stmt.get_cases();
+  if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
+    auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
+    std::unordered_map<string, vector<size_t>> variant_map;
+    vector<size_t> wildcards;
+
+    for (auto &variant : sum_type->variants) {
+      variant_map[variant->ident->value] = {};
+    }
+
+    for (size_t i = 0; i < cases->size(); i++) {
+      if (wildcards.size() > 0) { // TODO variants
+        logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+      }
+      if (cases->at(i).first->getNodeType() == NodeType::ident_pattern) {
+        wildcards.push_back(i);
+      } else { // NOTE assumed to be variant_pattern (which should be the case,
+               // because its type would indicate so)
+        auto variant_pattern =
+            dynamic_cast<const VariantPatternNode *>(cases->at(i).first.get());
+
+        variant_map[variant_pattern->variant->ident->value].push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      for (auto v : variant_map) {
+        if (v.second.size() == 0) {
+          logger_.warning(
+              case_stmt.pos(),
+              "Non-exhausitve case-statement: Missing cases for \"" + v.first +
+                  "\" variant.");
+        } else if (sum_type->find_variant(v.first)
+                       .value()
+                       ->parameter_types->formal_parameters.size() > 0) {
+          check_rec_exhaustiveness(0, case_stmt, v.first, v.second);
+        } else if (v.second.size() > 1) {
+          for (size_t i = 1; i < v.second.size(); i++) {
+            logger_.warning(cases->at(v.second.at(i)).first->pos(),
+                            "Unreachable case.");
+          }
+        }
+      }
+    }
+  } else if (case_stmt.value->type == ASTContext::INTEGER) {
+    vector<size_t> literal_cases;
+    vector<size_t> wildcards;
+
+    for (size_t i = 0; i < cases->size(); i++) {
+      if (wildcards.size() > 0) {
+        logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+      }
+      if (cases->at(i).first->getNodeType() == NodeType::literal_pattern) {
+        literal_cases.push_back(i);
+      } else {
+        wildcards.push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      logger_.warning(case_stmt.pos(), "Non-exhausitve case-statement: Missing "
+                                       "a case with an identifier pattern.");
+    }
+  } else if (case_stmt.value->type == ASTContext::BOOLEAN) {
+    vector<size_t> true_cases;
+    vector<size_t> false_cases;
+    vector<size_t> wildcards;
+
+    for (size_t i = 0; i < cases->size(); i++) {
+      if (cases->at(i).first->getNodeType() == NodeType::literal_pattern) {
+        if (wildcards.size() > 0 ||
+            (true_cases.size() > 0 && false_cases.size() > 0)) {
+          logger_.warning(cases->at(i).first->pos(), "Unreachable case.");
+        }
+
+        auto bool_pattern =
+            dynamic_cast<const BooleanPatternNode *>(cases->at(i).first.get());
+
+        if (bool_pattern->value) {
+          true_cases.push_back(i);
+        } else {
+          false_cases.push_back(i);
+        }
+      } else {
+        wildcards.push_back(i);
+      }
+    }
+
+    if (wildcards.size() == 0) {
+      if (true_cases.size() == 0) {
+        logger_.warning(case_stmt.pos(),
+                        "Non-exhausitve case-statement: Missing TRUE case.");
+      }
+      if (false_cases.size() == 0) {
+        logger_.warning(case_stmt.pos(),
+                        "Non-exhausitve case-statement: Missing FALSE case.");
+      }
+    }
+  }
+
   // TODO uniqueness check of cases
-  // TODO exhaustiveness check
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(

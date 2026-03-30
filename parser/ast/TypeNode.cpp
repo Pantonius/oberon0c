@@ -86,13 +86,22 @@ void SumTypeNode::setVariants(
 }
 const VariantDeclarationNode *
 SumTypeNode::find_variant(const IdentNode &ident) const {
+  if (auto val = find_variant(ident.value)) {
+    return val.value();
+  } else {
+    throw FieldNotFoundException(ident);
+  }
+}
+
+std::optional<const VariantDeclarationNode *>
+SumTypeNode::find_variant(const string &name) const {
   for (auto &variant : variants) {
-    if (ident.value == variant->ident->value) {
+    if (name == variant->ident->value) {
       return variant.get();
     }
   }
 
-  throw FieldNotFoundException(ident);
+  return std::nullopt;
 }
 
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }

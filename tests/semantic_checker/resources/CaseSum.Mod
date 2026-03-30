@@ -9,8 +9,8 @@ BEGIN
   j := 0;
   CASE i OF
     MaybeInt.Some(42) : j := 8
+    | MaybeInt.Some(2) : j := 2
     | MaybeInt.Some(x) : j := x
-    | TRUE : j := 1
-    | MaybeInt.None : j := 12
+    | MaybeInt.None : j := 0
   END
 END CaseSum.

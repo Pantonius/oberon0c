@@ -664,7 +664,45 @@ void CodeGenBuilder::visit(IdentPatternNode &ident_pattern) {}
 void CodeGenBuilder::visit(VariantPatternNode &variant_pattern) {}
 void CodeGenBuilder::visit(NumberPatternNode &number_pattern) {}
 void CodeGenBuilder::visit(BooleanPatternNode &bool_pattern) {}
-void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {}
+void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
+  // auto currentFunc = builder_->GetInsertBlock()->getParent();
+  //
+  // auto cases = case_stmt.get_cases();
+  //
+  // cases->at(0).first->accept(*this);
+  // auto condition = value_;
+  //
+  // auto tailBlock =
+  //     llvm::BasicBlock::Create(builder_->getContext(), "ifTail",
+  //     currentFunc);
+  // auto trueBlock =
+  //     llvm::BasicBlock::Create(builder_->getContext(), "ifTrue",
+  //     currentFunc);
+  // auto falseBlock =
+  //     llvm::BasicBlock::Create(builder_->getContext(), "ifFalse",
+  //     currentFunc);
+  //
+  // // [
+  // return_points_.push(tailBlock);
+  // builder_->CreateCondBr(condition, trueBlock, falseBlock);
+  //
+  // builder_->SetInsertPoint(trueBlock);
+  // if_stmt.body->accept(*this);
+  // builder_->CreateBr(tailBlock);
+  //
+  // builder_->SetInsertPoint(falseBlock);
+  // for (auto &elsif : if_stmt.elsifs) {
+  //   elsif->accept(*this);
+  // }
+  // if (if_stmt.else_statement_sequence) {
+  //   if_stmt.else_statement_sequence->accept(*this);
+  // }
+  // builder_->CreateBr(tailBlock);
+  // return_points_.pop();
+  // // ]
+  //
+  // builder_->SetInsertPoint(tailBlock);
+}
 
 llvm::Type *CodeGenBuilder::getLLVMType(TypeNode *const type) {
   llvm::Type *llvm_type;

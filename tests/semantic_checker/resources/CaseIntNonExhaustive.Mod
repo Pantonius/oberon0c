@@ -1,4 +1,4 @@
-MODULE Case;
+MODULE CaseInt;
 
 VAR i, j : INTEGER;
 
@@ -7,6 +7,5 @@ BEGIN
   CASE i OF
     0 : j := 8
     | 1 : j := 12
-    | x : j := x
   END
-END Case.
+END CaseInt.

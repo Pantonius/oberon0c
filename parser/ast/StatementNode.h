@@ -141,6 +141,22 @@ public:
   const unique_ptr<VarDeclarationNode> var;
 };
 
+// class ArrayPatternNode final : public PatternNode {
+// public:
+//   ArrayPatternNode(const FilePos pos,
+//                    vector<unique_ptr<PatternNode>> elem_patterns,
+//                    TypeNode *type)
+//       : PatternNode(NodeType::variant_pattern, pos, type),
+//
+//         elem_patterns(std::move(elem_patterns)) {}
+//   ~ArrayPatternNode() override = default;
+//
+//   void accept(NodeVisitor &visitor) override final;
+//   void print(std::ostream &stream) const final;
+//
+//   const vector<unique_ptr<PatternNode>> elem_patterns;
+// };
+
 class VariantPatternNode final : public PatternNode {
 public:
   VariantPatternNode(const FilePos pos, unique_ptr<IdentNode> sum_ident,
