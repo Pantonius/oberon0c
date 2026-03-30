@@ -1,11 +1,15 @@
 MODULE Case;
 
-VAR i, j : BOOLEAN;
+VAR i: BOOLEAN;
+  j: INTEGER;
 
 BEGIN
-  j := FALSE;
+  i := FALSE;
+  j := 0;
   CASE i OF
-    FALSE : j := TRUE
-    | TRUE : j := FALSE
-  END
+    FALSE : j := 12
+    | TRUE : j := 42
+  END;
+  WriteInt(j);
+  WriteLn
 END Case.

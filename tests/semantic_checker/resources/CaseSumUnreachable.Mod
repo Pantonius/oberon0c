@@ -13,6 +13,7 @@ BEGIN
   j := 0;
   CASE i OF
     MaybeInt.Some(42) : j := 8
+    | MaybeInt.Some(42) : j := 7
     | MaybeInt.Some(x) : j := x
     | MaybeInt.Some(2) : j := 2
     | MaybeInt.None : j := 0

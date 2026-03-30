@@ -591,8 +591,16 @@ void CodeGenBuilder::visit(BinaryExpressionNode &binary_expr) {
              right_type == ASTContext::BOOLEAN) {
     switch (binary_expr.op) {
     case BinaryOpType::b_and:
+      value_ = builder_->CreateAnd(left_value, right_value);
       break;
     case BinaryOpType::b_or:
+      value_ = builder_->CreateOr(left_value, right_value);
+      break;
+    case BinaryOpType::eq:
+      value_ = builder_->CreateICmpEQ(left_value, right_value);
+      break;
+    case BinaryOpType::neq:
+      value_ = builder_->CreateICmpNE(left_value, right_value);
       break;
     default:
       logger_.error(binary_expr.pos(), "UNKNOWN OPERATOR");
@@ -660,15 +668,130 @@ void CodeGenBuilder::visit(WhileStatementNode &while_stmt) {
   builder_->SetInsertPoint(tailBlock);
 }
 
-void CodeGenBuilder::visit(IdentPatternNode &ident_pattern) {}
+void CodeGenBuilder::visit(IdentPatternNode &ident_pattern) {
+  ident_pattern.var->accept(*this);
+}
 void CodeGenBuilder::visit(VariantPatternNode &variant_pattern) {}
-void CodeGenBuilder::visit(NumberPatternNode &number_pattern) {}
-void CodeGenBuilder::visit(BooleanPatternNode &bool_pattern) {}
+void CodeGenBuilder::visit(NumberPatternNode &number_pattern) {
+  value_ = builder_->getInt32(number_pattern.value);
+}
+void CodeGenBuilder::visit(BooleanPatternNode &bool_pattern) {
+  value_ = builder_->getInt1(bool_pattern.value);
+}
 void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
-  // auto currentFunc = builder_->GetInsertBlock()->getParent();
-  //
-  // auto cases = case_stmt.get_cases();
-  //
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  auto cases = case_stmt.get_cases();
+
+  case_stmt.value->accept(*this);
+
+  const auto right_type = case_stmt.value->type;
+  const auto right_value = value_;
+
+  if (right_type == ASTContext::INTEGER || right_type == ASTContext::BOOLEAN) {
+    u_int first_reachable_case = case_stmt.reachable_cases.at(0);
+
+    if (cases->at(first_reachable_case).first->getNodeType() ==
+        NodeType::ident_pattern) {
+      // just var declaration and assignment
+      cases->at(first_reachable_case)
+          .first->accept(*this); // visit IdentPatternNode
+      auto ident_pattern = dynamic_cast<const IdentPatternNode *>(
+          cases->at(first_reachable_case).first.get());
+
+      llvm::AllocaInst *base_ptr;
+      try {
+        base_ptr = static_cast<llvm::AllocaInst *>(
+            values_.at(ident_pattern->var.get()));
+      } catch (std::out_of_range &e) {
+        logger_.debug("Unknown variable: " +
+                      to_string(*ident_pattern->var->ident));
+      }
+
+      get_elem_ptr(ident_pattern->var.get(), base_ptr, {});
+
+      auto left_value = value_;
+      value_ = builder_->CreateStore(right_value, left_value);
+    } else {
+      auto tailBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                                "ifTail", currentFunc);
+      auto trueBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                                "ifTrue", currentFunc);
+      auto falseBlock = llvm::BasicBlock::Create(builder_->getContext(),
+                                                 "ifFalse", currentFunc);
+
+      // first one is just a number pattern
+      cases->at(first_reachable_case).first->accept(*this);
+      const auto if_left_value = value_;
+
+      auto if_condition = builder_->CreateICmpEQ(if_left_value, right_value);
+      builder_->CreateCondBr(if_condition, trueBlock, falseBlock);
+
+      builder_->SetInsertPoint(trueBlock);
+      cases->at(first_reachable_case).second->accept(*this);
+      builder_->CreateBr(tailBlock);
+
+      builder_->SetInsertPoint(falseBlock);
+
+      for (size_t i = 1; i < case_stmt.reachable_cases.size(); i++) {
+        auto case_index = case_stmt.reachable_cases.at(i);
+        if (cases->at(case_index).first->getNodeType() ==
+            NodeType::ident_pattern) {
+          // "ELSE"
+          cases->at(case_index).first->accept(*this); // visit IdentPatternNode
+          auto ident_pattern = dynamic_cast<const IdentPatternNode *>(
+              cases->at(case_index).first.get());
+
+          llvm::AllocaInst *base_ptr;
+          try {
+            base_ptr = static_cast<llvm::AllocaInst *>(
+                values_.at(ident_pattern->var.get()));
+          } catch (std::out_of_range &e) {
+            logger_.debug("Unknown variable: " +
+                          to_string(*ident_pattern->var->ident));
+          }
+
+          get_elem_ptr(ident_pattern->var.get(), base_ptr, {});
+
+          const auto left_value = value_;
+          value_ = builder_->CreateStore(right_value, left_value);
+
+          cases->at(case_index).second->accept(*this);
+
+        } else if (cases->at(case_index).first->getNodeType() ==
+                   NodeType::literal_pattern) {
+          // "ELSIF"
+          cases->at(case_index).first->accept(*this);
+          const auto elsif_left_value = value_;
+
+          auto elsif_condition =
+              builder_->CreateICmpEQ(elsif_left_value, right_value);
+
+          auto elsIfTrueBlock = llvm::BasicBlock::Create(
+              builder_->getContext(), "elsifTrue", currentFunc);
+          auto elsIfFalseBlock = llvm::BasicBlock::Create(
+              builder_->getContext(), "elsifFalse", currentFunc);
+
+          builder_->CreateCondBr(elsif_condition, elsIfTrueBlock,
+                                 elsIfFalseBlock);
+
+          builder_->SetInsertPoint(elsIfTrueBlock);
+          cases->at(case_index).second->accept(*this);
+          builder_->CreateBr(tailBlock);
+
+          builder_->SetInsertPoint(elsIfFalseBlock);
+        }
+      }
+      builder_->CreateBr(tailBlock);
+      builder_->SetInsertPoint(tailBlock);
+    }
+  } else if (case_stmt.value->getNodeType() == NodeType::sum_type) {
+    logger_.error(case_stmt.value->pos(),
+                  "Can't generate code for sum type values.");
+  } else {
+    logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
+  }
+
   // cases->at(0).first->accept(*this);
   // auto condition = value_;
   //

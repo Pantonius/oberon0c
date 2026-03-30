@@ -218,6 +218,8 @@ public:
 
   const unique_ptr<ExpressionNode> value;
 
+  vector<u_int> reachable_cases;
+
   void add_case(unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>);
   vector<
       std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>> *
