@@ -19,14 +19,35 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        stdenv = pkgs.clangStdenv;
+        shell = {
+          packages = (
+            if system == "aarch64-darwin" then
+              [ ]
+            else
+              with pkgs;
+              [
+                gdb
+                valgrind
+                vscode-extensions.vadimcn.vscode-lldb.adapter
+              ]
+          );
+          inputsFrom = [
+            self.packages.${system}.oberon0c
+            self.packages.${system}.oberon0c_fuzz
+          ];
+        };
       in
       {
-        devShells.default = pkgs.mkShell {
-          packages =
-            pkgs.callPackage ./dependencies.nix { inherit pkgs; }
-            ++ (if system == "aarch64-darwin" then [ ] else [ pkgs.gdb ]);
+        devShells = {
+          default = pkgs.mkShell.override { stdenv = stdenv; } shell;
         };
-        packages.default = pkgs.callPackage ./default.nix { inherit pkgs; };
+        packages = rec {
+          stdenv = stdenv;
+          oberon0c = pkgs.callPackage ./default.nix { inherit pkgs; };
+          oberon0c_fuzz = pkgs.callPackage ./afl.nix { inherit pkgs oberon0c; };
+          default = oberon0c;
+        };
       }
     );
 }

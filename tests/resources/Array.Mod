@@ -1,0 +1,9 @@
+MODULE Array;
+
+TYPE INTARRAY = ARRAY 20 OF INTEGER;
+
+VAR a: INTARRAY;
+
+BEGIN
+  a[5] = 3
+END Array.

@@ -2,7 +2,6 @@
 #define OBERON0C_MODULENODE_H
 
 #include "DeclarationSequenceNode.h"
-#include "ImportListNode.h"
 #include "Node.h"
 #include "StatementSequenceNode.h"
 #include <memory>
@@ -10,18 +9,22 @@
 using std::string;
 using std::unique_ptr;
 
-class ModuleNode final : public Node {
+class ModuleNode final : public Node, public DeclarationSequenceNode {
+private:
+  unique_ptr<StatementSequenceNode> statement_sequence_;
+
 public:
-  ModuleNode(const FilePos &pos) : Node(NodeType::module, pos) {}
-  ~ModuleNode() noexcept override;
+  ModuleNode(const FilePos pos, unique_ptr<IdentNode> ident)
+      : Node(NodeType::module, pos), ident(std::move(ident)) {}
+  ~ModuleNode() override = default;
 
-  void accept(NodeVisitor &visitor) override;
-  void print(std::ostream &stream) const override;
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
 
-  string ident;
-  unique_ptr<const ImportListNode> import_list;
-  unique_ptr<DeclarationSequenceNode> declaration_sequence;
-  unique_ptr<StatementSequenceNode> statement_sequence;
+  const unique_ptr<IdentNode> ident;
+
+  void set_statements(unique_ptr<StatementSequenceNode>);
+  StatementSequenceNode *get_statements();
 };
 
 #endif // OBERON0C_MODULENODE_H

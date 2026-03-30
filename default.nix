@@ -1,22 +1,41 @@
 {
   pkgs,
+  stdenv,
   makeWrapper,
 }:
-pkgs.stdenv.mkDerivation rec {
+stdenv.mkDerivation rec {
   pname = "oberon0c";
   version = "0.1.0";
 
   src = ./.;
 
-  buildInputs =
-    (import ./dependencies.nix {
-      inherit pkgs;
-    })
-    ++ [ makeWrapper ];
+  nativeBuildInputs = with pkgs; [
+    ninja
+    cmake
+    clang-tools
+  ];
+
+  buildInputs = with pkgs; [
+    boost
+    libllvm
+  ];
+
+  checkInputs = with pkgs; [
+    catch2_3
+  ];
+
+  doCheck = true;
+
+  configurePhase = ''
+    cmake . -G Ninja
+  '';
 
   buildPhase = ''
-    cmake . 
-    cmake --build . --parallel $NIX_BUILD_CORES
+    ninja
+  '';
+
+  checkPhase = ''
+    ninja test
   '';
 
   installPhase = ''
