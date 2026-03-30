@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <sys/types.h>
 #include <unordered_map>
 #include <utility>
@@ -238,8 +239,8 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
   TypeNode *type = nullptr;
   const DeclarationNode *decl;
   try {
-    decl = symbol_table_.lookup(*ident).value();
     type = symbol_table_.lookup_type(*ident, selectors);
+    decl = symbol_table_.lookup(*ident).value();
     if (!decl) {
       logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
     }
