@@ -467,7 +467,7 @@ void CodeGenBuilder::visit(RecordTypeNode &record_type) {
 
 void CodeGenBuilder::visit(SumTypeNode &sum_type) {
   // variant payload array
-  size_t max_size;
+  auto max_size = llvm::TypeSize::getZero();
 
   for (auto &variant : sum_type.variants) {
     vector<llvm::Type *> param_types;
@@ -491,11 +491,9 @@ void CodeGenBuilder::visit(SumTypeNode &sum_type) {
 
   // sum type consists of tag (Int32) and variant payload array (max size of all
   // variants)
+  auto payload_type = llvm::ArrayType::get(builder_->getInt8Ty(), max_size);
   auto llvm_type = llvm::StructType::get(
-      builder_->getContext(),
-      {builder_->getInt32Ty(),
-       llvm::ArrayType::get(builder_->getInt8Ty(), max_size)});
-  module_.getDataLayout().getTypeAllocSize(getLLVMType(ASTContext::INTEGER));
+      builder_->getContext(), {builder_->getInt32Ty(), payload_type});
 
   types_[&sum_type] = llvm_type;
 };
@@ -563,35 +561,36 @@ void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
       auto llvm_sum_type = getLLVMType(variant->type);
       llvm::AllocaInst *dst = builder_->CreateAlloca(llvm_sum_type);
 
-      llvm::Value *llvm_sum = llvm::UndefValue::get(llvm_sum_type);
       // find variant tag and put it into the tag position
-      llvm_sum = builder_->CreateInsertValue(
-          llvm_sum, llvm::ConstantInt::get(builder_->getInt32Ty(), variant_tag),
-          {0});
+      llvm::Value *llvm_sum_tag =
+          builder_->CreateConstGEP2_32(llvm_sum_type, dst, 0, 0);
+      builder_->CreateStore(
+          llvm::ConstantInt::get(builder_->getInt32Ty(), variant_tag),
+          llvm_sum_tag);
 
       // build llvm_variant
-      try {
-        llvm::Value *llvm_variant =
-            llvm::UndefValue::get(getLLVMType(variant->parameter_types));
+      if (variant->parameter_types->formal_parameters.size() > 0) {
+        try {
+          auto llvm_variant_type = getLLVMType(variant->parameter_types);
+          auto llvm_variant =
+              builder_->CreateConstGEP2_32(llvm_sum_type, dst, 0, 1);
 
-        for (u_int i = 0;
-             i < variant->parameter_types->formal_parameters.size(); i++) {
-          // visit parameter
-          variant->parameter_types->formal_parameters.at(i)->accept(*this);
-          auto field_value = value_;
+          for (u_int i = 0;
+               i < variant->parameter_types->formal_parameters.size(); i++) {
+            // visit parameter
+            variant->parameter_types->formal_parameters.at(i)->accept(*this);
+            auto field_value = value_;
 
-          llvm_variant =
-              builder_->CreateInsertValue(llvm_variant, field_value, {i});
+            auto llvm_field = builder_->CreateConstGEP2_32(llvm_variant_type,
+                                                           llvm_variant, 0, i);
+            builder_->CreateStore(field_value, llvm_field);
+          }
+
+          value_ = dst;
+        } catch (std::out_of_range &e) {
+          logger_.debug("Unknown type: " + to_string(variant->parameter_types));
+          exit(EXIT_FAILURE);
         }
-
-        // insert variant into payload position
-        llvm_sum = builder_->CreateInsertValue(llvm_sum, llvm_variant, {1});
-
-        value_ = builder_->CreateStore(llvm_sum, dst);
-        value_ = dst;
-      } catch (std::out_of_range &e) {
-        logger_.debug("Unknown type: " + to_string(variant->parameter_types));
-        exit(EXIT_FAILURE);
       }
     } catch (std::out_of_range &e) {
       logger_.debug("Unknown type: " + to_string(variant->type));
