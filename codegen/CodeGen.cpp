@@ -549,9 +549,10 @@ void CodeGenBuilder::visit(AssignmentNode &assign) {
 
 void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
   if (ident_expr.type->getNodeType() == NodeType::sum_type &&
-      !ident_expr.is_lvalue) {
+      !ident_expr.is_lvalue && ident_expr.selectors.size() == 1) {
     auto sum_type = dynamic_cast<const SumTypeNode *>(ident_expr.type);
-    auto record_field =
+
+    const RecordFieldNode *record_field =
         dynamic_cast<const RecordFieldNode *>(ident_expr.selectors.at(0).get());
     auto variant = sum_type->find_variant(*record_field->ident);
     auto variant_tag = sum_type->find_variant_index(*record_field->ident);
@@ -769,7 +770,14 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
   const auto right_type = case_stmt.value->type;
   const auto right_value = value_;
 
-  u_int first_reachable_case = case_stmt.reachable_cases.at(0);
+  u_int first_reachable_case;
+  try {
+    first_reachable_case = case_stmt.reachable_cases.at(0);
+  } catch (std::out_of_range &e) {
+    logger_.debug(to_string(case_stmt.pos()) +
+                  " No reachable statements in case statment");
+    return;
+  }
 
   if (right_type == ASTContext::INTEGER || right_type == ASTContext::BOOLEAN) {
     if (cases->at(first_reachable_case).first->getNodeType() ==
@@ -866,7 +874,12 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
       builder_->CreateBr(tailBlock);
       builder_->SetInsertPoint(tailBlock);
     }
-  } else if (case_stmt.value->getNodeType() == NodeType::sum_type) {
+  } else if (right_type->getNodeType() == NodeType::sum_type) {
+    logger_.error(
+        case_stmt.pos(),
+        "Sum type expressions are not supported in CodeGen. Skipping :(");
+    return;
+
     auto sum_type = dynamic_cast<SumTypeNode *>(case_stmt.value->type);
 
     if (cases->at(first_reachable_case).first->getNodeType() ==
@@ -948,7 +961,6 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
 
       builder_->SetInsertPoint(trueBlock);
       // TODO
-
       builder_->CreateBr(tailBlock);
 
       builder_->SetInsertPoint(falseBlock);
