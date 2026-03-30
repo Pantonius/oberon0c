@@ -2,8 +2,8 @@
 #define OBERON0C_ASTCONTEXT_H
 
 #include "ModuleNode.h"
+#include "TypeNode.h"
 #include "functional"
-#include "parser/ast/TypeNode.h"
 
 using std::function;
 

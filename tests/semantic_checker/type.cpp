@@ -107,7 +107,7 @@ TEST_CASE("Sema Record Type", "[sema][type][record]") {
   }
 }
 
-TEST_CASE("Procedure Type", "[sema][type][procedure]") {
+TEST_CASE("Sema Procedure Type", "[sema][type][procedure]") {
   Logger logger;
   SemanticChecker sema(logger);
 
@@ -150,7 +150,7 @@ TEST_CASE("Procedure Type", "[sema][type][procedure]") {
   }
 }
 
-TEST_CASE("Sum Type", "[sema][type][sum]") {
+TEST_CASE("Sema Sum Type", "[sema][type][sum]") {
   Logger logger;
   SemanticChecker sema(logger);
 

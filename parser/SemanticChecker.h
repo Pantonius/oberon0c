@@ -8,6 +8,7 @@
 #include "ast/TypeNode.h"
 #include "global.h"
 #include "util/Logger.h"
+#include <map>
 #include <memory>
 
 using std::unique_ptr;
@@ -58,6 +59,28 @@ public:
                   vector<unique_ptr<SelectorNode>>,
                   vector<unique_ptr<ExpressionNode>>);
 
+  unique_ptr<NumberPatternNode> onNumberPattern(const FilePos, int32_t,
+                                                TypeNode *);
+  unique_ptr<BooleanPatternNode> onBooleanPattern(const FilePos, bool,
+                                                  TypeNode *);
+
+  unique_ptr<IdentPatternNode>
+  onIdentPattern(const FilePos, unique_ptr<IdentNode>, TypeNode *);
+
+  unique_ptr<VariantPatternNode>
+  onVariantPattern(const FilePos, unique_ptr<IdentNode>,
+                   unique_ptr<RecordFieldNode>, vector<unique_ptr<PatternNode>>,
+                   TypeNode *);
+
+  unique_ptr<CaseStatementNode>
+  onCaseStatementStart(const FilePos, unique_ptr<ExpressionNode>);
+
+  void onCaseStatementCaseStart();
+  void onCaseStatementCaseEnd(CaseStatementNode &, unique_ptr<PatternNode>,
+                              unique_ptr<StatementSequenceNode>);
+
+  void onCaseStatementEnd(CaseStatementNode &);
+
   unique_ptr<ExpressionNode> onUnaryExpression(const FilePos,
                                                unique_ptr<ExpressionNode>,
                                                const UnaryOpType);
@@ -97,6 +120,18 @@ private:
   Logger &logger_;
   SymbolTable symbol_table_;
   ASTContext context_;
+
+  vector<u_int>
+  number_pattern_exhaustiveness(const FilePos,
+                                std::map<u_int, const PatternNode *>);
+
+  vector<u_int>
+  boolean_pattern_exhaustiveness(const FilePos,
+                                 std::map<u_int, const PatternNode *>);
+
+  vector<u_int>
+  variant_pattern_exhaustiveness(const FilePos, const SumTypeNode *,
+                                 std::map<u_int, const PatternNode *>);
 };
 
 class NonConstException : public std::exception {

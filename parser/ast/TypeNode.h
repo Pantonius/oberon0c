@@ -115,7 +115,12 @@ public:
   // NOTE setter such that the variants can be added after the SumType has been
   // initialized
   void setVariants(std::vector<unique_ptr<VariantDeclarationNode>>);
+
   const VariantDeclarationNode *find_variant(const IdentNode &ident) const;
+  size_t find_variant_index(const IdentNode &ident) const;
+
+  std::optional<const VariantDeclarationNode *>
+  find_variant(const string &name) const;
 };
 
 class FieldNotFoundException : public std::exception {

@@ -11,6 +11,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <sys/types.h>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -246,14 +248,6 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
         pos, std::move(ident), std::move(selectors), std::move(actual_params),
         decl, type, false);
   }
-
-  // TODO is this redundant?
-  // // lookup ident declaration
-  // auto node_lookup = symbol_table_.lookup(*ident);
-  // if (!node_lookup) {
-  //   logger_.error(pos, "Undeclared identifier.");
-  //   exit(EXIT_FAILURE);
-  // }
 
   if (decl->getNodeType() == NodeType::type_declaration) {
     if (decl->type->getNodeType() != NodeType::sum_type) {
@@ -503,7 +497,7 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
     if (proc_type->formal_parameters[i]->by_reference) {
       if (actual_params[i]->getNodeType() != NodeType::ident_expression) {
         logger_.error(actual_params[i]->pos(),
-                      "Passed parameter is not a variable.");
+                      "Passed parameter is not declared.");
         exit(EXIT_FAILURE);
       }
 
@@ -523,6 +517,328 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
   return std::make_unique<ProcedureCallNode>(
       pos, std::move(ident), std::move(selectors), std::move(actual_params),
       proc_decl);
+}
+
+unique_ptr<IdentPatternNode>
+SemanticChecker::onIdentPattern(const FilePos pos, unique_ptr<IdentNode> ident,
+                                TypeNode *value_type) {
+  auto var_decl =
+      make_unique<VarDeclarationNode>(pos, std::move(ident), value_type);
+  expect_unique(var_decl->ident.get(), var_decl.get());
+
+  return make_unique<IdentPatternNode>(pos, std::move(var_decl), value_type);
+}
+
+unique_ptr<NumberPatternNode>
+SemanticChecker::onNumberPattern(const FilePos pos, int32_t number,
+                                 TypeNode *type) {
+  if (type != ASTContext::INTEGER) {
+    logger_.error(pos, "Expected pattern of type " + to_string(type) +
+                           " but got INTEGER.");
+    exit(EXIT_FAILURE);
+  }
+
+  return std::make_unique<NumberPatternNode>(pos, number);
+}
+unique_ptr<BooleanPatternNode>
+SemanticChecker::onBooleanPattern(const FilePos pos, bool boolean,
+                                  TypeNode *type) {
+  if (type != ASTContext::BOOLEAN) {
+    logger_.error(pos, "Expected pattern of type " + to_string(type) +
+                           " but got BOOLEAN.");
+    exit(EXIT_FAILURE);
+  }
+
+  return std::make_unique<BooleanPatternNode>(pos, boolean);
+}
+
+unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
+    const FilePos pos, unique_ptr<IdentNode> sum_ident,
+    unique_ptr<RecordFieldNode> variant,
+    vector<unique_ptr<PatternNode>> param_pats, TypeNode *value_type) {
+
+  TypeNode *type = nullptr;
+  const DeclarationNode *decl;
+  try {
+    type = symbol_table_.lookup_type(*sum_ident, *variant);
+    decl = symbol_table_.lookup(*sum_ident).value();
+    if (!decl) {
+      logger_.error(sum_ident->pos(),
+                    to_string(*sum_ident) + " is not declared.");
+    }
+  } catch (LookupException &e) {
+    logger_.error(e.get_node().pos(), e.what());
+    exit(EXIT_FAILURE);
+  }
+
+  if (decl->type->getNodeType() != NodeType::sum_type) {
+    logger_.error(pos, sum_ident->value + "." + variant->ident->value +
+                           " is not a sum type variant: " +
+                           to_string(decl->getNodeType()));
+    exit(EXIT_FAILURE);
+  }
+
+  auto sum_type = dynamic_cast<const SumTypeNode *>(decl->type);
+  auto variant_decl = sum_type->find_variant(*variant->ident);
+
+  if (variant_decl->type != value_type) {
+    logger_.error(pos,
+                  "Pattern does not match the type of the case expression.");
+    exit(EXIT_FAILURE);
+  }
+
+  if (variant_decl->parameter_types->formal_parameters.size() !=
+      param_pats.size()) {
+    logger_.error(
+        pos,
+        "Variant pattern has " + to_string(param_pats.size()) +
+            " patterns for actual " +
+            to_string(variant_decl->parameter_types->formal_parameters.size()) +
+            " parameters.");
+    exit(EXIT_FAILURE);
+  }
+
+  for (size_t i = 0; i < param_pats.size(); i++) {
+    if (variant_decl->parameter_types->formal_parameters.at(i)->type !=
+        param_pats.at(i)->type) {
+      logger_.error(param_pats.at(i)->pos(),
+                    "Pattern for parameter at index " + to_string(i) +
+                        " does not match declared type.");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  return make_unique<VariantPatternNode>(pos, std::move(sum_ident),
+                                         std::move(variant),
+                                         std::move(param_pats), type);
+}
+
+unique_ptr<CaseStatementNode>
+SemanticChecker::onCaseStatementStart(const FilePos pos,
+                                      unique_ptr<ExpressionNode> expr) {
+  return make_unique<CaseStatementNode>(pos, std::move(expr));
+}
+
+void SemanticChecker::onCaseStatementCaseStart() { symbol_table_.beginScope(); }
+void SemanticChecker::onCaseStatementCaseEnd(
+    CaseStatementNode &case_stmt, unique_ptr<PatternNode> pattern,
+    unique_ptr<StatementSequenceNode> stmts) {
+  symbol_table_.endScope();
+
+  case_stmt.add_case(std::move(pattern), std::move(stmts));
+}
+
+vector<u_int> SemanticChecker::variant_pattern_exhaustiveness(
+    const FilePos pos, const SumTypeNode *sum_type,
+    std::map<u_int, const PatternNode *> case_patterns) {
+  std::unordered_map<string, vector<u_int>> variant_map;
+  auto wildcard_case = -1;
+
+  vector<u_int> reachable_cases;
+
+  for (auto &variant : sum_type->variants) {
+    variant_map[variant->ident->value] = {};
+  }
+
+  for (const auto &[i, pattern] : case_patterns) {
+    if (wildcard_case >= 0) {
+      logger_.warning(pattern->pos(), "Unreachable case.");
+      continue;
+    }
+
+    if (pattern->getNodeType() == NodeType::ident_pattern) {
+      wildcard_case = int(i);
+      reachable_cases.push_back(i);
+    } else if (pattern->getNodeType() == NodeType::variant_pattern) {
+      auto variant_pattern = dynamic_cast<const VariantPatternNode *>(pattern);
+      variant_map[variant_pattern->variant->ident->value].push_back(i);
+    } else {
+      logger_.error(pattern->pos(), "UNEXPECTED KIND OF PATTERN");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (wildcard_case < 0) {
+    for (auto v : variant_map) {
+      // NOTE if this throws, call a developer because he messed something up
+      auto v_variant = sum_type->find_variant(v.first).value();
+
+      if (v.second.size() == 0) {
+        logger_.warning(pos, "Non-exhausitve patterns: Missing cases for " +
+                                 v.first + " variant.");
+      } else if (v_variant->parameter_types->formal_parameters.size() > 0) {
+        // Variant with parameters
+
+        for (size_t pi = 0;
+             pi < v_variant->parameter_types->formal_parameters.size(); pi++) {
+          // for each parameter index
+          auto param_type =
+              v_variant->parameter_types->formal_parameters.at(pi)->type;
+
+          std::map<u_int, const PatternNode *> sub_case_patterns;
+
+          for (auto ci : v.second) {
+            // just the patterns of that variant
+            auto case_variant_pattern =
+                dynamic_cast<const VariantPatternNode *>(case_patterns.at(ci));
+
+            sub_case_patterns[ci] =
+                case_variant_pattern->param_patterns.at(pi).get();
+          }
+
+          vector<u_int> sub_reachable_cases;
+          if (param_type == ASTContext::INTEGER) {
+            sub_reachable_cases =
+                number_pattern_exhaustiveness(pos, sub_case_patterns);
+          } else if (param_type == ASTContext::BOOLEAN) {
+            sub_reachable_cases =
+                boolean_pattern_exhaustiveness(pos, sub_case_patterns);
+          } else if (param_type->getNodeType() == NodeType::sum_type) {
+            sub_reachable_cases = variant_pattern_exhaustiveness(
+                pos, dynamic_cast<const SumTypeNode *>(param_type),
+                sub_case_patterns);
+          }
+          reachable_cases.insert(reachable_cases.end(),
+                                 sub_reachable_cases.begin(),
+                                 sub_reachable_cases.end());
+        }
+      } else if (v.second.size() > 1) {
+        reachable_cases.push_back(v.second.at(0));
+        // Variant without parameters
+        for (size_t i = 1; i < v.second.size(); i++) {
+          logger_.warning(case_patterns.at(v.second.at(i))->pos(),
+                          "Duplicate case (unreachable).");
+        }
+      }
+    }
+  }
+
+  return reachable_cases;
+}
+
+vector<u_int> SemanticChecker::number_pattern_exhaustiveness(
+    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns) {
+
+  std::map<int, u_int> literal_cases; // literal_value -> case_index
+  int wildcard_case = -1;
+
+  vector<u_int> reachable_cases;
+
+  for (const auto &[i, pattern] : case_patterns) {
+    if (wildcard_case >= 0) {
+      logger_.warning(pattern->pos(), "Unreachable case.");
+      continue;
+    }
+    if (pattern->getNodeType() == NodeType::literal_pattern) {
+      auto literal_pattern = dynamic_cast<const NumberPatternNode *>(pattern);
+
+      if (!literal_cases.contains(literal_pattern->value)) {
+        literal_cases[literal_pattern->value] = i;
+        reachable_cases.push_back(i);
+      } else {
+        logger_.warning(pattern->pos(), "Duplicate case (unreachable).");
+      }
+    } else if (pattern->getNodeType() == NodeType::ident_pattern) {
+      wildcard_case = int(i);
+      reachable_cases.push_back(i);
+    } else {
+      logger_.error(pattern->pos(), "UNEXPECTED KIND OF PATTERN");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  if (wildcard_case < 0) {
+    logger_.warning(pos, "Non-exhausitve case-statement: Missing a case with "
+                         "an identifier pattern.");
+  }
+
+  return reachable_cases;
+}
+
+vector<u_int> SemanticChecker::boolean_pattern_exhaustiveness(
+    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns) {
+  int true_case = -1;
+  int false_case = -1;
+  int wildcard_case = -1;
+
+  vector<u_int> reachable_cases;
+
+  for (const auto &[i, pattern] : case_patterns) {
+    if (wildcard_case >= 0 || (true_case >= 0 && false_case >= 0)) {
+      logger_.warning(pattern->pos(), "Unreachable case.");
+      continue;
+    }
+
+    if (pattern->getNodeType() == NodeType::literal_pattern) {
+      auto bool_pattern = dynamic_cast<const BooleanPatternNode *>(pattern);
+
+      if (bool_pattern->value) {
+        if (true_case < 0) {
+          true_case = int(i);
+          reachable_cases.push_back(i);
+        } else {
+          logger_.warning(pattern->pos(), "Duplicate TRUE case (unreachable).");
+        }
+      } else {
+        if (false_case < 0) {
+          false_case = int(i);
+          reachable_cases.push_back(i);
+        } else {
+          logger_.warning(pattern->pos(), "Duplicate TRUE case (unreachable).");
+        }
+      }
+    } else {
+      wildcard_case = int(i);
+      reachable_cases.push_back(i);
+    }
+  }
+
+  if (wildcard_case < 0) {
+    if (true_case < 0) {
+      logger_.warning(pos, "Non-exhausitve case-statement: Missing TRUE case.");
+    }
+    if (false_case < 0) {
+      logger_.warning(pos,
+                      "Non-exhausitve case-statement: Missing FALSE case.");
+    }
+  }
+
+  return reachable_cases;
+}
+
+void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
+  if (case_stmt.get_cases()->size() == 0) {
+    logger_.error(case_stmt.pos(),
+                  "No cases specified in the case expression.");
+    exit(EXIT_FAILURE);
+  }
+
+  std::map<u_int, const PatternNode *> case_patterns;
+  for (u_int i = 0; i < case_stmt.get_cases()->size(); i++) {
+    case_patterns[i] = case_stmt.get_cases()->at(i).first.get();
+  }
+
+  if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
+    auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
+
+    case_stmt.reachable_cases = variant_pattern_exhaustiveness(
+        case_stmt.pos(), sum_type, case_patterns);
+  } else if (case_stmt.value->type == ASTContext::INTEGER) {
+    case_stmt.reachable_cases =
+        number_pattern_exhaustiveness(case_stmt.pos(), case_patterns);
+  } else if (case_stmt.value->type == ASTContext::BOOLEAN) {
+    case_stmt.reachable_cases =
+        boolean_pattern_exhaustiveness(case_stmt.pos(), case_patterns);
+  } else {
+    logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
+    exit(EXIT_FAILURE);
+  }
+
+  if (case_stmt.reachable_cases.size() == 0) {
+    // NOTE as of now, there is no reason for this to happen
+    logger_.error(case_stmt.pos(), "None of the specified cases is reachable!");
+    exit(EXIT_FAILURE);
+  }
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(

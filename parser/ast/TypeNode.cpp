@@ -69,7 +69,7 @@ void SumTypeNode::print(ostream &stream) const {
 
   auto v_size = variants.size();
   if (v_size > 0) {
-    variants[0]->print(stream);
+    variants.at(0)->print(stream);
 
     for (size_t i = 1; i < v_size; i++) {
       stream << "; ";
@@ -86,14 +86,44 @@ void SumTypeNode::setVariants(
 }
 const VariantDeclarationNode *
 SumTypeNode::find_variant(const IdentNode &ident) const {
-  for (auto &variant : variants) {
-    if (ident.value == variant->ident->value) {
-      return variant.get();
+  if (auto val = find_variant(ident.value)) {
+    return val.value();
+  } else {
+    throw FieldNotFoundException(ident);
+  }
+}
+size_t SumTypeNode::find_variant_index(const IdentNode &ident) const {
+  for (size_t i = 0; i < variants.size(); i++) {
+    if (variants.at(i)->ident->value == ident.value) {
+      return i;
     }
   }
 
   throw FieldNotFoundException(ident);
 }
 
+std::optional<const VariantDeclarationNode *>
+SumTypeNode::find_variant(const string &name) const {
+  for (auto &variant : variants) {
+    if (name == variant->ident->value) {
+      return variant.get();
+    }
+  }
+
+  return std::nullopt;
+}
+
 void ProcedureTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
-void ProcedureTypeNode::print(ostream &stream) const { stream << "PROCEDURE"; }
+void ProcedureTypeNode::print(ostream &stream) const {
+  stream << "PROCEDURE ";
+
+  auto v_size = formal_parameters.size();
+  if (v_size > 0) {
+    formal_parameters.at(0)->print(stream);
+
+    for (size_t i = 1; i < v_size; i++) {
+      stream << "; ";
+      formal_parameters.at(i)->print(stream);
+    }
+  }
+}

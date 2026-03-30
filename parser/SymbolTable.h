@@ -40,8 +40,14 @@ public:
   std::optional<const DeclarationNode *> lookup(const IdentNode &ident,
                                                 bool this_scope = false) const;
 
-  TypeNode *lookup_type(const IdentNode &ident,
-                        const vector<unique_ptr<SelectorNode>> &selectors);
+  TypeNode *lookup_type(const IdentNode &,
+                        const vector<unique_ptr<SelectorNode>> &);
+  TypeNode *lookup_type(const IdentNode &, const SelectorNode &);
+
+  TypeNode *lookup_array_selector(const Node *, const TypeNode *,
+                                  const ArrayIndexNode *);
+  TypeNode *lookup_record_selector(const Node *, const TypeNode *,
+                                   const RecordFieldNode *);
   ProcedureTypeNode *
   lookup_variant_proc_type(const IdentNode &ident,
                            const unique_ptr<SelectorNode> &selector);
