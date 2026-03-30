@@ -655,7 +655,15 @@ unique_ptr<PatternNode> Parser::pattern(TypeNode *value_type) {
 
       if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
         auto sum_type = dynamic_cast<const SumTypeNode *>(value_type);
-        auto variant_decl = sum_type->find_variant(*variant->ident);
+
+        const VariantDeclarationNode *variant_decl;
+        try {
+          variant_decl = sum_type->find_variant(*variant->ident);
+        } catch (FieldNotFoundException &e) {
+          logger_.error(variant->pos(), "No such variant: " + ident->value +
+                                            "." + variant->ident->value);
+          exit(EXIT_FAILURE);
+        }
 
         size_t i = 0;
         do {

@@ -6,6 +6,7 @@
 #include "global.h"
 #include "parser/SymbolTable.h"
 #include "parser/ast/ASTContext.h"
+#include "parser/ast/ExpressionNode.h"
 #include "util/Logger.h"
 #include <cmath>
 #include <cstdio>
@@ -237,8 +238,8 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
   TypeNode *type = nullptr;
   const DeclarationNode *decl;
   try {
-    type = symbol_table_.lookup_type(*ident, selectors);
     decl = symbol_table_.lookup(*ident).value();
+    type = symbol_table_.lookup_type(*ident, selectors);
     if (!decl) {
       logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
     }
@@ -247,6 +248,15 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
     return std::make_unique<IdentExpressionNode>(
         pos, std::move(ident), std::move(selectors), std::move(actual_params),
         decl, type, false);
+  } catch (FieldNotFoundException &e) {
+    if (decl->type->getNodeType() == NodeType::sum_type) {
+      logger_.error(e.field().pos(), "No such variant: " + decl->ident->value +
+                                         "." + e.field().value);
+      exit(EXIT_FAILURE);
+    } else {
+      logger_.error(e.field().pos(), e.what());
+      exit(EXIT_FAILURE);
+    }
   }
 
   if (decl->getNodeType() == NodeType::type_declaration) {
@@ -266,8 +276,17 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
       exit(EXIT_FAILURE);
     }
 
-    auto variant_proc_type =
-        symbol_table_.lookup_variant_proc_type(*ident, selectors.at(0));
+    ProcedureTypeNode *variant_proc_type;
+    auto variant = dynamic_cast<const RecordFieldNode *>(selectors.at(0).get());
+    try {
+      variant_proc_type =
+          symbol_table_.lookup_variant_proc_type(*ident, selectors.at(0));
+    } catch (FieldNotFoundException &e) {
+      logger_.error(selectors.at(0)->pos(),
+                    "No such variant: " + ident->value + "." +
+                        to_string(variant->ident->value));
+      exit(EXIT_FAILURE);
+    }
 
     // parameter count check
     if (variant_proc_type->formal_parameters.size() != actual_params.size()) {
@@ -579,7 +598,15 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
   }
 
   auto sum_type = dynamic_cast<const SumTypeNode *>(decl->type);
-  auto variant_decl = sum_type->find_variant(*variant->ident);
+
+  const VariantDeclarationNode *variant_decl;
+  try {
+    variant_decl = sum_type->find_variant(*variant->ident);
+  } catch (FieldNotFoundException &e) {
+    logger_.error(variant->pos(), "No such variant: " + sum_ident->value + "." +
+                                      variant->ident->value);
+    exit(EXIT_FAILURE);
+  }
 
   if (variant_decl->type != value_type) {
     logger_.error(pos,
