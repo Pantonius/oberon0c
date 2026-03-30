@@ -588,6 +588,10 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
     exit(EXIT_FAILURE);
+  } catch (FieldNotFoundException &e) {
+    logger_.error(variant->pos(), "No such variant: " + sum_ident->value + "." +
+                                      e.field().value);
+    exit(EXIT_FAILURE);
   }
 
   if (decl->type->getNodeType() != NodeType::sum_type) {
@@ -604,7 +608,7 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
     variant_decl = sum_type->find_variant(*variant->ident);
   } catch (FieldNotFoundException &e) {
     logger_.error(variant->pos(), "No such variant: " + sum_ident->value + "." +
-                                      variant->ident->value);
+                                      e.field().value);
     exit(EXIT_FAILURE);
   }
 
