@@ -44,6 +44,10 @@ For the most part the setup should be the same as before.
    ```
    > ninja
    ```
+5. Tests can be executed with
+   ```
+   > ninja test
+   ```
 
 ### Nix
 If you want to play around, a nix flake is provided ([`flake.nix`](../flake.nix)) where all neccessary dependencies are declared. Using `nix develop` will put you into a development environment, while `nix build` should build the entire project.
