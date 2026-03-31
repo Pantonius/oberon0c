@@ -1,5 +1,6 @@
 # Implementation
 ## Sum Types
+
 ### AST
 In general a SumType is represented in the AST as a `SumTypeNode : TypeNode` with a `ProcedureType` holding all parameter types.
 
@@ -16,6 +17,9 @@ Patterns are realized as `PatternNode` and all have `type` that is:
 The pattern matching is translated into a series of conditional branches. As of now the simplest example work: Case statements over literal types (`CASE i : INTEGER OF ... END`) and case statements over sum type expressions with literal parameter types (`CASE i : MaybeInt OF ... END`).
 
 ## Overall Changes
+### Scanner
+Added `SUM` as keyword.
+
 ### Parser
 Added `sum_type()`, `pattern(...)`, `case_statement()`
 Adapted `type()` and `expression()`
