@@ -90,6 +90,7 @@ private:
 
   void literal_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
   void ident_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
+  void variant_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
 
   llvm::Type *getLLVMType(TypeNode *);
   TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,

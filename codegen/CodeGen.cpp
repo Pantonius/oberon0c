@@ -872,6 +872,69 @@ void CodeGenBuilder::literal_pattern(PatternNode *pattern,
   builder_->SetInsertPoint(false_block);
 }
 
+void CodeGenBuilder::variant_pattern(PatternNode *pattern,
+                                     StatementSequenceNode *statements,
+                                     llvm::Value *case_value) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  auto variant_pattern = dynamic_cast<const VariantPatternNode *>(pattern);
+  auto sum_type = dynamic_cast<const SumTypeNode *>(pattern->type);
+
+  auto case_vtag_pointer = builder_->CreateConstGEP2_32(
+      getLLVMType(pattern->type), case_value, 0, 0);
+  auto case_vtag =
+      builder_->CreateLoad(builder_->getInt32Ty(), case_vtag_pointer);
+
+  auto variant_index =
+      sum_type->find_variant_index(*variant_pattern->variant->ident);
+  auto pattern_vtag = builder_->getInt32(variant_index);
+
+  // compare variant tags
+  auto condition = builder_->CreateICmpEQ(pattern_vtag, case_vtag);
+
+  auto true_block =
+      llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
+  auto false_block =
+      llvm::BasicBlock::Create(builder_->getContext(), "ifFalse", currentFunc);
+  auto tail_block = return_points_.top();
+
+  builder_->CreateCondBr(condition, true_block, false_block);
+  builder_->SetInsertPoint(true_block);
+
+  auto variant_decl = sum_type->find_variant(*variant_pattern->variant->ident);
+  for (size_t pi = 0; pi < variant_pattern->param_patterns.size(); pi++) {
+    auto curr_pattern = variant_pattern->param_patterns.at(pi).get();
+
+    // extract field from llvm sum type
+    auto case_payload_pointer = builder_->CreateConstGEP2_32(
+        getLLVMType(pattern->type), case_value, 0, 1);
+
+    auto case_curr_field_pointer =
+        builder_->CreateConstGEP2_32(getLLVMType(variant_decl->parameter_types),
+                                     case_payload_pointer, 0, pi);
+    auto case_curr_field = builder_->CreateLoad(
+        getLLVMType(
+            variant_decl->parameter_types->formal_parameters.at(pi)->type),
+        case_curr_field_pointer);
+
+    if (curr_pattern->getNodeType() == NodeType::literal_pattern) {
+      literal_pattern(curr_pattern, statements, case_curr_field);
+    } else if (curr_pattern->getNodeType() == NodeType::variant_pattern) {
+      CodeGenBuilder::variant_pattern(curr_pattern, statements,
+                                      case_curr_field);
+    } else if (curr_pattern->getNodeType() == NodeType::ident_pattern) {
+      ident_pattern(curr_pattern, statements, case_curr_field);
+    } else {
+      logger_.error(curr_pattern->pos(), "UNEXPECTED KIND OF PATTERN");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  builder_->CreateBr(tail_block);
+
+  builder_->SetInsertPoint(false_block);
+}
+
 void CodeGenBuilder::ident_pattern(PatternNode *pattern,
                                    StatementSequenceNode *statements,
                                    llvm::Value *case_value) {
@@ -897,7 +960,7 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
     if (curr_pattern->getNodeType() == NodeType::literal_pattern) {
       literal_pattern(curr_pattern, curr_body, right_value);
     } else if (curr_pattern->getNodeType() == NodeType::variant_pattern) {
-
+      variant_pattern(curr_pattern, curr_body, right_value);
     } else if (curr_pattern->getNodeType() == NodeType::ident_pattern) {
       ident_pattern(curr_pattern, curr_body, right_value);
     } else {
