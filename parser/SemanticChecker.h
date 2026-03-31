@@ -121,17 +121,17 @@ private:
   SymbolTable symbol_table_;
   ASTContext context_;
 
-  vector<u_int>
+  std::tuple<bool, std::unordered_map<int, vector<u_int>>, vector<u_int>>
   number_pattern_exhaustiveness(const FilePos,
-                                std::map<u_int, const PatternNode *>);
+                                std::map<u_int, const PatternNode *>, bool);
 
-  vector<u_int>
+  std::tuple<bool, vector<u_int>, vector<u_int>, vector<u_int>>
   boolean_pattern_exhaustiveness(const FilePos,
-                                 std::map<u_int, const PatternNode *>);
+                                 std::map<u_int, const PatternNode *>, bool);
 
-  vector<u_int>
+  std::tuple<bool, std::unordered_map<string, vector<u_int>>, vector<u_int>>
   variant_pattern_exhaustiveness(const FilePos, const SumTypeNode *,
-                                 std::map<u_int, const PatternNode *>);
+                                 std::map<u_int, const PatternNode *>, bool);
 };
 
 class NonConstException : public std::exception {

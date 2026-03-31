@@ -7,13 +7,16 @@
 #include "parser/SymbolTable.h"
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/ExpressionNode.h"
+#include "parser/ast/StatementNode.h"
 #include "util/Logger.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <sys/types.h>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -660,27 +663,26 @@ void SemanticChecker::onCaseStatementCaseEnd(
   case_stmt.add_case(std::move(pattern), std::move(stmts));
 }
 
-vector<u_int> SemanticChecker::variant_pattern_exhaustiveness(
+std::tuple<bool, std::unordered_map<string, vector<u_int>>, vector<u_int>>
+SemanticChecker::variant_pattern_exhaustiveness(
     const FilePos pos, const SumTypeNode *sum_type,
-    std::map<u_int, const PatternNode *> case_patterns) {
+    std::map<u_int, const PatternNode *> case_patterns, bool is_last) {
+  bool is_exhaustive = true;
   std::unordered_map<string, vector<u_int>> variant_map;
-  auto wildcard_case = -1;
-
-  vector<u_int> reachable_cases;
+  vector<u_int> wildcard_cases;
 
   for (auto &variant : sum_type->variants) {
     variant_map[variant->ident->value] = {};
   }
 
   for (const auto &[i, pattern] : case_patterns) {
-    if (wildcard_case >= 0) {
+    if (is_last && wildcard_cases.size() > 0) {
       logger_.warning(pattern->pos(), "Unreachable case.");
       continue;
     }
 
     if (pattern->getNodeType() == NodeType::ident_pattern) {
-      wildcard_case = int(i);
-      reachable_cases.push_back(i);
+      wildcard_cases.push_back(i);
     } else if (pattern->getNodeType() == NodeType::variant_pattern) {
       auto variant_pattern = dynamic_cast<const VariantPatternNode *>(pattern);
       variant_map[variant_pattern->variant->ident->value].push_back(i);
@@ -690,52 +692,147 @@ vector<u_int> SemanticChecker::variant_pattern_exhaustiveness(
     }
   }
 
-  if (wildcard_case < 0) {
+  if (wildcard_cases.size() == 0) {
     for (auto v : variant_map) {
       // NOTE if this throws, call a developer because he messed something up
       auto v_variant = sum_type->find_variant(v.first).value();
 
       if (v.second.size() == 0) {
-        logger_.warning(pos, "Non-exhausitve patterns: Missing cases for " +
+        logger_.warning(pos, "Non-exhaustive patterns: Missing cases for " +
                                  v.first + " variant.");
+        is_exhaustive = false;
       } else if (v_variant->parameter_types->formal_parameters.size() > 0) {
         // Variant with parameters
+        auto vertically_exhaustive_cases = std::make_unique<CaseTree>(
+            VariantCaseTreeKey(v_variant->ident->value), v.second, 0);
+        std::queue<CaseTree *> leafs;
+        // WorkList :P
+        leafs.push(vertically_exhaustive_cases.get());
 
-        for (size_t pi = 0;
-             pi < v_variant->parameter_types->formal_parameters.size(); pi++) {
+        while (leafs.size() > 0) {
+          auto curr_leaf = leafs.front();
+          leafs.pop(); // why the heck does pop not return the object?!
+
+          auto curr_param_index = curr_leaf->level;
+          if (curr_param_index >=
+              v_variant->parameter_types->formal_parameters.size()) {
+            break; // already done
+          }
+
           // for each parameter index
-          auto param_type =
-              v_variant->parameter_types->formal_parameters.at(pi)->type;
+          auto param_type = v_variant->parameter_types->formal_parameters
+                                .at(curr_param_index)
+                                ->type;
 
           std::map<u_int, const PatternNode *> sub_case_patterns;
 
-          for (auto ci : v.second) {
+          for (auto ci : curr_leaf->cases) {
             // just the patterns of that variant
             auto case_variant_pattern =
                 dynamic_cast<const VariantPatternNode *>(case_patterns.at(ci));
 
             sub_case_patterns[ci] =
-                case_variant_pattern->param_patterns.at(pi).get();
+                case_variant_pattern->param_patterns.at(curr_param_index).get();
           }
 
-          vector<u_int> sub_reachable_cases;
-          if (param_type == ASTContext::INTEGER) {
-            sub_reachable_cases =
-                number_pattern_exhaustiveness(pos, sub_case_patterns);
-          } else if (param_type == ASTContext::BOOLEAN) {
-            sub_reachable_cases =
-                boolean_pattern_exhaustiveness(pos, sub_case_patterns);
-          } else if (param_type->getNodeType() == NodeType::sum_type) {
-            sub_reachable_cases = variant_pattern_exhaustiveness(
-                pos, dynamic_cast<const SumTypeNode *>(param_type),
-                sub_case_patterns);
+          if (sub_case_patterns.size() == 0) {
+            logger_.error(pos, "No patterns for parameter at index " +
+                                   to_string(curr_param_index) +
+                                   " in variant " + v.first);
+            continue;
           }
-          reachable_cases.insert(reachable_cases.end(),
-                                 sub_reachable_cases.begin(),
-                                 sub_reachable_cases.end());
+
+          auto pos = sub_case_patterns
+                         .at(curr_leaf->cases.at(curr_leaf->cases.size() - 1))
+                         ->pos();
+
+          if (param_type == ASTContext::INTEGER) {
+            auto result = number_pattern_exhaustiveness(
+                pos, sub_case_patterns,
+                curr_param_index + 1 ==
+                    v_variant->parameter_types->formal_parameters.size());
+
+            // 0: is_exhaustive, 1: literal_cases, 2: wildcard_cases
+            if (std::get<0>(result)) {
+              for (const auto &[literal, literal_cases] : std::get<1>(result)) {
+                auto exhaust_set = std::make_unique<CaseTree>(
+                    (NumberCaseTreeKey(literal)), literal_cases,
+                    curr_leaf->level + 1);
+
+                // add into worklist
+                leafs.push(exhaust_set.get());
+
+                // add into tree
+                curr_leaf->children.push_back(std::move(exhaust_set));
+              }
+
+              auto exhaust_set = std::make_unique<CaseTree>(
+                  (IdentCaseTreeKey()), std::get<2>(result),
+                  curr_leaf->level + 1);
+
+              // add into worklist
+              leafs.push(exhaust_set.get());
+
+              // add into tree
+              curr_leaf->children.push_back(std::move(exhaust_set));
+            } else {
+              is_exhaustive = false;
+            }
+          } else if (param_type == ASTContext::BOOLEAN) {
+            auto result = boolean_pattern_exhaustiveness(
+                pos, sub_case_patterns,
+                curr_param_index + 1 ==
+                    v_variant->parameter_types->formal_parameters.size());
+
+            // 0: is_exhaustive, 1 : true_cases, 2: false_case,
+            // 3: wildcard_cases
+            if (std::get<0>(result)) {
+
+              auto true_exhaust_set = std::make_unique<CaseTree>(
+                  (BoolCaseTreeKey(true)), std::get<1>(result),
+                  curr_leaf->level + 1);
+              auto false_exhaust_set = std::make_unique<CaseTree>(
+                  (BoolCaseTreeKey(false)), std::get<2>(result),
+                  curr_leaf->level + 1);
+              auto wildcard_exhaust_set = std::make_unique<CaseTree>(
+                  (IdentCaseTreeKey()), std::get<3>(result),
+                  curr_leaf->level + 1);
+
+              // add into worklist
+              leafs.push(true_exhaust_set.get());
+              leafs.push(false_exhaust_set.get());
+              leafs.push(wildcard_exhaust_set.get());
+
+              // add into tree
+              curr_leaf->children.push_back(std::move(true_exhaust_set));
+              curr_leaf->children.push_back(std::move(false_exhaust_set));
+              curr_leaf->children.push_back(std::move(wildcard_exhaust_set));
+            } else {
+              is_exhaustive = false;
+            }
+          } else if (param_type->getNodeType() == NodeType::sum_type) {
+            auto result = variant_pattern_exhaustiveness(
+                pos, dynamic_cast<const SumTypeNode *>(param_type),
+                sub_case_patterns,
+                curr_param_index + 1 ==
+                    v_variant->parameter_types->formal_parameters.size());
+
+            if (std::get<0>(result)) {
+              for (const auto &[variant, variant_cases] : std::get<1>(result)) {
+                auto variant_exhaust_set = std::make_unique<CaseTree>(
+                    (VariantCaseTreeKey(variant)), variant_cases,
+                    curr_leaf->level + 1);
+                // add into worklist
+                leafs.push(variant_exhaust_set.get());
+                // add into tree
+                curr_leaf->children.push_back(std::move(variant_exhaust_set));
+              }
+            } else {
+              is_exhaustive = false;
+            }
+          }
         }
-      } else if (v.second.size() > 1) {
-        reachable_cases.push_back(v.second.at(0));
+      } else if (is_last && v.second.size() > 1) {
         // Variant without parameters
         for (size_t i = 1; i < v.second.size(); i++) {
           logger_.warning(case_patterns.at(v.second.at(i))->pos(),
@@ -745,58 +842,62 @@ vector<u_int> SemanticChecker::variant_pattern_exhaustiveness(
     }
   }
 
-  return reachable_cases;
+  return std::make_tuple(is_exhaustive, variant_map, wildcard_cases);
 }
 
-vector<u_int> SemanticChecker::number_pattern_exhaustiveness(
-    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns) {
+std::tuple<bool, std::unordered_map<int, vector<u_int>>, vector<u_int>>
+SemanticChecker::number_pattern_exhaustiveness(
+    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns,
+    bool is_last) {
 
-  std::map<int, u_int> literal_cases; // literal_value -> case_index
-  int wildcard_case = -1;
-
-  vector<u_int> reachable_cases;
+  bool is_exhaustive = true;
+  std::unordered_map<int, vector<u_int>>
+      literal_cases; // literal_value -> case_indecies
+  vector<u_int> wildcard_cases;
 
   for (const auto &[i, pattern] : case_patterns) {
-    if (wildcard_case >= 0) {
+    if (is_last && wildcard_cases.size() > 0) {
       logger_.warning(pattern->pos(), "Unreachable case.");
       continue;
     }
     if (pattern->getNodeType() == NodeType::literal_pattern) {
       auto literal_pattern = dynamic_cast<const NumberPatternNode *>(pattern);
 
-      if (!literal_cases.contains(literal_pattern->value)) {
-        literal_cases[literal_pattern->value] = i;
-        reachable_cases.push_back(i);
-      } else {
+      if (is_last && literal_cases.contains(literal_pattern->value)) {
         logger_.warning(pattern->pos(), "Duplicate case (unreachable).");
+        continue;
       }
+
+      literal_cases[literal_pattern->value].push_back(i);
     } else if (pattern->getNodeType() == NodeType::ident_pattern) {
-      wildcard_case = int(i);
-      reachable_cases.push_back(i);
+      wildcard_cases.push_back(i);
     } else {
       logger_.error(pattern->pos(), "UNEXPECTED KIND OF PATTERN");
       exit(EXIT_FAILURE);
     }
   }
 
-  if (wildcard_case < 0) {
-    logger_.warning(pos, "Non-exhausitve case-statement: Missing a case with "
+  if (wildcard_cases.size() == 0) {
+    is_exhaustive = false;
+    logger_.warning(pos, "Non-exhaustive case-statement: Missing a case with "
                          "an identifier pattern.");
   }
 
-  return reachable_cases;
+  return std::make_tuple(is_exhaustive, literal_cases, wildcard_cases);
 }
 
-vector<u_int> SemanticChecker::boolean_pattern_exhaustiveness(
-    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns) {
-  int true_case = -1;
-  int false_case = -1;
-  int wildcard_case = -1;
-
-  vector<u_int> reachable_cases;
+std::tuple<bool, vector<u_int>, vector<u_int>, vector<u_int>>
+SemanticChecker::boolean_pattern_exhaustiveness(
+    const FilePos pos, std::map<u_int, const PatternNode *> case_patterns,
+    bool is_last) {
+  bool is_exhaustive = true;
+  vector<u_int> true_cases;
+  vector<u_int> false_cases;
+  vector<u_int> wildcard_cases;
 
   for (const auto &[i, pattern] : case_patterns) {
-    if (wildcard_case >= 0 || (true_case >= 0 && false_case >= 0)) {
+    if (is_last && (wildcard_cases.size() > 0 ||
+                    (true_cases.size() > 0 && false_cases.size() > 0))) {
       logger_.warning(pattern->pos(), "Unreachable case.");
       continue;
     }
@@ -805,38 +906,38 @@ vector<u_int> SemanticChecker::boolean_pattern_exhaustiveness(
       auto bool_pattern = dynamic_cast<const BooleanPatternNode *>(pattern);
 
       if (bool_pattern->value) {
-        if (true_case < 0) {
-          true_case = int(i);
-          reachable_cases.push_back(i);
-        } else {
+        if (is_last && true_cases.size() != 0) {
           logger_.warning(pattern->pos(), "Duplicate TRUE case (unreachable).");
+          continue;
         }
+        true_cases.push_back(i);
       } else {
-        if (false_case < 0) {
-          false_case = int(i);
-          reachable_cases.push_back(i);
-        } else {
+        if (is_last && false_cases.size() != 0) {
           logger_.warning(pattern->pos(),
                           "Duplicate FALSE case (unreachable).");
+          continue;
         }
+        false_cases.push_back(i);
       }
     } else {
-      wildcard_case = int(i);
-      reachable_cases.push_back(i);
+      wildcard_cases.push_back(i);
     }
   }
 
-  if (wildcard_case < 0) {
-    if (true_case < 0) {
-      logger_.warning(pos, "Non-exhausitve case-statement: Missing TRUE case.");
+  if (wildcard_cases.size() == 0) {
+    if (true_cases.size() == 0) {
+      is_exhaustive = false;
+      logger_.warning(pos, "Non-exhaustive case-statement: Missing TRUE case.");
     }
-    if (false_case < 0) {
+    if (false_cases.size() == 0) {
+      is_exhaustive = false;
       logger_.warning(pos,
-                      "Non-exhausitve case-statement: Missing FALSE case.");
+                      "Non-exhaustive case-statement: Missing FALSE case.");
     }
   }
 
-  return reachable_cases;
+  return std::make_tuple(is_exhaustive, true_cases, false_cases,
+                         wildcard_cases);
 }
 
 void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
@@ -851,25 +952,29 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     case_patterns[i] = case_stmt.get_cases()->at(i).first.get();
   }
 
+  bool is_exhaustive = true;
   if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
     auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
 
-    case_stmt.reachable_cases = variant_pattern_exhaustiveness(
-        case_stmt.pos(), sum_type, case_patterns);
+    auto result = variant_pattern_exhaustiveness(case_stmt.pos(), sum_type,
+                                                 case_patterns, true);
+    is_exhaustive = std::get<0>(result);
   } else if (case_stmt.value->type == ASTContext::INTEGER) {
-    case_stmt.reachable_cases =
-        number_pattern_exhaustiveness(case_stmt.pos(), case_patterns);
+    auto result =
+        number_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
+    is_exhaustive = std::get<0>(result);
   } else if (case_stmt.value->type == ASTContext::BOOLEAN) {
-    case_stmt.reachable_cases =
-        boolean_pattern_exhaustiveness(case_stmt.pos(), case_patterns);
+    auto result =
+        boolean_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
+    is_exhaustive = std::get<0>(result);
   } else {
     logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
     exit(EXIT_FAILURE);
   }
 
-  if (case_stmt.reachable_cases.size() == 0) {
+  if (!is_exhaustive) {
     // NOTE as of now, there is no reason for this to happen
-    logger_.error(case_stmt.pos(), "None of the specified cases is reachable!");
+    logger_.error(case_stmt.pos(), "Case statement is not exhaustive.");
     exit(EXIT_FAILURE);
   }
 }

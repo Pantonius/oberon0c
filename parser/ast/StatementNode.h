@@ -203,6 +203,60 @@ public:
   void print(std::ostream &stream) const final;
 };
 
+enum class KeyType { boolean, number, variant, ident };
+
+class CaseTreeKey {
+public:
+  CaseTreeKey(const KeyType type) : type(type) {};
+  ~CaseTreeKey() = default;
+
+  const KeyType type;
+};
+
+class BoolCaseTreeKey final : public CaseTreeKey {
+public:
+  BoolCaseTreeKey(bool value) : CaseTreeKey(KeyType::boolean), value(value) {};
+  ~BoolCaseTreeKey() = default;
+
+  const bool value;
+};
+
+class NumberCaseTreeKey final : public CaseTreeKey {
+public:
+  NumberCaseTreeKey(int32_t value)
+      : CaseTreeKey(KeyType::number), value(value) {};
+  ~NumberCaseTreeKey() = default;
+
+  const int32_t value;
+};
+
+class VariantCaseTreeKey final : public CaseTreeKey {
+public:
+  VariantCaseTreeKey(string value)
+      : CaseTreeKey(KeyType::variant), value(value) {};
+  ~VariantCaseTreeKey() = default;
+
+  const string value;
+};
+
+class IdentCaseTreeKey final : public CaseTreeKey {
+public:
+  IdentCaseTreeKey() : CaseTreeKey(KeyType::ident) {};
+  ~IdentCaseTreeKey() = default;
+};
+
+class CaseTree {
+public:
+  CaseTree(CaseTreeKey key, vector<u_int> cases, size_t level)
+      : key(key), level(level), cases(cases) {};
+  ~CaseTree() = default;
+
+  CaseTreeKey key;
+  size_t level;
+  vector<u_int> cases;
+  vector<unique_ptr<CaseTree>> children;
+};
+
 class CaseStatementNode final : public StatementNode {
 private:
   vector<std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>>
@@ -224,6 +278,8 @@ public:
   vector<
       std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>> *
   get_cases();
+
+  unique_ptr<CaseTree> case_tree;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H
