@@ -557,7 +557,8 @@ void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
     const RecordFieldNode *record_field =
         dynamic_cast<const RecordFieldNode *>(ident_expr.selectors.at(0).get());
     auto variant = sum_type->find_variant(*record_field->ident);
-    auto variant_tag = sum_type->find_variant_index(*record_field->ident);
+    auto variant_tag =
+        sum_type->find_variant(*record_field->ident)->variant_index;
 
     // initialize sum type value
     try {
@@ -1022,15 +1023,13 @@ void CodeGenBuilder::variants(
 
     auto variant_pattern =
         dynamic_cast<const VariantPatternNode *>(rep_pattern);
-    auto sum_type = dynamic_cast<const SumTypeNode *>(rep_pattern->type);
 
     auto case_vtag_pointer = builder_->CreateConstGEP2_32(
         getLLVMType(rep_pattern->type), case_value, 0, 0);
     auto case_vtag =
         builder_->CreateLoad(builder_->getInt32Ty(), case_vtag_pointer);
 
-    auto variant_index =
-        sum_type->find_variant_index(*variant_pattern->variant->ident);
+    auto variant_index = variant_pattern->variant_index;
     auto pattern_vtag = builder_->getInt32(variant_index);
 
     // compare variant tags

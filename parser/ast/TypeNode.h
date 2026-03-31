@@ -117,7 +117,6 @@ public:
   void setVariants(std::vector<unique_ptr<VariantDeclarationNode>>);
 
   const VariantDeclarationNode *find_variant(const IdentNode &ident) const;
-  size_t find_variant_index(const IdentNode &ident) const;
 
   std::optional<const VariantDeclarationNode *>
   find_variant(const string &name) const;
