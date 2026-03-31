@@ -1,15 +1,16 @@
 MODULE CaseSumNonExhaustiveParam;
 
-TYPE MaybeInt = SUM None; Some(INTEGER) END;
-VAR i : MaybeInt;
+TYPE Compound = SUM None; Some(INTEGER, BOOLEAN) END;
+VAR i : Compound;
   j : INTEGER;
 
 BEGIN
-  i := MaybeInt.Some(42);
+  i := Compound.Some(42; TRUE);
   j := 0;
   CASE i OF
-    MaybeInt.Some(42) : j := 8
-    | MaybeInt.Some(2) : j := 2
-    | MaybeInt.None : j := 0
+    Compound.Some(42; FALSE) : j := 8
+    | Compound.Some(42; TRUE) : j := 2
+    | Compound.None : j := 0
+    (* non-exhaustive in Some variant -- lacking atleast Some(x; FALSE) and Some(x; TRUE) *)
   END
 END CaseSumNonExhaustiveParam.

@@ -104,4 +104,16 @@ TEST_CASE("Test Case Exhaustiveness"
     REQUIRE(logger.getErrorCount() == 0);
     REQUIRE(logger.getWarningCount() == 2);
   }
+  SECTION("file CaseSumUnreachable.Mod") {
+    Logger logger;
+    const path path = "./semantic_checker/resources/CaseSumUnreachable.Mod";
+    Scanner scanner(path, logger);
+
+    Parser parser(scanner, logger);
+
+    parser.parse();
+
+    REQUIRE(logger.getErrorCount() == 0);
+    REQUIRE(logger.getWarningCount() == 4);
+  }
 }

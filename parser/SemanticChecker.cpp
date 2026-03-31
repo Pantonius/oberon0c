@@ -879,8 +879,9 @@ SemanticChecker::number_pattern_exhaustiveness(
 
   if (wildcard_cases.size() == 0) {
     is_exhaustive = false;
-    logger_.warning(pos, "Non-exhaustive case-statement: Missing a case with "
-                         "an identifier pattern.");
+    logger_.warning(
+        pos, "Non-exhaustive case-statement: Missing an INTEGER case with "
+             "an identifier pattern.");
   }
 
   return std::make_tuple(is_exhaustive, literal_cases, wildcard_cases);
@@ -969,12 +970,6 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     is_exhaustive = std::get<0>(result);
   } else {
     logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
-    exit(EXIT_FAILURE);
-  }
-
-  if (!is_exhaustive) {
-    // NOTE as of now, there is no reason for this to happen
-    logger_.error(case_stmt.pos(), "Case statement is not exhaustive.");
     exit(EXIT_FAILURE);
   }
 }

@@ -9,5 +9,6 @@ BEGIN
   j := 0;
   CASE i OF
     MaybeInt.Some(x) : j := x
+    (* non-exhaustive in variants -- lacking None case *)
   END
 END CaseSumNonExhaustiveVariant.

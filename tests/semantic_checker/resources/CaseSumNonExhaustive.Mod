@@ -10,5 +10,6 @@ BEGIN
   CASE i OF
     MaybeInt.Some(42) : j := 8
     | MaybeInt.Some(2) : j := 2
+    (* non-exhaustive with correct types *)
   END
 END CaseSumNonExhaustive.
