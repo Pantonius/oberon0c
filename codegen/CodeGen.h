@@ -91,9 +91,9 @@ private:
   void literal_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
   void ident_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
 
-  void int_literals(vector<std::pair<PatternNode *, StatementSequenceNode *>>,
-                    llvm::Value *, const vector<unique_ptr<PatternNode>> &,
-                    size_t);
+  template <typename T>
+  void literals(vector<std::pair<PatternNode *, StatementSequenceNode *>>,
+                llvm::Value *, const vector<unique_ptr<PatternNode>> &, size_t);
   void variants(vector<std::pair<PatternNode *, StatementSequenceNode *>>,
                 llvm::Value *);
 
