@@ -88,6 +88,9 @@ private:
   void visit(VariantPatternNode &) override final;
   void visit(WhileStatementNode &) override final;
 
+  void literal_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
+  void ident_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
+
   llvm::Type *getLLVMType(TypeNode *);
   TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,
                          const vector<unique_ptr<SelectorNode>> &selectors);
