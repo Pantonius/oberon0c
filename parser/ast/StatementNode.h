@@ -278,8 +278,6 @@ public:
   vector<
       std::pair<unique_ptr<PatternNode>, unique_ptr<StatementSequenceNode>>> *
   get_cases();
-
-  unique_ptr<CaseTree> case_tree;
 };
 
 #endif // OBERON0C_STATEMENTNODE_H

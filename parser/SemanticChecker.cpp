@@ -838,6 +838,9 @@ SemanticChecker::variant_pattern_exhaustiveness(
           logger_.warning(case_patterns.at(v.second.at(i))->pos(),
                           "Duplicate case (unreachable).");
         }
+
+        // reduce to list without duplicates
+        v.second = {v.second.at(0)};
       }
     }
   }
@@ -953,21 +956,56 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     case_patterns[i] = case_stmt.get_cases()->at(i).first.get();
   }
 
-  bool is_exhaustive = true;
   if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
     auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
 
     auto result = variant_pattern_exhaustiveness(case_stmt.pos(), sum_type,
                                                  case_patterns, true);
-    is_exhaustive = std::get<0>(result);
+
+    // all returned cases are reachable
+    // variants
+    for (const auto &[variant, variant_cases] : std::get<1>(result)) {
+      case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                       variant_cases.begin(),
+                                       variant_cases.end());
+    }
+    // wildcards
+    case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                     std::get<2>(result).begin(),
+                                     std::get<2>(result).end());
   } else if (case_stmt.value->type == ASTContext::INTEGER) {
     auto result =
         number_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
-    is_exhaustive = std::get<0>(result);
+
+    // all returned cases are reachable
+    // literals
+    for (const auto &[literal, literal_cases] : std::get<1>(result)) {
+      case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                       literal_cases.begin(),
+                                       literal_cases.end());
+    }
+    // wildcard
+    case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                     std::get<2>(result).begin(),
+                                     std::get<2>(result).end());
   } else if (case_stmt.value->type == ASTContext::BOOLEAN) {
     auto result =
         boolean_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
-    is_exhaustive = std::get<0>(result);
+
+    // all returned cases are reachable
+
+    // true
+    case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                     std::get<1>(result).begin(),
+                                     std::get<1>(result).end());
+    // false
+    case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                     std::get<2>(result).begin(),
+                                     std::get<2>(result).end());
+    // wildcard
+    case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
+                                     std::get<3>(result).begin(),
+                                     std::get<3>(result).end());
   } else {
     logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
     exit(EXIT_FAILURE);
