@@ -2,6 +2,7 @@
 #include "global.h"
 #include "parser/ast/ASTContext.h"
 #include "parser/ast/ExpressionNode.h"
+#include "parser/ast/StatementNode.h"
 #include "parser/ast/TypeNode.h"
 #include <cstdlib>
 #include <llvm/Bitcode/BitcodeWriter.h>
@@ -580,7 +581,7 @@ void CodeGenBuilder::visit(IdentExpressionNode &ident_expr) {
           for (u_int i = 0;
                i < variant->parameter_types->formal_parameters.size(); i++) {
             // visit parameter
-            variant->parameter_types->formal_parameters.at(i)->accept(*this);
+            ident_expr.actual_parameters.at(i)->accept(*this);
             auto field_value = value_;
 
             auto llvm_field = builder_->CreateConstGEP2_32(llvm_variant_type,
@@ -872,67 +873,256 @@ void CodeGenBuilder::literal_pattern(PatternNode *pattern,
   builder_->SetInsertPoint(false_block);
 }
 
-void CodeGenBuilder::variant_pattern(PatternNode *pattern,
-                                     StatementSequenceNode *statements,
-                                     llvm::Value *case_value) {
+llvm::Value *
+CodeGenBuilder::getCaseValueField(const VariantPatternNode *variant_pattern,
+                                  size_t param_index, llvm::Value *case_value) {
+  // get all information about types and variants
+  auto sum_type = dynamic_cast<const SumTypeNode *>(variant_pattern->type);
+  auto variant_decl = sum_type->find_variant(*variant_pattern->variant->ident);
+
+  // construct pointer to payload
+  auto case_payload_pointer = builder_->CreateConstGEP2_32(
+      getLLVMType(variant_pattern->type), case_value, 0, 1);
+
+  // construct pointer to field in payload
+  auto case_curr_field_pointer =
+      builder_->CreateConstGEP2_32(getLLVMType(variant_decl->parameter_types),
+                                   case_payload_pointer, 0, param_index);
+
+  // load the value at pointer
+  return builder_->CreateLoad(
+      getLLVMType(
+          variant_decl->parameter_types->formal_parameters.at(param_index)
+              ->type),
+      case_curr_field_pointer);
+}
+
+void CodeGenBuilder::int_literals(
+    // case patterns are variant patterns
+    vector<std::pair<PatternNode *, StatementSequenceNode *>> cases,
+    // case_value is the entire value of the case stmt expression
+    llvm::Value *case_value,
+    const vector<unique_ptr<PatternNode>> &param_patterns, size_t param_index) {
   auto currentFunc = builder_->GetInsertBlock()->getParent();
 
-  auto variant_pattern = dynamic_cast<const VariantPatternNode *>(pattern);
-  auto sum_type = dynamic_cast<const SumTypeNode *>(pattern->type);
+  // partition according to literal
+  std::unordered_map<int,
+                     vector<std::pair<PatternNode *, StatementSequenceNode *>>>
+      literal_map;
+  vector<std::pair<PatternNode *, StatementSequenceNode *>> wildcard_cases;
 
-  auto case_vtag_pointer = builder_->CreateConstGEP2_32(
-      getLLVMType(pattern->type), case_value, 0, 0);
-  auto case_vtag =
-      builder_->CreateLoad(builder_->getInt32Ty(), case_vtag_pointer);
-
-  auto variant_index =
-      sum_type->find_variant_index(*variant_pattern->variant->ident);
-  auto pattern_vtag = builder_->getInt32(variant_index);
-
-  // compare variant tags
-  auto condition = builder_->CreateICmpEQ(pattern_vtag, case_vtag);
-
-  auto true_block =
-      llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
-  auto false_block =
-      llvm::BasicBlock::Create(builder_->getContext(), "ifFalse", currentFunc);
-  auto tail_block = return_points_.top();
-
-  builder_->CreateCondBr(condition, true_block, false_block);
-  builder_->SetInsertPoint(true_block);
-
-  auto variant_decl = sum_type->find_variant(*variant_pattern->variant->ident);
-  for (size_t pi = 0; pi < variant_pattern->param_patterns.size(); pi++) {
-    auto curr_pattern = variant_pattern->param_patterns.at(pi).get();
-
-    // extract field from llvm sum type
-    auto case_payload_pointer = builder_->CreateConstGEP2_32(
-        getLLVMType(pattern->type), case_value, 0, 1);
-
-    auto case_curr_field_pointer =
-        builder_->CreateConstGEP2_32(getLLVMType(variant_decl->parameter_types),
-                                     case_payload_pointer, 0, pi);
-    auto case_curr_field = builder_->CreateLoad(
-        getLLVMType(
-            variant_decl->parameter_types->formal_parameters.at(pi)->type),
-        case_curr_field_pointer);
+  for (auto &curr_case : cases) {
+    auto variant_pattern =
+        dynamic_cast<const VariantPatternNode *>(curr_case.first);
+    auto curr_pattern = variant_pattern->param_patterns.at(param_index).get();
 
     if (curr_pattern->getNodeType() == NodeType::literal_pattern) {
-      literal_pattern(curr_pattern, statements, case_curr_field);
-    } else if (curr_pattern->getNodeType() == NodeType::variant_pattern) {
-      CodeGenBuilder::variant_pattern(curr_pattern, statements,
-                                      case_curr_field);
-    } else if (curr_pattern->getNodeType() == NodeType::ident_pattern) {
-      ident_pattern(curr_pattern, statements, case_curr_field);
+      // literal pattern
+      auto literal_pattern =
+          dynamic_cast<const NumberPatternNode *>(curr_pattern);
+      auto literal = literal_pattern->value;
+
+      if (!literal_map.contains(literal)) {
+        literal_map[literal] = {curr_case};
+      } else {
+        literal_map[literal].push_back(curr_case);
+      }
     } else {
-      logger_.error(curr_pattern->pos(), "UNEXPECTED KIND OF PATTERN");
-      exit(EXIT_FAILURE);
+      // ident pattern
+      wildcard_cases.push_back(curr_case);
     }
   }
 
-  builder_->CreateBr(tail_block);
+  // build conditional branching for each
+  for (const auto &[literal, literal_cases] : literal_map) {
+    auto pattern_literal = builder_->getInt32(literal);
 
-  builder_->SetInsertPoint(false_block);
+    // case value param
+    auto variant_pattern =
+        dynamic_cast<const VariantPatternNode *>(literal_cases.begin()->first);
+    auto case_value_field =
+        getCaseValueField(variant_pattern, param_index, case_value);
+
+    // compare literals
+    auto condition = builder_->CreateICmpEQ(pattern_literal, case_value_field);
+
+    auto true_block =
+        llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
+    auto false_block = llvm::BasicBlock::Create(builder_->getContext(),
+                                                "ifFalse", currentFunc);
+    auto tail_block = return_points_.top();
+
+    builder_->CreateCondBr(condition, true_block, false_block);
+    builder_->SetInsertPoint(true_block);
+
+    // move on to the next parameter if any
+    if (param_index + 1 < param_patterns.size()) {
+      vector<std::pair<PatternNode *, StatementSequenceNode *>> sub_cases;
+      for (auto curr_case : literal_cases) {
+        sub_cases.emplace_back(curr_case.first, curr_case.second);
+      }
+
+      auto next_param_type = param_patterns.at(param_index + 1)->type;
+
+      if (next_param_type == ASTContext::INTEGER) {
+        int_literals(sub_cases, case_value, param_patterns, param_index + 1);
+      } else if (next_param_type->getNodeType() == NodeType::sum_type) {
+        variants(sub_cases, case_value);
+      } else {
+        logger_.error(next_param_type->pos(), "UNEXPECTED VALUE TYPE");
+        exit(EXIT_FAILURE);
+      }
+    } else if (literal_cases.size() == 1) {
+      literal_cases.at(0).second->accept(*this);
+    } else {
+      // this shouldn't happen because we remove duplicates
+      logger_.debug("Overlooked duplicate?");
+      // but if it does, just do the first thing (the order of equal cases is
+      // preserved through-out the compiler; unless I am mistaken, the intended
+      // order is maintained and any duplicate occurance can be ignored because
+      // the first occurance will already have matched)
+      literal_cases.at(0).second->accept(*this);
+    }
+    builder_->CreateBr(tail_block);
+
+    builder_->SetInsertPoint(false_block);
+  }
+  for (auto &wildcard_case : wildcard_cases) {
+    auto variant_pattern =
+        dynamic_cast<const VariantPatternNode *>(wildcard_case.first);
+    auto curr_pattern = variant_pattern->param_patterns.at(param_index).get();
+
+    // visit ident pattern to declare variable
+    value_ = getCaseValueField(variant_pattern, param_index, case_value);
+    curr_pattern->accept(*this);
+
+    // move on to the next parameter if any
+    if (param_index + 1 < param_patterns.size()) {
+      vector<std::pair<PatternNode *, StatementSequenceNode *>> sub_cases;
+      for (auto curr_case : wildcard_cases) {
+        sub_cases.emplace_back(curr_case.first, curr_case.second);
+      }
+
+      auto next_param_type = param_patterns.at(param_index + 1)->type;
+
+      if (next_param_type == ASTContext::INTEGER) {
+        int_literals(sub_cases, case_value, param_patterns, param_index + 1);
+      } else if (next_param_type->getNodeType() == NodeType::sum_type) {
+        variants(sub_cases, case_value);
+      } else {
+        logger_.error(next_param_type->pos(), "UNEXPECTED VALUE TYPE");
+        exit(EXIT_FAILURE);
+      }
+    } else if (wildcard_cases.size() == 1) {
+      wildcard_case.second->accept(*this);
+    } else {
+      // this shouldn't happen because we remove duplicates
+      logger_.debug("Overlooked duplicate?");
+      // but if it does, just do the first thing (the order of equal cases is
+      // preserved through-out the compiler; unless I am mistaken, the intended
+      // order is maintained and any duplicate occurance can be ignored because
+      // the first occurance will already have matched)
+      wildcard_case.second->accept(*this);
+    }
+  }
+}
+
+void CodeGenBuilder::variants(
+    vector<std::pair<PatternNode *, StatementSequenceNode *>> cases,
+    llvm::Value *case_value) {
+  auto currentFunc = builder_->GetInsertBlock()->getParent();
+
+  // partition according to variant
+  std::unordered_map<string,
+                     vector<std::pair<PatternNode *, StatementSequenceNode *>>>
+      variant_map;
+  vector<std::pair<PatternNode *, StatementSequenceNode *>> wildcard_cases;
+
+  for (auto &curr_case : cases) {
+    if (curr_case.first->getNodeType() == NodeType::variant_pattern) {
+      auto variant_pattern =
+          dynamic_cast<const VariantPatternNode *>(curr_case.first);
+      auto variant = variant_pattern->variant->ident->value;
+
+      if (!variant_map.contains(variant)) {
+        variant_map[variant] = {curr_case};
+      } else {
+        variant_map[variant].push_back(curr_case);
+      }
+    } else {
+      // ident pattern
+      wildcard_cases.push_back(curr_case);
+    }
+  }
+
+  for (const auto &[variant, variant_cases] : variant_map) {
+    auto rep_pattern = variant_cases.begin()->first;
+
+    auto variant_pattern =
+        dynamic_cast<const VariantPatternNode *>(rep_pattern);
+    auto sum_type = dynamic_cast<const SumTypeNode *>(rep_pattern->type);
+
+    auto case_vtag_pointer = builder_->CreateConstGEP2_32(
+        getLLVMType(rep_pattern->type), case_value, 0, 0);
+    auto case_vtag =
+        builder_->CreateLoad(builder_->getInt32Ty(), case_vtag_pointer);
+
+    auto variant_index =
+        sum_type->find_variant_index(*variant_pattern->variant->ident);
+    auto pattern_vtag = builder_->getInt32(variant_index);
+
+    // compare variant tags
+    auto condition = builder_->CreateICmpEQ(pattern_vtag, case_vtag);
+
+    auto true_block =
+        llvm::BasicBlock::Create(builder_->getContext(), "ifTrue", currentFunc);
+    auto false_block = llvm::BasicBlock::Create(builder_->getContext(),
+                                                "ifFalse", currentFunc);
+    auto tail_block = return_points_.top();
+
+    builder_->CreateCondBr(condition, true_block, false_block);
+    builder_->SetInsertPoint(true_block);
+
+    vector<std::pair<PatternNode *, StatementSequenceNode *>> sub_cases;
+    for (auto curr_case : variant_cases) {
+      sub_cases.emplace_back(curr_case.first, curr_case.second);
+    }
+
+    // if there are parameters
+    if (variant_pattern->param_patterns.size() > 0) {
+      auto curr_param_type = variant_pattern->param_patterns.at(0)->type;
+
+      // generate conditional branching according to first parameter type
+      if (curr_param_type == ASTContext::INTEGER) {
+        int_literals(sub_cases, case_value, variant_pattern->param_patterns, 0);
+      } else if (curr_param_type->getNodeType() == NodeType::sum_type) {
+        // variants(sub_cases, case_value); // TODO
+      } else {
+        logger_.error(curr_param_type->pos(), "UNEXPECTED VALUE TYPE");
+        exit(EXIT_FAILURE);
+      }
+      // if there are no parameters, the following may hold
+    } else if (variant_cases.size() == 1) {
+      // visit statement sequence
+      variant_cases.at(0).second->accept(*this);
+    } else {
+      // this shouldn't happen because we remove duplicates
+      logger_.debug("Overlooked duplicate?");
+      // but if it does, just do the first thing (the order of equal cases is
+      // preserved through-out the compiler; unless I am mistaken, the intended
+      // order is maintained and any duplicate occurance can be ignored because
+      // the first occurance will already have matched)
+      variant_cases.at(0).second->accept(*this);
+    }
+    builder_->CreateBr(tail_block);
+
+    builder_->SetInsertPoint(false_block);
+  }
+  for (auto &wildcard_case : wildcard_cases) {
+    value_ = case_value;
+    wildcard_case.first->accept(*this);
+    wildcard_case.second->accept(*this);
+  }
 }
 
 void CodeGenBuilder::ident_pattern(PatternNode *pattern,
@@ -948,25 +1138,34 @@ void CodeGenBuilder::visit(CaseStatementNode &case_stmt) {
 
   case_stmt.value->accept(*this);
   const auto right_value = value_;
+  auto right_type = case_stmt.value->type;
 
   auto tail_block =
       llvm::BasicBlock::Create(builder_->getContext(), "ifTail", currentFunc);
   return_points_.push(tail_block);
 
-  for (auto ci : case_stmt.reachable_cases) {
-    auto curr_pattern = case_stmt.get_cases()->at(ci).first.get();
-    auto curr_body = case_stmt.get_cases()->at(ci).second.get();
+  if (right_type->getNodeType() == NodeType::std_type) {
+    for (auto ci : case_stmt.reachable_cases) {
+      auto curr_pattern = case_stmt.get_cases()->at(ci).first.get();
+      auto curr_body = case_stmt.get_cases()->at(ci).second.get();
 
-    if (curr_pattern->getNodeType() == NodeType::literal_pattern) {
-      literal_pattern(curr_pattern, curr_body, right_value);
-    } else if (curr_pattern->getNodeType() == NodeType::variant_pattern) {
-      variant_pattern(curr_pattern, curr_body, right_value);
-    } else if (curr_pattern->getNodeType() == NodeType::ident_pattern) {
-      ident_pattern(curr_pattern, curr_body, right_value);
-    } else {
-      logger_.error(curr_pattern->pos(), "UNEXPECTED PATTERN");
-      exit(EXIT_FAILURE);
+      if (curr_pattern->getNodeType() == NodeType::literal_pattern) {
+        literal_pattern(curr_pattern, curr_body, right_value);
+      } else if (curr_pattern->getNodeType() == NodeType::ident_pattern) {
+        ident_pattern(curr_pattern, curr_body, right_value);
+      } else {
+        logger_.error(curr_pattern->pos(), "UNEXPECTED PATTERN");
+        exit(EXIT_FAILURE);
+      }
     }
+  } else if (right_type->getNodeType() == NodeType::sum_type) {
+    vector<std::pair<PatternNode *, StatementSequenceNode *>> cases;
+    for (auto ci : case_stmt.reachable_cases) {
+      cases.emplace_back(case_stmt.get_cases()->at(ci).first.get(),
+                         case_stmt.get_cases()->at(ci).second.get());
+    }
+
+    variants(cases, right_value);
   }
   builder_->CreateBr(tail_block);
   builder_->SetInsertPoint(tail_block);

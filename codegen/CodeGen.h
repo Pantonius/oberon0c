@@ -90,7 +90,15 @@ private:
 
   void literal_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
   void ident_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
-  void variant_pattern(PatternNode *, StatementSequenceNode *, llvm::Value *);
+
+  void int_literals(vector<std::pair<PatternNode *, StatementSequenceNode *>>,
+                    llvm::Value *, const vector<unique_ptr<PatternNode>> &,
+                    size_t);
+  void variants(vector<std::pair<PatternNode *, StatementSequenceNode *>>,
+                llvm::Value *);
+
+  llvm::Value *getCaseValueField(const VariantPatternNode *, size_t,
+                                 llvm::Value *);
 
   llvm::Type *getLLVMType(TypeNode *);
   TypeNode *get_elem_ptr(const DeclarationNode *ref, llvm::Value *base_ptr,

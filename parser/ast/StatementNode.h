@@ -161,15 +161,19 @@ class VariantPatternNode final : public PatternNode {
 public:
   VariantPatternNode(const FilePos pos, unique_ptr<IdentNode> sum_ident,
                      unique_ptr<RecordFieldNode> variant,
+                     const size_t variant_index,
                      vector<unique_ptr<PatternNode>> param_patterns,
                      TypeNode *type)
       : PatternNode(NodeType::variant_pattern, pos, type),
-        sum_ident(std::move(sum_ident)), variant(std::move(variant)),
-        param_patterns(std::move(param_patterns)) {}
+        variant_index(variant_index), sum_ident(std::move(sum_ident)),
+        variant(std::move(variant)), param_patterns(std::move(param_patterns)) {
+  }
   ~VariantPatternNode() override = default;
 
   void accept(NodeVisitor &visitor) override final;
   void print(std::ostream &stream) const final;
+
+  const size_t variant_index;
 
   const unique_ptr<IdentNode> sum_ident;
   const unique_ptr<RecordFieldNode> variant;
@@ -232,11 +236,11 @@ public:
 
 class VariantCaseTreeKey final : public CaseTreeKey {
 public:
-  VariantCaseTreeKey(string value)
+  VariantCaseTreeKey(size_t value)
       : CaseTreeKey(KeyType::variant), value(value) {};
   ~VariantCaseTreeKey() = default;
 
-  const string value;
+  const size_t value;
 };
 
 class IdentCaseTreeKey final : public CaseTreeKey {

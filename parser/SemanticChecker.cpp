@@ -17,7 +17,6 @@
 #include <queue>
 #include <sys/types.h>
 #include <tuple>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -216,8 +215,8 @@ SumTypeNode *SemanticChecker::onSumType(
     auto procedure_type = onProcedureType(variant_pos, std::move(params));
 
     auto variant = std::make_unique<VariantDeclarationNode>(
-        variant_pos, std::move(proto_variant.first), procedure_type,
-        sum_type.get());
+        variant_pos, variants.size(), std::move(proto_variant.first),
+        procedure_type, sum_type.get());
 
     expect_unique_within_scope(variant->ident.get(), variant.get());
 
@@ -643,9 +642,9 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
     }
   }
 
-  return make_unique<VariantPatternNode>(pos, std::move(sum_ident),
-                                         std::move(variant),
-                                         std::move(param_pats), type);
+  return make_unique<VariantPatternNode>(
+      pos, std::move(sum_ident), std::move(variant),
+      variant_decl->variant_index, std::move(param_pats), type);
 }
 
 unique_ptr<CaseStatementNode>
@@ -663,29 +662,29 @@ void SemanticChecker::onCaseStatementCaseEnd(
   case_stmt.add_case(std::move(pattern), std::move(stmts));
 }
 
-std::tuple<bool, std::unordered_map<string, vector<u_int>>, vector<u_int>>
+std::tuple<bool, std::map<size_t, vector<u_int>>, vector<u_int>>
 SemanticChecker::variant_pattern_exhaustiveness(
     const FilePos pos, const SumTypeNode *sum_type,
     std::map<u_int, const PatternNode *> case_patterns, bool is_last) {
   bool is_exhaustive = true;
-  std::unordered_map<string, vector<u_int>> variant_map;
+  std::map<size_t, vector<u_int>> variant_map;
   vector<u_int> wildcard_cases;
 
   for (auto &variant : sum_type->variants) {
-    variant_map[variant->ident->value] = {};
+    variant_map[variant->variant_index] = {};
   }
 
   for (const auto &[i, pattern] : case_patterns) {
     if (is_last && wildcard_cases.size() > 0) {
       logger_.warning(pattern->pos(), "Unreachable case.");
-      continue;
+      break;
     }
 
     if (pattern->getNodeType() == NodeType::ident_pattern) {
       wildcard_cases.push_back(i);
     } else if (pattern->getNodeType() == NodeType::variant_pattern) {
       auto variant_pattern = dynamic_cast<const VariantPatternNode *>(pattern);
-      variant_map[variant_pattern->variant->ident->value].push_back(i);
+      variant_map[variant_pattern->variant_index].push_back(i);
     } else {
       logger_.error(pattern->pos(), "UNEXPECTED KIND OF PATTERN");
       exit(EXIT_FAILURE);
@@ -695,16 +694,16 @@ SemanticChecker::variant_pattern_exhaustiveness(
   if (wildcard_cases.size() == 0) {
     for (auto v : variant_map) {
       // NOTE if this throws, call a developer because he messed something up
-      auto v_variant = sum_type->find_variant(v.first).value();
+      auto v_variant = sum_type->variants.at(v.first).get();
 
       if (v.second.size() == 0) {
         logger_.warning(pos, "Non-exhaustive patterns: Missing cases for " +
-                                 v.first + " variant.");
+                                 v_variant->ident->value + " variant.");
         is_exhaustive = false;
       } else if (v_variant->parameter_types->formal_parameters.size() > 0) {
         // Variant with parameters
         auto vertically_exhaustive_cases = std::make_unique<CaseTree>(
-            VariantCaseTreeKey(v_variant->ident->value), v.second, 0);
+            VariantCaseTreeKey(v_variant->variant_index), v.second, 0);
         std::queue<CaseTree *> leafs;
         // WorkList :P
         leafs.push(vertically_exhaustive_cases.get());
@@ -738,7 +737,7 @@ SemanticChecker::variant_pattern_exhaustiveness(
           if (sub_case_patterns.size() == 0) {
             logger_.error(pos, "No patterns for parameter at index " +
                                    to_string(curr_param_index) +
-                                   " in variant " + v.first);
+                                   " in variant " + v_variant->ident->value);
             continue;
           }
 
@@ -848,14 +847,13 @@ SemanticChecker::variant_pattern_exhaustiveness(
   return std::make_tuple(is_exhaustive, variant_map, wildcard_cases);
 }
 
-std::tuple<bool, std::unordered_map<int, vector<u_int>>, vector<u_int>>
+std::tuple<bool, std::map<int, vector<u_int>>, vector<u_int>>
 SemanticChecker::number_pattern_exhaustiveness(
     const FilePos pos, std::map<u_int, const PatternNode *> case_patterns,
     bool is_last) {
 
   bool is_exhaustive = true;
-  std::unordered_map<int, vector<u_int>>
-      literal_cases; // literal_value -> case_indecies
+  std::map<int, vector<u_int>> literal_cases; // literal_value -> case_indecies
   vector<u_int> wildcard_cases;
 
   for (const auto &[i, pattern] : case_patterns) {
@@ -1010,6 +1008,8 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     logger_.error(case_stmt.value->pos(), "UNEXPECTED VALUE TYPE");
     exit(EXIT_FAILURE);
   }
+
+  std::sort(case_stmt.reachable_cases.begin(), case_stmt.reachable_cases.end());
 }
 
 unique_ptr<ExpressionNode> SemanticChecker::onUnaryExpression(
