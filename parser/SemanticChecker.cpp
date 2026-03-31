@@ -241,16 +241,14 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
   TypeNode *type = nullptr;
   const DeclarationNode *decl;
   try {
-    type = symbol_table_.lookup_type(*ident, selectors);
     decl = symbol_table_.lookup(*ident).value();
+    type = symbol_table_.lookup_type(*ident, selectors);
     if (!decl) {
       logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
     }
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
-    return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), std::move(actual_params),
-        decl, type, false);
+    exit(EXIT_FAILURE);
   } catch (FieldNotFoundException &e) {
     if (decl->type->getNodeType() == NodeType::sum_type) {
       logger_.error(e.field().pos(), "No such variant: " + decl->ident->value +
