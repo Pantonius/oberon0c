@@ -13,7 +13,7 @@ Patterns are realized as `PatternNode` and all have `type` that is:
 - or implied for `NumberPatternNode`, `BooleanPatternNode`, and `VariantPatternNode`
 
 ### CodeGen / LLVM
-The pattern matching is translated into a series of conditional branches. For now only pattern matching against literal values works.
+The pattern matching is translated into a series of conditional branches. As of now the simplest example work: Case statements over literal types (`CASE i : INTEGER OF ... END`) and case statements over sum type expressions with literal parameter types (`CASE i : MaybeInt OF ... END`).
 
 ## Overall Changes
 ### Parser
@@ -36,3 +36,7 @@ Adapted `onIdentExpression(...)` to accomodate for variant expressions
     - `visit(SumTypeNode &)`: which constructs the sum type to be a `llvm::StructType` consisting of a variant tag (`i32`) and payload (`[max_size * i8]`) with the realized variant object.
 - case statement:
     - `visit(CaseStatementNode *)`: which translates the case statement structure into an if-elsif-else structure, but only for literals.
+    - `literals(...)`, `variants(...)`, `literal_pattern(...)`, and `ident_pattern(...)`: aid in translating the case statement into a branching structure
+    - and `getCaseValueField(...)`: aids in retrieving a field from a sum type value
+
+Adapted `visit(IdentExpressioNode &)` for variant expressions.

@@ -801,54 +801,6 @@ void CodeGenBuilder::visit(BooleanPatternNode &bool_pattern) {
   value_ = builder_->getInt1(bool_pattern.value);
 }
 
-// void CodeGenBuilder::number_case(
-//     int case_literal, std::map<u_int, const PatternNode *> case_patterns) {
-//   auto currentFunc = builder_->GetInsertBlock()->getParent();
-//
-//   // partition into literals and wildcards
-//   std::unordered_map<int32_t, vector<u_int>> literal_map;
-//   vector<u_int> wildcard_cases;
-//
-//   for (const auto &[i, pattern] : case_patterns) {
-//     if (pattern->getNodeType() == NodeType::literal_pattern) {
-//       auto literal_pattern = dynamic_cast<const NumberPatternNode
-//       *>(pattern); literal_map[literal_pattern->value].push_back(i);
-//     } else if (pattern->getNodeType() == NodeType::ident_pattern) {
-//       wildcard_cases.push_back(i);
-//     } else {
-//       logger_.error(pattern->pos(), "UNEXPECTED KIND OF PATTERN");
-//       exit(EXIT_FAILURE);
-//     }
-//   }
-//
-//   // branch according to literal
-//
-//   for (const auto &[literal, literal_cases] : literal_map) {
-//     auto tailBlock =
-//         llvm::BasicBlock::Create(builder_->getContext(), "ifTail",
-//         currentFunc);
-//     auto trueBlock =
-//         llvm::BasicBlock::Create(builder_->getContext(), "ifTrue",
-//         currentFunc);
-//     auto falseBlock = llvm::BasicBlock::Create(builder_->getContext(),
-//                                                "ifFalse", currentFunc);
-//
-//     const auto if_left_value =
-//         builder_->getInt32(literal); // warning but I guess fine
-//     const auto if_right_value = builder_->getInt32(case_literal);
-//
-//     auto if_condition = builder_->CreateICmpEQ(if_left_value,
-//     if_right_value); builder_->CreateCondBr(if_condition, trueBlock,
-//     falseBlock);
-//
-//     builder_->SetInsertPoint(trueBlock);
-//     // TODO
-//     builder_->CreateBr(tailBlock);
-//
-//     builder_->SetInsertPoint(falseBlock);
-//   }
-// }
-
 void CodeGenBuilder::literal_pattern(PatternNode *pattern,
                                      StatementSequenceNode *statements,
                                      llvm::Value *case_value) {
@@ -980,7 +932,8 @@ void CodeGenBuilder::literals(
     } else if (literal_cases.size() == 1) {
       literal_cases.at(0).second->accept(*this);
     } else {
-      // this shouldn't happen because we remove duplicates
+      // this shouldn't happen because we remove duplicates -> Update:
+      // CaseSumUnreachable does produce this message right now
       logger_.debug("Overlooked duplicate?");
       // but if it does, just do the first thing (the order of equal cases is
       // preserved through-out the compiler; unless I am mistaken, the intended
@@ -1024,7 +977,8 @@ void CodeGenBuilder::literals(
     } else if (wildcard_cases.size() == 1) {
       wildcard_case.second->accept(*this);
     } else {
-      // this shouldn't happen because we remove duplicates
+      // this shouldn't happen because we remove duplicates -> Update:
+      // CaseSumUnreachable does produce this message right now
       logger_.debug("Overlooked duplicate?");
       // but if it does, just do the first thing (the order of equal cases is
       // preserved through-out the compiler; unless I am mistaken, the intended
@@ -1108,6 +1062,9 @@ void CodeGenBuilder::variants(
         literals<bool>(sub_cases, case_value, variant_pattern->param_patterns,
                        0);
       } else if (curr_param_type->getNodeType() == NodeType::sum_type) {
+        logger_.error(curr_param_type->pos(),
+                      "Can't generate code for sum types in sum types :(");
+        exit(EXIT_FAILURE);
         // variants(sub_cases, case_value); // TODO
       } else {
         logger_.error(curr_param_type->pos(), "UNEXPECTED VALUE TYPE");
@@ -1118,7 +1075,8 @@ void CodeGenBuilder::variants(
       // visit statement sequence
       variant_cases.at(0).second->accept(*this);
     } else {
-      // this shouldn't happen because we remove duplicates
+      // this shouldn't happen because we remove duplicates -> Update:
+      // CaseSumUnreachable does produce this message right now
       logger_.debug("Overlooked duplicate?");
       // but if it does, just do the first thing (the order of equal cases is
       // preserved through-out the compiler; unless I am mistaken, the intended
