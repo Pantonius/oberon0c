@@ -1,6 +1,6 @@
 # A Compiler for the Oberon-0 Programming Language
 
-**For additional dependencies see [docs/Setup.md](/docs/Setup.md)**
+**For additional dependencies see [docs/02_Setup.md](/docs/02_Setup.md)**
 
 The [Oberon](https://www.ethoberon.ethz.ch) programming language was proposed in 1987 by
 [Niklaus Wirth](https://people.inf.ethz.ch/wirth/) as a successor to Pascal and Modula-2. Due to this lineage, Oberon is
