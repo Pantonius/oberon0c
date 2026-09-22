@@ -46,8 +46,10 @@ int main(const int argc, const char *argv[]) {
   Parser parser(scanner, logger);
   auto context = parser.parse();
 
-  CodeGen gen(logger);
-  gen.build(*context, filename);
+  if (logger.getErrorCount() == 0) {
+    CodeGen gen(logger);
+    gen.build(*context, filename);
+  }
 
   // Status print
   string status = (logger.getErrorCount() == 0 ? "complete" : "failed");

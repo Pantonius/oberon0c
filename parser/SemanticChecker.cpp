@@ -239,116 +239,118 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
 
   // get ident type for more detailed error messages
   TypeNode *type = nullptr;
-  const DeclarationNode *decl;
+  const DeclarationNode *decl = nullptr;
   try {
-    decl = symbol_table_.lookup(*ident).value();
-    type = symbol_table_.lookup_type(*ident, selectors);
-    if (!decl) {
-      logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
+    if (auto some_decl = symbol_table_.lookup(*ident)) {
+      decl = some_decl.value();
     }
+    type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
-    exit(EXIT_FAILURE);
   } catch (FieldNotFoundException &e) {
     if (decl->type->getNodeType() == NodeType::sum_type) {
       logger_.error(e.field().pos(), "No such variant: " + decl->ident->value +
                                          "." + e.field().value);
-      exit(EXIT_FAILURE);
     } else {
       logger_.error(e.field().pos(), e.what());
-      exit(EXIT_FAILURE);
     }
   }
 
-  if (decl->getNodeType() == NodeType::type_declaration) {
-    if (decl->type->getNodeType() != NodeType::sum_type) {
-      logger_.error(decl->pos(), "Expected sum type.");
-      exit(EXIT_FAILURE);
-    }
-
-    if (selectors.size() == 0) {
-      logger_.error(pos,
-                    "Unqualified variant expressions are not supported yet.");
-      exit(EXIT_FAILURE);
-    }
-
-    if (selectors.size() != 1) {
-      logger_.error(pos, "Malformed variant selector.");
-      exit(EXIT_FAILURE);
-    }
-
-    ProcedureTypeNode *variant_proc_type;
-    auto variant = dynamic_cast<const RecordFieldNode *>(selectors.at(0).get());
-    try {
-      variant_proc_type =
-          symbol_table_.lookup_variant_proc_type(*ident, selectors.at(0));
-    } catch (FieldNotFoundException &e) {
-      logger_.error(selectors.at(0)->pos(),
-                    "No such variant: " + ident->value + "." +
-                        to_string(variant->ident->value));
-      exit(EXIT_FAILURE);
-    }
-
-    // parameter count check
-    if (variant_proc_type->formal_parameters.size() != actual_params.size()) {
-      logger_.error(pos, "Number of given parameters does not match declared "
-                         "variant parameters.");
-      exit(EXIT_FAILURE);
-    }
-
-    // parameter type check
-    for (size_t i = 0; i < actual_params.size(); i++) {
-      if (actual_params.at(i)->type !=
-          variant_proc_type->formal_parameters.at(i)->type) {
-        logger_.error(
-            actual_params.at(i)->pos(),
-            "Given type " + to_string(actual_params.at(i)->type) +
-                " does not match expected type " +
-                to_string(variant_proc_type->formal_parameters.at(i)->type));
+  if (decl) {
+    if (decl->getNodeType() == NodeType::type_declaration) {
+      if (decl->type->getNodeType() != NodeType::sum_type) {
+        logger_.error(decl->pos(), "Expected sum type.");
         exit(EXIT_FAILURE);
       }
+
+      if (selectors.size() == 0) {
+        logger_.error(pos,
+                      "Unqualified variant expressions are not supported yet.");
+        exit(EXIT_FAILURE);
+      }
+
+      if (selectors.size() != 1) {
+        logger_.error(pos, "Malformed variant selector.");
+        exit(EXIT_FAILURE);
+      }
+
+      ProcedureTypeNode *variant_proc_type;
+      auto variant =
+          dynamic_cast<const RecordFieldNode *>(selectors.at(0).get());
+      try {
+        variant_proc_type =
+            symbol_table_.lookup_variant_proc_type(*ident, selectors.at(0));
+      } catch (FieldNotFoundException &e) {
+        logger_.error(selectors.at(0)->pos(),
+                      "No such variant: " + ident->value + "." +
+                          to_string(variant->ident->value));
+        exit(EXIT_FAILURE);
+      }
+
+      // parameter count check
+      if (variant_proc_type->formal_parameters.size() != actual_params.size()) {
+        logger_.error(pos, "Number of given parameters does not match declared "
+                           "variant parameters.");
+        exit(EXIT_FAILURE);
+      }
+
+      // parameter type check
+      for (size_t i = 0; i < actual_params.size(); i++) {
+        if (actual_params.at(i)->type !=
+            variant_proc_type->formal_parameters.at(i)->type) {
+          logger_.error(
+              actual_params.at(i)->pos(),
+              "Given type " + to_string(actual_params.at(i)->type) +
+                  " does not match expected type " +
+                  to_string(variant_proc_type->formal_parameters.at(i)->type));
+          exit(EXIT_FAILURE);
+        }
+      }
+
+      return std::make_unique<IdentExpressionNode>(
+          pos, std::move(ident), std::move(selectors), std::move(actual_params),
+          decl, type, false);
+    } else if (decl->getNodeType() == NodeType::const_declaration) {
+      if (actual_params.size() > 0) {
+        logger_.error(actual_params.at(0)->pos(),
+                      "Constant expressions should not have parameters.");
+        exit(EXIT_FAILURE);
+      }
+
+      auto const_decl = dynamic_cast<const ConstDeclarationNode *>(decl);
+
+      auto expr = const_decl->expression.get();
+      switch (expr->getNodeType()) {
+      case NodeType::boolean:
+        return clone_literal<BooleanExpressionNode>(
+            dynamic_cast<BooleanExpressionNode *>(expr));
+      case NodeType::number:
+        return clone_literal<NumberExpressionNode>(
+            dynamic_cast<NumberExpressionNode *>(expr));
+      default:
+        logger_.error(pos, "Constant of invalid node type.");
+        exit(EXIT_FAILURE);
+      }
+    } else if (decl->getNodeType() == NodeType::var_declaration ||
+               decl->getNodeType() == NodeType::param_declaration) {
+
+      if (actual_params.size() > 0) {
+        logger_.error(
+            actual_params.at(0)->pos(),
+            "Variable and parameter expressions should not have parameters.");
+        exit(EXIT_FAILURE);
+      }
+
+      return std::make_unique<IdentExpressionNode>(
+          pos, std::move(ident), std::move(selectors), decl, type, false);
+    } else {
+      logger_.error(pos, "Identifier is not a constant or variable.");
     }
-
-    return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), std::move(actual_params),
-        decl, type, false);
-  } else if (decl->getNodeType() == NodeType::const_declaration) {
-    if (actual_params.size() > 0) {
-      logger_.error(actual_params.at(0)->pos(),
-                    "Constant expressions should not have parameters.");
-      exit(EXIT_FAILURE);
-    }
-
-    auto const_decl = dynamic_cast<const ConstDeclarationNode *>(decl);
-
-    auto expr = const_decl->expression.get();
-    switch (expr->getNodeType()) {
-    case NodeType::boolean:
-      return clone_literal<BooleanExpressionNode>(
-          dynamic_cast<BooleanExpressionNode *>(expr));
-    case NodeType::number:
-      return clone_literal<NumberExpressionNode>(
-          dynamic_cast<NumberExpressionNode *>(expr));
-    default:
-      logger_.error(pos, "Constant of invalid node type.");
-      exit(EXIT_FAILURE);
-    }
-  } else if (decl->getNodeType() == NodeType::var_declaration ||
-             decl->getNodeType() == NodeType::param_declaration) {
-
-    if (actual_params.size() > 0) {
-      logger_.error(
-          actual_params.at(0)->pos(),
-          "Variable and parameter expressions should not have parameters.");
-      exit(EXIT_FAILURE);
-    }
-
-    return std::make_unique<IdentExpressionNode>(
-        pos, std::move(ident), std::move(selectors), decl, type, false);
-  } else {
-    logger_.error(pos, "Identifier is not a constant or variable.");
-    exit(EXIT_FAILURE);
   }
+
+  // no decl
+  return std::make_unique<IdentExpressionNode>(
+      pos, std::move(ident), std::move(selectors), decl, type, false);
 }
 
 unique_ptr<IdentExpressionNode> SemanticChecker::onIdentExpressionReference(

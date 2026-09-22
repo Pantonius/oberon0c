@@ -5,7 +5,6 @@
 #include "parser/ast/IdentNode.h"
 #include "parser/ast/TypeNode.h"
 #include <catch2/catch_test_macros.hpp>
-#include <cmath>
 #include <memory>
 #include <utility>
 
