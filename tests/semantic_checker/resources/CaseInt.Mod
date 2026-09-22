@@ -1,9 +1,10 @@
 MODULE CaseInt;
 
 VAR i, j : INTEGER;
+(* the most simple are literal cases: INTEGER and BOOLEAN *)
 
 BEGIN
-  i := 2;
+  i := 0;
   j := 0;
   CASE i OF
     0 : j := 8

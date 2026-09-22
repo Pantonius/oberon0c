@@ -14,6 +14,10 @@ BEGIN
     | MaybeInt.Some(2) : j := 2
     | MaybeInt.Some(x) : j := x
     | MaybeInt.None : j := 0
+    (* for case stmts over sum types code generation only works if the parameter types are not sum types *)
+    (* sadly *)
     (* exhaustive cases with correct types of patterns *)
-  END
+  END;
+  (* Which means this works: *)
+  WriteInt(j); WriteLn
 END CaseSum.
