@@ -19,6 +19,8 @@ const std::unordered_map<std::string, StdTypeNode *const>
 StdTypeNode *const ASTContext::BOOLEAN = ASTContext::std_types.at("BOOLEAN");
 StdTypeNode *const ASTContext::INTEGER = ASTContext::std_types.at("INTEGER");
 
+ErrorTypeNode *const ASTContext::ERROR_TYPE = new ErrorTypeNode(EMPTY_POS);
+
 // const FilePos pos, unique_ptr<IdentNode> proc_name,
 //                            ProcedureTypeNode *const type_node
 const std::unordered_map<StdProc, ProcedureDeclarationNode *const>

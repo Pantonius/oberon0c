@@ -109,8 +109,10 @@ public:
 
   void expect_unique(const IdentNode *, const DeclarationNode *, bool = false);
   void expect_unique_within_scope(const IdentNode *, const DeclarationNode *);
-  void expect_number(ExpressionNode *expr);
-  void expect_bool(ExpressionNode *expr);
+  void expect_number(ExpressionNode *);
+  void expect_bool(ExpressionNode *);
+
+  static bool types_match(const TypeNode *, const TypeNode *);
 
   template <typename L, typename T>
   unique_ptr<LiteralExpressionNode<T>>

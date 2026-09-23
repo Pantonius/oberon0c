@@ -62,6 +62,7 @@ private:
   void visit(CaseStatementNode &) override final;
   void visit(ConstDeclarationNode &) override final;
   void visit(ElsIfStatementNode &) override final;
+  void visit(ErrorTypeNode &) override final;
   void visit(IdentExpressionNode &) override final;
   void visit(IdentNode &) override final;
   void visit(IdentPatternNode &) override final;

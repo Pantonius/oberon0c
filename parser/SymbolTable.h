@@ -65,7 +65,8 @@ private:
 public:
   LookupException(const Node &node)
       : node_(node),
-        msg_(to_string(&node) + " could not be found in symbol table") {}
+        msg_("'" + to_string(&node) +
+             "' could not be found. Is the variable declared and in scope?") {}
   LookupException(const Node &node, const string msg)
       : node_(node), msg_(msg) {}
 

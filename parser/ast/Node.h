@@ -1,9 +1,8 @@
 #ifndef OBERON0C_NODE_H
 #define OBERON0C_NODE_H
 
-#include "scanner/Token.h"
+#include "global.h"
 #include <ostream>
-#include <valarray>
 
 enum class NodeType : char {
   array_selector,
@@ -15,6 +14,7 @@ enum class NodeType : char {
   const_declaration,
   declaration_sequence,
   elsif_statement,
+  error_type,
   field,
   fp_section,
   ident,

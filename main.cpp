@@ -49,6 +49,8 @@ int main(const int argc, const char *argv[]) {
   if (logger.getErrorCount() == 0) {
     CodeGen gen(logger);
     gen.build(*context, filename);
+  } else {
+    logger.info("Skipped code generation because of errors");
   }
 
   // Status print

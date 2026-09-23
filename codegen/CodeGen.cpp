@@ -443,6 +443,10 @@ void CodeGenBuilder::visit(StdTypeNode &std_type) {
   types_[&std_type] = type;
 }
 
+void CodeGenBuilder::visit(ErrorTypeNode &_) {
+  assert(false && "error type reached codegen");
+}
+
 void CodeGenBuilder::visit(ArrayTypeNode &array_type) {
   array_type.type->accept(*this);
   auto type = llvm::ArrayType::get(

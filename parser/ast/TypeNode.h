@@ -151,4 +151,12 @@ public:
   vector<unique_ptr<ParamDeclarationNode>> formal_parameters;
 };
 
+class ErrorTypeNode final : public TypeNode {
+public:
+  explicit ErrorTypeNode(const FilePos pos)
+      : TypeNode(NodeType::error_type, pos) {}
+  void accept(NodeVisitor &visitor) override final;
+  void print(std::ostream &stream) const final;
+};
+
 #endif // OBERON0C_TYPENODE_H

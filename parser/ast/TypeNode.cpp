@@ -118,3 +118,6 @@ void ProcedureTypeNode::print(ostream &stream) const {
     }
   }
 }
+
+void ErrorTypeNode::accept(NodeVisitor &visitor) { visitor.visit(*this); }
+void ErrorTypeNode::print(ostream &stream) const { stream << "<unknown>"; }

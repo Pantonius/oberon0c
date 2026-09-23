@@ -30,6 +30,8 @@ std::ostream &operator<<(std::ostream &stream, const NodeType &type) {
     return stream << "declaration_sequence";
   case NodeType::elsif_statement:
     return stream << "elsif_statement";
+  case NodeType::error_type:
+    return stream << "error_type";
   case NodeType::field:
     return stream << "field";
   case NodeType::fp_section:

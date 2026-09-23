@@ -9,6 +9,8 @@
 #include "parser/ast/ExpressionNode.h"
 #include "parser/ast/StatementNode.h"
 #include "util/Logger.h"
+#include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -82,12 +84,11 @@ SemanticChecker::onConst(const FilePos pos, unique_ptr<IdentNode> ident,
 vector<unique_ptr<VarDeclarationNode>>
 SemanticChecker::onVars(const FilePos pos, vector<unique_ptr<IdentNode>> idents,
                         TypeNode *type) {
+  vector<unique_ptr<VarDeclarationNode>> var_decls;
   if (!type) {
     logger_.error(pos, "Unspecified variable type.");
-    exit(EXIT_FAILURE);
   }
 
-  vector<unique_ptr<VarDeclarationNode>> var_decls;
   for (size_t i = 0; i < idents.size(); i++) {
     auto var_decl =
         make_unique<VarDeclarationNode>(pos, std::move(idents[i]), type);
@@ -117,21 +118,19 @@ TypeNode *SemanticChecker::onIdentType(const FilePos pos,
   } catch (...) {
   }
 
-  auto type_decl_ = symbol_table_.lookup(*ident);
+  if (auto type_decl_ = symbol_table_.lookup(*ident)) {
+    if (auto type_decl =
+            dynamic_cast<const TypeDeclarationNode *>(type_decl_.value())) {
+      return type_decl->type;
+    }
 
-  if (!type_decl_) {
+    logger_.error(pos, "'" + to_string(*ident) + "' is not a type.");
+    return {};
+  } else {
     logger_.error(pos, "Specified type '" + ident->value +
                            "' is not declared in the current scope.");
     return {};
   }
-
-  if (auto type_decl =
-          dynamic_cast<const TypeDeclarationNode *>(type_decl_.value())) {
-    return type_decl->type;
-  }
-
-  logger_.error(pos, "'" + to_string(*ident) + "' is not a type.");
-  return {};
 }
 
 ArrayTypeNode *SemanticChecker::onArrayType(const FilePos pos,
@@ -247,8 +246,9 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
     type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
+    type = ASTContext::ERROR_TYPE;
   } catch (FieldNotFoundException &e) {
-    if (decl->type->getNodeType() == NodeType::sum_type) {
+    if (decl && decl->type->getNodeType() == NodeType::sum_type) {
       logger_.error(e.field().pos(), "No such variant: " + decl->ident->value +
                                          "." + e.field().value);
     } else {
@@ -296,8 +296,8 @@ unique_ptr<ExpressionNode> SemanticChecker::onIdentExpression(
 
       // parameter type check
       for (size_t i = 0; i < actual_params.size(); i++) {
-        if (actual_params.at(i)->type !=
-            variant_proc_type->formal_parameters.at(i)->type) {
+        if (!types_match(actual_params.at(i)->type,
+                         variant_proc_type->formal_parameters.at(i)->type)) {
           logger_.error(
               actual_params.at(i)->pos(),
               "Given type " + to_string(actual_params.at(i)->type) +
@@ -358,15 +358,15 @@ unique_ptr<IdentExpressionNode> SemanticChecker::onIdentExpressionReference(
     vector<unique_ptr<SelectorNode>> selectors) {
   // get ident type for more detailed error messages
   TypeNode *type = nullptr;
-  const DeclarationNode *decl;
+  const DeclarationNode *decl = nullptr;
   try {
-    type = symbol_table_.lookup_type(*ident, selectors);
-    decl = symbol_table_.lookup(*ident).value();
-    if (!decl) {
-      logger_.error(ident->pos(), to_string(*ident) + " is not a variable.");
+    if (auto some_decl = symbol_table_.lookup(*ident)) {
+      decl = some_decl.value();
     }
+    type = symbol_table_.lookup_type(*ident, selectors);
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
+    type = ASTContext::ERROR_TYPE;
     return std::make_unique<IdentExpressionNode>(
         pos, std::move(ident), std::move(selectors), decl, type, true);
   }
@@ -463,7 +463,8 @@ const ProcedureTypeNode *SemanticChecker::onProcedureCallStart(
   // get procedure declaration
   auto opt_decl = symbol_table_.lookup(ident);
   if (!opt_decl) {
-    logger_.error(pos, "Undeclared procedure identifier.");
+    logger_.error(pos, "Undeclared procedure identifier: \"" +
+                           to_string(ident) + "\"");
     exit(EXIT_FAILURE);
   }
   if (opt_decl.value()->getNodeType() != NodeType::procedure_declaration) {
@@ -484,18 +485,22 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
     vector<unique_ptr<ExpressionNode>> actual_params) {
 
   // get procedure declaration
-  auto opt_decl = symbol_table_.lookup(*ident);
-  if (!opt_decl) {
-    logger_.error(pos, "Undeclared procedure identifier.");
-    exit(EXIT_FAILURE);
+  const ProcedureDeclarationNode *proc_decl = nullptr;
+  if (auto opt_decl = symbol_table_.lookup(*ident)) {
+    if (opt_decl.value()->getNodeType() != NodeType::procedure_declaration) {
+      logger_.error(
+          pos, "Identifier is not associated with a procedure declaration.");
+    }
+    proc_decl =
+        dynamic_cast<const ProcedureDeclarationNode *>(opt_decl.value());
+  } else {
+    logger_.error(pos, "Undeclared procedure identifier: \"" +
+                           to_string(*ident) + "\"");
+
+    return std::make_unique<ProcedureCallNode>(
+        pos, std::move(ident), std::move(selectors), std::move(actual_params),
+        proc_decl);
   }
-  if (opt_decl.value()->getNodeType() != NodeType::procedure_declaration) {
-    logger_.error(pos,
-                  "Identifier is not associated with a procedure declaration.");
-    exit(EXIT_FAILURE);
-  }
-  auto proc_decl =
-      dynamic_cast<const ProcedureDeclarationNode *>(opt_decl.value());
 
   // look into procedure type
   auto proc_type = dynamic_cast<const ProcedureTypeNode *>(proc_decl->type);
@@ -510,7 +515,8 @@ unique_ptr<ProcedureCallNode> SemanticChecker::onProcedureCall(
   for (size_t i = 0; i < proc_type->formal_parameters.size(); i++) {
     // NOTE type compatibility for now just means identity
     // TODO add logic for type casting
-    if (proc_type->formal_parameters[i]->type != actual_params[i]->type) {
+    if (!types_match(proc_type->formal_parameters[i]->type,
+                     actual_params[i]->type)) {
       logger_.error(actual_params[i]->pos(),
                     "Parameter type does not match declared formal type.");
       exit(EXIT_FAILURE);
@@ -554,10 +560,9 @@ SemanticChecker::onIdentPattern(const FilePos pos, unique_ptr<IdentNode> ident,
 unique_ptr<NumberPatternNode>
 SemanticChecker::onNumberPattern(const FilePos pos, int32_t number,
                                  TypeNode *type) {
-  if (type != ASTContext::INTEGER) {
+  if (!types_match(type, ASTContext::INTEGER)) {
     logger_.error(pos, "Expected pattern of type " + to_string(type) +
                            " but got INTEGER.");
-    exit(EXIT_FAILURE);
   }
 
   return std::make_unique<NumberPatternNode>(pos, number);
@@ -565,10 +570,9 @@ SemanticChecker::onNumberPattern(const FilePos pos, int32_t number,
 unique_ptr<BooleanPatternNode>
 SemanticChecker::onBooleanPattern(const FilePos pos, bool boolean,
                                   TypeNode *type) {
-  if (type != ASTContext::BOOLEAN) {
+  if (!types_match(type, ASTContext::BOOLEAN)) {
     logger_.error(pos, "Expected pattern of type " + to_string(type) +
                            " but got BOOLEAN.");
-    exit(EXIT_FAILURE);
   }
 
   return std::make_unique<BooleanPatternNode>(pos, boolean);
@@ -580,21 +584,25 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
     vector<unique_ptr<PatternNode>> param_pats, TypeNode *value_type) {
 
   TypeNode *type = nullptr;
-  const DeclarationNode *decl;
+  const DeclarationNode *decl = nullptr;
   try {
     type = symbol_table_.lookup_type(*sum_ident, *variant);
-    decl = symbol_table_.lookup(*sum_ident).value();
-    if (!decl) {
-      logger_.error(sum_ident->pos(),
-                    to_string(*sum_ident) + " is not declared.");
+    if (auto some_decl = symbol_table_.lookup(*sum_ident)) {
+      decl = some_decl.value();
     }
   } catch (LookupException &e) {
     logger_.error(e.get_node().pos(), e.what());
-    exit(EXIT_FAILURE);
+    type = ASTContext::ERROR_TYPE;
   } catch (FieldNotFoundException &e) {
     logger_.error(variant->pos(), "No such variant: " + sum_ident->value + "." +
                                       e.field().value);
     exit(EXIT_FAILURE);
+  }
+
+  if (!decl) {
+    return make_unique<VariantPatternNode>(
+        pos, std::move(sum_ident), std::move(variant), 0, std::move(param_pats),
+        ASTContext::ERROR_TYPE);
   }
 
   if (decl->type->getNodeType() != NodeType::sum_type) {
@@ -615,7 +623,7 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
     exit(EXIT_FAILURE);
   }
 
-  if (variant_decl->type != value_type) {
+  if (!types_match(variant_decl->type, value_type)) {
     logger_.error(pos,
                   "Pattern does not match the type of the case expression.");
     exit(EXIT_FAILURE);
@@ -633,8 +641,9 @@ unique_ptr<VariantPatternNode> SemanticChecker::onVariantPattern(
   }
 
   for (size_t i = 0; i < param_pats.size(); i++) {
-    if (variant_decl->parameter_types->formal_parameters.at(i)->type !=
-        param_pats.at(i)->type) {
+    if (!types_match(
+            variant_decl->parameter_types->formal_parameters.at(i)->type,
+            param_pats.at(i)->type)) {
       logger_.error(param_pats.at(i)->pos(),
                     "Pattern for parameter at index " + to_string(i) +
                         " does not match declared type.");
@@ -745,7 +754,7 @@ SemanticChecker::variant_pattern_exhaustiveness(
                          .at(curr_leaf->cases.at(curr_leaf->cases.size() - 1))
                          ->pos();
 
-          if (param_type == ASTContext::INTEGER) {
+          if (types_match(param_type, ASTContext::INTEGER)) {
             auto result = number_pattern_exhaustiveness(
                 pos, sub_case_patterns,
                 curr_param_index + 1 ==
@@ -777,7 +786,7 @@ SemanticChecker::variant_pattern_exhaustiveness(
             } else {
               is_exhaustive = false;
             }
-          } else if (param_type == ASTContext::BOOLEAN) {
+          } else if (types_match(param_type, ASTContext::BOOLEAN)) {
             auto result = boolean_pattern_exhaustiveness(
                 pos, sub_case_patterns,
                 curr_param_index + 1 ==
@@ -950,11 +959,21 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
   }
 
   std::map<u_int, const PatternNode *> case_patterns;
+  bool poisoned_pattern = false;
   for (u_int i = 0; i < case_stmt.get_cases()->size(); i++) {
-    case_patterns[i] = case_stmt.get_cases()->at(i).first.get();
+    auto pattern = case_stmt.get_cases()->at(i).first.get();
+    case_patterns[i] = pattern;
+    poisoned_pattern |= pattern->type == ASTContext::ERROR_TYPE;
   }
 
-  if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
+  if (poisoned_pattern) {
+    // a pattern was already reported as ill-typed; its recovery node carries a
+    // placeholder variant index, so exhaustiveness would report duplicate and
+    // missing cases that say nothing about the source
+  } else if (case_stmt.value->type == ASTContext::ERROR_TYPE) {
+    // selector was already reported as ill-typed; exhaustiveness over it is
+    // meaningless and would emit spurious warnings
+  } else if (case_stmt.value->type->getNodeType() == NodeType::sum_type) {
     auto sum_type = dynamic_cast<const SumTypeNode *>(case_stmt.value->type);
 
     auto result = variant_pattern_exhaustiveness(case_stmt.pos(), sum_type,
@@ -971,7 +990,7 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
                                      std::get<2>(result).begin(),
                                      std::get<2>(result).end());
-  } else if (case_stmt.value->type == ASTContext::INTEGER) {
+  } else if (types_match(case_stmt.value->type, ASTContext::INTEGER)) {
     auto result =
         number_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
 
@@ -986,7 +1005,7 @@ void SemanticChecker::onCaseStatementEnd(CaseStatementNode &case_stmt) {
     case_stmt.reachable_cases.insert(case_stmt.reachable_cases.end(),
                                      std::get<2>(result).begin(),
                                      std::get<2>(result).end());
-  } else if (case_stmt.value->type == ASTContext::BOOLEAN) {
+  } else if (types_match(case_stmt.value->type, ASTContext::BOOLEAN)) {
     auto result =
         boolean_pattern_exhaustiveness(case_stmt.pos(), case_patterns, true);
 
@@ -1072,7 +1091,7 @@ unique_ptr<ExpressionNode> SemanticChecker::onBinaryExpression(
     exit(EXIT_FAILURE);
   }
 
-  if (left_expr->type != right_expr->type) {
+  if (!types_match(left_expr->type, right_expr->type)) {
     logger_.error(right_expr->pos(), "Expression types do not match.");
     exit(EXIT_FAILURE);
   }
@@ -1229,8 +1248,8 @@ unique_ptr<AssignmentNode>
 SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
                           vector<unique_ptr<SelectorNode>> selectors,
                           unique_ptr<ExpressionNode> expr) {
-  TypeNode *lhs_type;
-  const DeclarationNode *decl;
+  TypeNode *lhs_type = ASTContext::ERROR_TYPE;
+  const DeclarationNode *decl = nullptr;
   try {
     lhs_type = symbol_table_.lookup_type(*ident, selectors);
     if (auto opt_decl = symbol_table_.lookup(*ident)) {
@@ -1258,7 +1277,7 @@ SemanticChecker::onAssign(const FilePos pos, unique_ptr<IdentNode> ident,
   } else if (expr->type == nullptr) {
     logger_.error(pos,
                   "'" + to_string(expr.get()) + "' has no associated type");
-  } else if ((ident_expr->type != expr->type)) {
+  } else if (!types_match(ident_expr->type, expr->type)) {
     logger_.error(pos, "Can not assign '" + to_string(expr.get()) + ": " +
                            to_string(expr->type) + "' to '" +
                            to_string(ident_expr.get()) + ": " +
@@ -1273,7 +1292,7 @@ unique_ptr<ArrayIndexNode>
 SemanticChecker::onArrayIndex(const FilePos pos,
                               unique_ptr<ExpressionNode> expr_) {
 
-  if (expr_->type != ASTContext::INTEGER) {
+  if (!types_match(expr_->type, ASTContext::INTEGER)) {
     logger_.error(pos, "Array index is not an INTEGER");
   }
   if (auto number_expr =
@@ -1295,10 +1314,19 @@ void SemanticChecker::expect_unique(const IdentNode *ident,
                                     const DeclarationNode *value,
                                     bool this_scope) {
   if (auto decl = symbol_table_.lookup(*ident, this_scope)) {
-    logger_.error(ident->pos(), "Identifier already declared here: " +
-                                    to_string(decl.value()->pos()) + ":" +
-                                    to_string(*decl));
-    throw DuplicateFieldException(*ident);
+    if (types_match(decl.value()->type, value->type)) {
+      logger_.warning(ident->pos(),
+                      "Identifier already declared here with identical type: " +
+                          to_string(decl.value()->pos()) + ":" +
+                          to_string(*decl));
+    } else {
+      logger_.error(ident->pos(), "Identifier already declared here: " +
+                                      to_string(decl.value()->pos()) + ":" +
+                                      to_string(*decl) +
+                                      " with conflicting type " +
+                                      to_string(decl.value()->type));
+      throw DuplicateFieldException(*ident);
+    }
   }
   symbol_table_.insert(*ident, value);
   return;
@@ -1310,18 +1338,16 @@ void SemanticChecker::expect_unique_within_scope(const IdentNode *ident,
 }
 
 void SemanticChecker::expect_bool(ExpressionNode *expr) {
-  if (expr->type != ASTContext::BOOLEAN) {
+  if (!types_match(expr->type, ASTContext::BOOLEAN)) {
     logger_.error(expr->pos(), "Expression should be of type " +
                                    to_string(ASTContext::BOOLEAN) + ".");
-    // exit(EXIT_FAILURE);
   }
 }
 
 void SemanticChecker::expect_number(ExpressionNode *expr) {
-  if (expr->type != ASTContext::INTEGER) {
+  if (!types_match(expr->type, ASTContext::INTEGER)) {
     logger_.error(expr->pos(), "Expression should be of type " +
                                    to_string(ASTContext::INTEGER) + ".");
-    // exit(EXIT_FAILURE);
   }
 }
 
@@ -1333,4 +1359,15 @@ SemanticChecker::clone_literal(LiteralExpressionNode<T> *literal) {
   }
 
   return nullptr;
+}
+
+bool SemanticChecker::types_match(const TypeNode *type_a,
+                                  const TypeNode *type_b) {
+  assert(type_a && type_b && "null type — use ASTContext::ERROR_TYPE");
+
+  if (type_a == ASTContext::ERROR_TYPE || type_b == ASTContext::ERROR_TYPE) {
+    return true;
+  }
+
+  return type_a == type_b;
 }

@@ -125,6 +125,7 @@ set(UTEST_SOURCES
   tests/semantic_checker/expression.cpp
   tests/semantic_checker/type.cpp
   tests/semantic_checker/case_tests.cpp
+  tests/semantic_checker/decl_tests.cpp
   tests/code_gen/code_gen_tests.cpp
 )
 

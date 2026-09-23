@@ -656,6 +656,13 @@ unique_ptr<PatternNode> Parser::pattern(TypeNode *value_type) {
       if (peek_check_token_type(TokenType::lparen, ADVANCE_ON_TRUE)) {
         auto sum_type = dynamic_cast<const SumTypeNode *>(value_type);
 
+        if (!sum_type) {
+          logger_.error(variant->pos(),
+                        "Variant pattern on a case expression that is not a "
+                        "sum type.");
+          exit(EXIT_FAILURE);
+        }
+
         const VariantDeclarationNode *variant_decl;
         try {
           variant_decl = sum_type->find_variant(*variant->ident);

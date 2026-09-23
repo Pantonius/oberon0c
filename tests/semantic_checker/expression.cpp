@@ -23,7 +23,7 @@ TEST_CASE("Sema Ident Expression", "[sema][expression][ident]") {
         EMPTY_POS, std::make_unique<IdentNode>(EMPTY_POS, "undeclared"), {},
         {});
 
-    REQUIRE(expr->type == nullptr);
+    REQUIRE(expr->type == ASTContext::ERROR_TYPE);
   }
 
   SECTION("No selectors") {

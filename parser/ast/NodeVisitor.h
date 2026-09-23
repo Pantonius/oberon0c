@@ -17,6 +17,7 @@ public:
   virtual void visit(CaseStatementNode &) = 0;
   virtual void visit(ConstDeclarationNode &) = 0;
   virtual void visit(ElsIfStatementNode &) = 0;
+  virtual void visit(ErrorTypeNode &) = 0;
   virtual void visit(IdentExpressionNode &) = 0;
   virtual void visit(IdentNode &) = 0;
   virtual void visit(IdentPatternNode &) = 0;

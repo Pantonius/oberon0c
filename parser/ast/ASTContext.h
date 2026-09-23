@@ -20,6 +20,7 @@ public:
   static const std::unordered_map<std::string, StdTypeNode *const> std_types;
   static StdTypeNode *const BOOLEAN;
   static StdTypeNode *const INTEGER;
+  static ErrorTypeNode *const ERROR_TYPE;
 
   static const std::unordered_map<StdProc, ProcedureDeclarationNode *const>
       std_procs;
